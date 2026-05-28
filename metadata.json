@@ -1,0 +1,6 @@
+{
+  "name": "E-Raport SMP Al Irsyad Surakarta",
+  "description": "Sistem Informasi Akademik dan Input Nilai Raport Kurikulum Merdeka untuk SMP Al Irsyad Surakarta",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

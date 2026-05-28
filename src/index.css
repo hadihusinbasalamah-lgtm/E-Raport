@@ -1,0 +1,30 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@media print {
+  /* Hide all elements during print of specific print sections */
+  body * {
+    visibility: hidden;
+  }
+  
+  #raport-print-area, #raport-print-area *,
+  #print-guru-nilai-area, #print-guru-nilai-area * {
+    visibility: visible;
+  }
+  
+  #raport-print-area, #print-guru-nilai-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    background: white !important;
+    color: black !important;
+    visibility: visible !important;
+  }
+}
+
