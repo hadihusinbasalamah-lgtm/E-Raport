@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { SchemaDatabase, LoginRole, SessionState } from '../types';
-import { BookOpen, Key, User, ShieldCheck, GraduationCap, ArrowRight } from 'lucide-react';
+import { BookOpen, Key, User, ShieldCheck, GraduationCap, ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface LoginScreenProps {
@@ -16,7 +16,8 @@ interface LoginScreenProps {
 export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState<'admin' | 'guru'>('admin');
+  const [role, setRole] = useState<'admin' | 'guru'>('guru');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = (e: React.FormEvent) => {
@@ -112,18 +113,8 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
           {/* Tabs header */}
           <div className="flex border-b border-slate-100 bg-slate-50">
             <button
-              onClick={() => { setRole('admin'); setError(''); }}
-              className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium text-sm transition-all border-b-2 ${
-                role === 'admin'
-                  ? 'border-emerald-600 text-emerald-700 bg-white font-semibold'
-                  : 'border-transparent text-slate-500 hover:text-slate-800'
-              }`}
-            >
-              <ShieldCheck className="w-4 h-4" />
-              Role Admin
-            </button>
-            <button
               onClick={() => { setRole('guru'); setError(''); }}
+              type="button"
               className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium text-sm transition-all border-b-2 ${
                 role === 'guru'
                   ? 'border-emerald-600 text-emerald-700 bg-white font-semibold'
@@ -132,6 +123,18 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
             >
               <GraduationCap className="w-4 h-4" />
               Role Guru
+            </button>
+            <button
+              onClick={() => { setRole('admin'); setError(''); }}
+              type="button"
+              className={`flex-1 py-4 flex items-center justify-center gap-2 font-medium text-sm transition-all border-b-2 ${
+                role === 'admin'
+                  ? 'border-emerald-600 text-emerald-700 bg-white font-semibold'
+                  : 'border-transparent text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              Role Admin
             </button>
           </div>
 
@@ -156,7 +159,7 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
                     required
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder={role === 'admin' ? 'Contoh: admin' : 'Contoh: ahmadfauzi'}
+                    placeholder="Masukkan Username"
                     className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-sans"
                   />
                 </div>
@@ -171,13 +174,20 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
                     <Key className="h-4 w-4" />
                   </div>
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder={role === 'admin' ? 'Default: alirsyadsolo' : 'Default: guru123'}
-                    className="block w-full pl-9 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-sans"
+                    placeholder="Masukkan Password"
+                    className="block w-full pl-9 pr-10 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all font-sans"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 

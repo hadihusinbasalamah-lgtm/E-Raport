@@ -18,6 +18,7 @@ import { GuruTP } from './components/GuruTP';
 import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
 import { GuruProfile } from './components/GuruProfile';
+import { GuruLeger } from './components/GuruLeger';
 
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
@@ -170,6 +171,12 @@ export default function App() {
       icon: Printer,
       badge: isHomeroomTeacher ? 'Wali Kelas' : undefined 
     },
+    ...(isHomeroomTeacher ? [{
+      id: 'legerNav',
+      label: 'Cetak Leger Raport',
+      icon: FileText,
+      badge: 'Wali Kelas'
+    }] : []),
     { id: 'profile-guru', label: 'Pengaturan Profil', icon: User },
   ];
 
@@ -466,6 +473,10 @@ export default function App() {
 
                       {activeTab === 'cetakNav' && (
                         <GuruCetak db={db} guruId={session.userId} onUpdate={handleUpdateDb} />
+                      )}
+
+                      {activeTab === 'legerNav' && isHomeroomTeacher && (
+                        <GuruLeger db={db} guruId={session.userId} onUpdate={handleUpdateDb} />
                       )}
 
                       {activeTab === 'profile-guru' && (
