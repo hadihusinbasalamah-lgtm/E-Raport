@@ -86,8 +86,13 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
         
         {/* Logo and Titles */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-4 bg-emerald-900 rounded-2xl shadow-lg text-emerald-300 mb-4 border border-emerald-800">
-            <BookOpen className="w-10 h-10" />
+          <div className="inline-flex items-center justify-center p-2 bg-white rounded-2xl shadow-md mb-4 border border-emerald-100">
+            <img 
+              src="https://www.alirsyad.or.id/wp-content/uploads/download/alirsyad-alislamiyyah.png" 
+              alt="Logo Al Irsyad Surakarta" 
+              className="w-16 h-16 object-contain" 
+              referrerPolicy="no-referrer" 
+            />
           </div>
           <h1 className="text-2xl font-black tracking-tight text-slate-900 sm:text-3xl font-sans uppercase">
             E-RAPORT DIGITAL
@@ -185,57 +190,7 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
               </button>
             </form>
 
-            {/* Quick login bypass for easier access/evaluation */}
-            <div className="mt-6 border-t border-slate-100 pt-5">
-              <p className="text-xs font-semibold text-slate-400 tracking-wider uppercase text-center mb-3">
-                AKSES CEPAT DEMO (PILIH UNTUK INSTANT LOGIN)
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  onClick={() => handleQuickLogin('admin')}
-                  className="p-2 border border-emerald-100 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-xl text-left text-xs transition-colors"
-                >
-                  <div className="font-semibold text-emerald-800 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full" />
-                    Administrator
-                  </div>
-                  <div className="text-slate-400 text-[10px] mt-0.5">user: admin / pass: alirsyadsolo</div>
-                </button>
 
-                <button
-                  onClick={() => handleQuickLogin('guru', 'ahmadfauzi', 'guru123')}
-                  className="p-2 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-xl text-left text-xs transition-colors"
-                >
-                  <div className="font-semibold text-slate-700 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                    Ust. Ahmad (Guru/Wali VII A)
-                  </div>
-                  <div className="text-slate-400 text-[10px] mt-0.5">user: ahmadfauzi / pass: guru123</div>
-                </button>
-
-                <button
-                  onClick={() => handleQuickLogin('guru', 'fatimah', 'guru123')}
-                  className="p-2 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-xl text-left text-xs transition-colors text-ellipsis overflow-hidden"
-                >
-                  <div className="font-semibold text-slate-700 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-amber-500 rounded-full" />
-                    Usth. Fatimah (Wali VII B)
-                  </div>
-                  <div className="text-slate-400 text-[10px] mt-0.5">user: fatimah / pass: guru123</div>
-                </button>
-
-                <button
-                  onClick={() => handleQuickLogin('guru', 'sarah', 'guru123')}
-                  className="p-2 border border-slate-100 hover:border-emerald-300 hover:bg-emerald-50/50 rounded-xl text-left text-xs transition-colors"
-                >
-                  <div className="font-semibold text-slate-700 flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-                    Usth. Sarah (Wali VIII A)
-                  </div>
-                  <div className="text-slate-400 text-[10px] mt-0.5">user: sarah / pass: guru123</div>
-                </button>
-              </div>
-            </div>
 
           </div>
         </motion.div>

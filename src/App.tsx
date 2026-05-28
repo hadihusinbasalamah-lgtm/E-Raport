@@ -185,8 +185,13 @@ export default function App() {
           {/* SIDEBAR FOR DESKTOP / TOP-NAV TOGGLE FOR MOBILE */}
           <header className="md:hidden bg-emerald-900 text-white p-4 flex justify-between items-center shadow-md shrink-0 sticky top-0 z-40">
             <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-emerald-800 rounded-lg text-amber-300">
-                <BookOpen className="w-5 h-5" />
+              <div className="p-1.5 bg-white rounded-lg">
+                <img 
+                  src="https://www.alirsyad.or.id/wp-content/uploads/download/alirsyad-alislamiyyah.png" 
+                  alt="Logo Al Irsyad" 
+                  className="w-7 h-7 object-contain" 
+                  referrerPolicy="no-referrer" 
+                />
               </div>
               <div>
                 <span className="text-xs text-amber-300 font-mono tracking-wider block font-bold">E-RAPORT MASTER</span>
@@ -210,8 +215,13 @@ export default function App() {
             {/* School identity brand at sidebar top */}
             <div className="p-6 border-b border-emerald-800 hidden md:block">
               <div className="flex items-center gap-2.5">
-                <div className="p-2 bg-emerald-800 rounded-xl text-emerald-300 border border-emerald-750">
-                  <BookOpen className="w-6 h-6" />
+                <div className="p-1 bg-white rounded-xl">
+                  <img 
+                    src="https://www.alirsyad.or.id/wp-content/uploads/download/alirsyad-alislamiyyah.png" 
+                    alt="Logo Al Irsyad" 
+                    className="w-10 h-10 object-contain" 
+                    referrerPolicy="no-referrer" 
+                  />
                 </div>
                 <div>
                   <h1 className="font-extrabold tracking-tight text-white text-[15px] font-sans uppercase">E-RAPORT</h1>
