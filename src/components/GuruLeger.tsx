@@ -194,8 +194,8 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
           margin: 0 !important;
         }
         @page {
-          size: A4 landscape !important;
-          margin: 10mm 10mm 10mm 10mm !important;
+          size: 330mm 215mm !important;
+          margin: 10mm 12mm 10mm 12mm !important;
         }
         table {
           border-collapse: collapse !important;
@@ -266,7 +266,7 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
             className="w-full md:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-sm transition active:scale-95"
           >
             <Printer className="w-4 h-4" />
-            Cetak Leger (Landscape A4)
+            Cetak Leger (Landscape F4)
           </button>
         </div>
 

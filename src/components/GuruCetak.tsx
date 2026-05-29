@@ -451,9 +451,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           .raport-page {
                             width: 100% !important;
-                            min-height: 260mm !important;
-                            height: 260mm !important;
-                            max-height: 260mm !important;
+                            min-height: 265mm !important;
+                            height: 265mm !important;
+                            max-height: 265mm !important;
                             padding: 0 !important;
                             margin: 0 !important;
                             border: none !important;
@@ -507,7 +507,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             height: 180mm !important;
                           }
                           .raport-page-2 table.table-raport-nilai {
-                            height: 220mm !important;
+                            height: 205mm !important;
+                          }
+                          .raport-page table.table-raport-nilai td.cell-no,
+                          .raport-page table.table-raport-nilai td.cell-nilai {
+                            padding: 6px 2px !important;
+                            text-align: center !important;
+                          }
+                          .raport-page table.table-raport-nilai th.cell-no,
+                          .raport-page table.table-raport-nilai th.cell-nilai {
+                            padding: 8px 2px !important;
+                            text-align: center !important;
                           }
                           .raport-page table.table-raport-nilai td {
                             padding: 6px 10px !important;
@@ -642,9 +652,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     /* Page break and force sizing for print sheets */
                     .raport-page {
                       width: 100% !important;
-                      min-height: 260mm !important;
-                      height: 260mm !important;
-                      max-height: 260mm !important;
+                      min-height: 265mm !important;
+                      height: 265mm !important;
+                      max-height: 265mm !important;
                       padding: 0 !important;
                       margin: 0 !important;
                       border: none !important;
@@ -704,7 +714,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       height: 180mm !important;
                     }
                     .raport-page-2 table.table-raport-nilai {
-                      height: 220mm !important;
+                      height: 205mm !important;
+                    }
+                    .raport-page table.table-raport-nilai td.cell-no,
+                    .raport-page table.table-raport-nilai td.cell-nilai {
+                      padding: 6px 2px !important;
+                      text-align: center !important;
+                    }
+                    .raport-page table.table-raport-nilai th.cell-no,
+                    .raport-page table.table-raport-nilai th.cell-nilai {
+                      padding: 8px 2px !important;
+                      text-align: center !important;
                     }
                     .raport-page table.table-raport-nilai td {
                       padding: 6px 10px !important;
@@ -933,17 +953,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
                               <colgroup>
-                                <col style={{ width: '5%' }} />
-                                <col style={{ width: '27%' }} />
-                                <col style={{ width: '10%' }} />
-                                <col style={{ width: '58%' }} />
+                                <col style={{ width: '8%' }} />
+                                <col style={{ width: '28%' }} />
+                                <col style={{ width: '12%' }} />
+                                <col style={{ width: '52%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight" style={{ width: '10%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -957,9 +977,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                   return (
                                     <React.Fragment key={r.mapelNama}>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px]" rowSpan={2}>{idx + 1}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{idx + 1}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px]" rowSpan={2}>{r.nilaiAkhir}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
                                         <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
@@ -985,17 +1005,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
                               <colgroup>
-                                <col style={{ width: '5%' }} />
-                                <col style={{ width: '27%' }} />
-                                <col style={{ width: '10%' }} />
-                                <col style={{ width: '58%' }} />
+                                <col style={{ width: '8%' }} />
+                                <col style={{ width: '28%' }} />
+                                <col style={{ width: '12%' }} />
+                                <col style={{ width: '52%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight" style={{ width: '10%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1005,9 +1025,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                   return (
                                     <React.Fragment key={r.mapelNama}>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px]" rowSpan={2}>{globalIdx}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px]" rowSpan={2}>{r.nilaiAkhir}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
                                         <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
@@ -1030,9 +1050,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                       return (
                                         <React.Fragment key={r.mapelNama}>
                                           <tr className="align-top border-b border-black">
-                                            <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px]" rowSpan={2}>{globalIdx}</td>
+                                            <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                             <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
-                                            <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px]" rowSpan={2}>{r.nilaiAkhir}</td>
+                                            <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
                                             <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
                                           </tr>
                                           <tr className="align-top border-b border-black">
@@ -1060,17 +1080,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
                               <colgroup>
-                                <col style={{ width: '5%' }} />
-                                <col style={{ width: '27%' }} />
-                                <col style={{ width: '10%' }} />
-                                <col style={{ width: '58%' }} />
+                                <col style={{ width: '8%' }} />
+                                <col style={{ width: '28%' }} />
+                                <col style={{ width: '12%' }} />
+                                <col style={{ width: '52%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight" style={{ width: '10%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
+                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1080,9 +1100,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                   return (
                                     <React.Fragment key={r.mapelNama}>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px]" rowSpan={2}>{globalIdx}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px]" rowSpan={2}>{r.nilaiAkhir}</td>
+                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
                                         <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
@@ -1155,7 +1175,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             <div className="grid grid-cols-2 gap-24 text-[12px] mt-6">
                               {/* Left Column: Orang Tua */}
                               <div className="text-center">
-                                <p className="invisible">Date Space Row Placeholder</p> 
+                                <p>&nbsp;</p> 
                                 <p className="font-semibold">Mengetahui,</p>
                                 <p className="font-semibold">Orangtua/ Wali</p>
                                 <div className="h-20" />
