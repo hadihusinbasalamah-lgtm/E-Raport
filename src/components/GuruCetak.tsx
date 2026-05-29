@@ -451,9 +451,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           .raport-page {
                             width: 100% !important;
-                            min-height: 265mm !important;
-                            height: 265mm !important;
-                            max-height: 265mm !important;
+                            min-height: 260mm !important;
+                            height: 260mm !important;
+                            max-height: 260mm !important;
                             padding: 0 !important;
                             margin: 0 !important;
                             border: none !important;
@@ -652,9 +652,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     /* Page break and force sizing for print sheets */
                     .raport-page {
                       width: 100% !important;
-                      min-height: 265mm !important;
-                      height: 265mm !important;
-                      max-height: 265mm !important;
+                      min-height: 260mm !important;
+                      height: 260mm !important;
+                      max-height: 260mm !important;
                       padding: 0 !important;
                       margin: 0 !important;
                       border: none !important;
