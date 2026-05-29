@@ -821,6 +821,14 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       };
                     };
 
+                    // Helper to adjust CP font size based on text length to prevent line-breaks/cutoff without changing column size
+                    const getCpFontSizeClass = (text: string) => {
+                      if (!text) return 'text-[12px] leading-relaxed';
+                      if (text.length > 200) return 'text-[10px] leading-snug';
+                      if (text.length > 130) return 'text-[11px] leading-snug';
+                      return 'text-[12px] leading-relaxed';
+                    };
+
                     // Helper to identify Yayasan religious subjects
                     const isYayasanSubject = (name: string): boolean => {
                       const lowercaseName = name.toLowerCase();
@@ -985,10 +993,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                         <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{idx + 1}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.needsImprovement}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
                                       </tr>
                                     </React.Fragment>
                                   );
@@ -999,7 +1007,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Raport Kurikulum Merdeka</span>
+                            <span>SMP Al-Irsyad Surakarta • Raport Kurikulum Merdeka • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 1 dari 3</span>
                           </div>
                         </div>
@@ -1038,10 +1046,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                         <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.needsImprovement}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
                                       </tr>
                                     </React.Fragment>
                                   );
@@ -1063,10 +1071,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                             <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                             <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
                                             <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
-                                            <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
+                                            <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
                                           </tr>
                                           <tr className="align-top border-b border-black">
-                                            <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.needsImprovement}</td>
+                                            <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
                                           </tr>
                                         </React.Fragment>
                                       );
@@ -1079,7 +1087,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar</span>
+                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 2 dari 3</span>
                           </div>
                         </div>
@@ -1118,10 +1126,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                         <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
                                         <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.master}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
                                       </tr>
                                       <tr className="align-top border-b border-black">
-                                        <td className="border border-black py-2 px-3 text-justify text-[12px] leading-relaxed">{split.needsImprovement}</td>
+                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
                                       </tr>
                                     </React.Fragment>
                                   );
@@ -1220,7 +1228,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar</span>
+                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 3 dari 3</span>
                           </div>
                         </div>
