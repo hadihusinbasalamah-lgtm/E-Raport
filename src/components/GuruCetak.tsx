@@ -437,14 +437,23 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             padding: 0 !important;
                             margin: 0 !important;
                           }
+                          #raport-print-area {
+                            display: block !important;
+                            width: 100% !important;
+                            max-width: 100% !important;
+                            margin: 0 !important;
+                            padding: 0 !important;
+                            gap: 0 !important;
+                          }
                           @page {
                             size: A4 portrait !important;
-                            margin: 12mm 12mm 12mm 12mm !important;
+                            margin: 10mm 12mm 10mm 12mm !important;
                           }
                           .raport-page {
                             width: 100% !important;
-                            min-height: 255mm !important;
-                            height: 255mm !important;
+                            min-height: 260mm !important;
+                            height: 260mm !important;
+                            max-height: 260mm !important;
                             padding: 0 !important;
                             margin: 0 !important;
                             border: none !important;
@@ -456,6 +465,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             justify-content: space-between !important;
                             page-break-after: always !important;
                             break-after: page !important;
+                            overflow: hidden !important;
                           }
                           .raport-page:last-of-type {
                             page-break-after: avoid !important;
@@ -464,19 +474,62 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           .print-no-break {
                             break-inside: avoid !important;
                           }
-                          table {
+                          .raport-page td, .raport-page th {
+                            padding: 3px 5px !important;
+                            font-size: 11px !important;
+                            line-height: 1.2 !important;
+                          }
+                          .raport-page th {
+                            font-weight: bold !important;
+                            padding: 4px 5px !important;
+                          }
+                          /* Border rules strictly inside tables except border-none */
+                          .raport-page table:not(.border-none) {
+                            border: 1.5px solid #000000 !important;
                             border-collapse: collapse !important;
                             width: 100% !important;
                           }
-                          table, th, td {
+                          .raport-page table:not(.border-none) th, 
+                          .raport-page table:not(.border-none) td {
                             border: 1px solid #000000 !important;
                           }
-                          td, th {
-                            color: #000000 !important;
+                          .raport-page table.border-none,
+                          .raport-page table.border-none tr,
+                          .raport-page table.border-none td {
+                            border: none !important;
+                            border-width: 0 !important;
+                          }
+                          /* Tighter print spacing for elements to fit perfect to sheet */
+                          .raport-page .h-20 {
+                            height: 10mm !important;
+                          }
+                          .raport-page .mb-6 {
+                            margin-bottom: 4mm !important;
+                          }
+                          .raport-page .mb-5 {
+                            margin-bottom: 3mm !important;
+                          }
+                          .raport-page .mt-6 {
+                            margin-top: 4mm !important;
+                          }
+                          .raport-page .gap-5 {
+                            gap: 3mm !important;
+                          }
+                          .raport-page .grid-cols-12 {
+                            display: grid !important;
+                            grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+                          }
+                          .raport-page .col-span-12 {
+                            grid-column: span 12 / span 12 !important;
+                          }
+                          .raport-page .col-span-7 {
+                            grid-column: span 7 / span 7 !important;
+                          }
+                          .raport-page .col-span-5 {
+                            grid-column: span 5 / span 5 !important;
                           }
                         }
                       `;
-
                       document.head.appendChild(helperStyle);
                       document.body.appendChild(printHelper);
                       document.body.classList.add('printing-active');
@@ -534,7 +587,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                   @media print {
                     @page {
                       size: A4 portrait;
-                      margin: 12mm 12mm 12mm 12mm !important;
+                      margin: 10mm 12mm 10mm 12mm !important;
                     }
                     
                     /* Hide standard live app UI completely scrollable content, buttons, sidebar, backgrounds */
@@ -559,13 +612,16 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       border: none !important;
                       box-shadow: none !important;
                       background: #ffffff !important;
+                      gap: 0 !important;
+                      display: block !important;
                     }
 
                     /* Page break and force sizing for print sheets */
                     .raport-page {
                       width: 100% !important;
-                      min-height: 255mm !important;
-                      height: 255mm !important;
+                      min-height: 260mm !important;
+                      height: 260mm !important;
+                      max-height: 260mm !important;
                       padding: 0 !important;
                       margin: 0 !important;
                       border: none !important;
@@ -577,6 +633,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       justify-content: space-between !important;
                       page-break-after: always !important;
                       break-after: page !important;
+                      overflow: hidden !important;
                     }
                     
                     .raport-page:last-of-type {
@@ -589,12 +646,62 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       justify-content: flex-start !important;
                     }
 
-                    /* Keep borders black and heavy during print */
-                    table {
-                      border-collapse: collapse !important;
+                    .raport-page td, .raport-page th {
+                      padding: 3px 5px !important;
+                      font-size: 11px !important;
+                      line-height: 1.2 !important;
                     }
-                    th, td {
+                    .raport-page th {
+                      font-weight: bold !important;
+                      padding: 4px 5px !important;
+                    }
+
+                    /* Border rules strictly inside tables except border-none */
+                    .raport-page table:not(.border-none) {
+                      border: 1.5px solid #000000 !important;
+                      border-collapse: collapse !important;
+                      width: 100% !important;
+                    }
+                    .raport-page table:not(.border-none) th, 
+                    .raport-page table:not(.border-none) td {
+                      border: 1px solid #000000 !important;
                       border-color: #000000 !important;
+                    }
+                    .raport-page table.border-none,
+                    .raport-page table.border-none tr,
+                    .raport-page table.border-none td {
+                      border: none !important;
+                      border-width: 0 !important;
+                    }
+                    
+                    /* Tighter print spacing for elements to fit perfect to sheet */
+                    .raport-page .h-20 {
+                      height: 10mm !important;
+                    }
+                    .raport-page .mb-6 {
+                      margin-bottom: 4mm !important;
+                    }
+                    .raport-page .mb-5 {
+                      margin-bottom: 3mm !important;
+                    }
+                    .raport-page .mt-6 {
+                      margin-top: 4mm !important;
+                    }
+                    .raport-page .gap-5 {
+                      gap: 3mm !important;
+                    }
+                    .raport-page .grid-cols-12 {
+                      display: grid !important;
+                      grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+                    }
+                    .raport-page .col-span-12 {
+                      grid-column: span 12 / span 12 !important;
+                    }
+                    .raport-page .col-span-7 {
+                      grid-column: span 7 / span 7 !important;
+                    }
+                    .raport-page .col-span-5 {
+                      grid-column: span 5 / span 5 !important;
                     }
                   }
                 `}</style>
@@ -712,7 +819,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </h1>
                           </div>
 
-                          <div className="h-[120mm] print:h-[135mm]" />
+                          <div className="flex-grow print:flex-grow h-[80mm] print:h-auto" />
 
                           <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black">
                             <div className="w-full text-center">
