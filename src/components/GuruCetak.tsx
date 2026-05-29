@@ -447,7 +447,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           @page {
                             size: A4 portrait !important;
-                            margin: 10mm 12mm 10mm 12mm !important;
+                            margin: 10mm 6mm 10mm 6mm !important;
                           }
                           .raport-page {
                             width: 100% !important;
@@ -620,7 +620,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                   @media print {
                     @page {
                       size: A4 portrait;
-                      margin: 10mm 12mm 10mm 12mm !important;
+                      margin: 10mm 6mm 10mm 6mm !important;
                     }
                     
                     /* Hide standard live app UI completely scrollable content, buttons, sidebar, backgrounds */
