@@ -953,17 +953,22 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
                               <colgroup>
-                                <col style={{ width: '8%' }} />
-                                <col style={{ width: '28%' }} />
-                                <col style={{ width: '12%' }} />
-                                <col style={{ width: '52%' }} />
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2 text-center align-middle cell-no" style={{ width: '5%' }}>No</th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2 px-1 text-center align-middle font-bold cell-nilai" style={{ width: '10%' }}>
+                                    <div className="flex flex-col items-center justify-center leading-none">
+                                      <span>Nilai</span>
+                                      <span>Akhir</span>
+                                    </div>
+                                  </th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1005,17 +1010,22 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
                               <colgroup>
-                                <col style={{ width: '8%' }} />
-                                <col style={{ width: '28%' }} />
-                                <col style={{ width: '12%' }} />
-                                <col style={{ width: '52%' }} />
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2 text-center align-middle cell-no" style={{ width: '5%' }}>No</th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2 px-1 text-center align-middle font-bold cell-nilai" style={{ width: '10%' }}>
+                                    <div className="flex flex-col items-center justify-center leading-none">
+                                      <span>Nilai</span>
+                                      <span>Akhir</span>
+                                    </div>
+                                  </th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -1080,17 +1090,22 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
                               <colgroup>
-                                <col style={{ width: '8%' }} />
-                                <col style={{ width: '28%' }} />
-                                <col style={{ width: '12%' }} />
-                                <col style={{ width: '52%' }} />
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
                               </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2.5 px-1.5 text-center align-middle cell-no" style={{ width: '8%' }}>No</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '28%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2.5 px-1 text-center align-middle font-bold leading-tight cell-nilai" style={{ width: '12%' }}>Nilai Akhir</th>
-                                  <th className="border border-black py-2.5 px-3 text-center align-middle" style={{ width: '52%' }}>Capaian Kompetensi</th>
+                                  <th className="border border-black py-2 text-center align-middle cell-no" style={{ width: '5%' }}>No</th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
+                                  <th className="border border-black py-2 px-1 text-center align-middle font-bold cell-nilai" style={{ width: '10%' }}>
+                                    <div className="flex flex-col items-center justify-center leading-none">
+                                      <span>Nilai</span>
+                                      <span>Akhir</span>
+                                    </div>
+                                  </th>
+                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
                                 </tr>
                               </thead>
                               <tbody>
