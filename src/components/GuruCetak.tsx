@@ -424,6 +424,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             overflow: hidden !important;
                             visibility: hidden !important;
                           }
+                          #print-helper-area, #print-helper-area * {
+                            visibility: visible !important;
+                          }
                           #print-helper-area {
                             display: block !important;
                             width: 210mm !important;

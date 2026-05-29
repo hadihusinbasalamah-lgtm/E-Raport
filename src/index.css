@@ -13,11 +13,12 @@
   }
   
   #raport-print-area, #raport-print-area *,
-  #print-guru-nilai-area, #print-guru-nilai-area * {
-    visibility: visible;
+  #print-guru-nilai-area, #print-guru-nilai-area *,
+  #print-helper-area, #print-helper-area * {
+    visibility: visible !important;
   }
   
-  #raport-print-area, #print-guru-nilai-area {
+  #raport-print-area, #print-guru-nilai-area, #print-helper-area {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
