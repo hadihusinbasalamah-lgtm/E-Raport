@@ -786,60 +786,38 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       if (!desc || desc.trim() === '') return fallback;
 
                       const separators = [
-                        { key: ' Serta perlu bimbingan dalam ', isNegative: true },
-                        { key: ' serta perlu bimbingan dalam ', isNegative: true },
-                        { key: ' Serta perlu bimbingan ', isNegative: true },
-                        { key: ' serta perlu bimbingan ', isNegative: true },
-                        { key: '. Serta perlu bimbingan ', isNegative: true },
-                        { key: '. serta perlu bimbingan ', isNegative: true },
-                        { key: 'perlu bimbingan dalam', isNegative: true },
-                        { key: 'Perlu bimbingan dalam', isNegative: true },
-                        // Positive transitions
-                        { key: ' Serta menunjukkan penguasaan yang baik dalam ', isNegative: false },
-                        { key: ' serta menunjukkan penguasaan yang baik dalam ', isNegative: false },
-                        { key: ' Serta menunjukkan penguasaan yang baik ', isNegative: false },
-                        { key: ' serta menunjukkan penguasaan yang baik ', isNegative: false },
-                        { key: '. Serta menunjukkan penguasaan yang baik ', isNegative: false },
-                        { key: '. serta menunjukkan penguasaan yang baik ', isNegative: false }
+                        ' Serta perlu bimbingan ',
+                        ' serta perlu bimbingan ',
+                        ' Serta perlu bimbingan dalam ',
+                        ' serta perlu bimbingan dalam ',
+                        '. Serta perlu bimbingan ',
+                        '. serta perlu bimbingan ',
+                        'perlu bimbingan dalam',
+                        'Perlu bimbingan dalam'
                       ];
 
                       for (const sep of separators) {
-                        const idx = desc.toLowerCase().indexOf(sep.key.toLowerCase());
+                        const idx = desc.toLowerCase().indexOf(sep.toLowerCase());
                         if (idx !== -1) {
                           let master = desc.substring(0, idx).trim();
-                          let secondPart = desc.substring(idx + sep.key.length).trim();
+                          let needsImprovement = desc.substring(idx + sep.length).trim();
 
-                          if (sep.isNegative) {
-                            if (!secondPart.toLowerCase().startsWith('perlu bimbingan')) {
-                              secondPart = 'Perlu bimbingan ' + (secondPart.toLowerCase().startsWith('dalam') ? secondPart : 'dalam ' + secondPart);
-                            } else {
-                              secondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
-                            }
+                          if (!needsImprovement.toLowerCase().startsWith('perlu bimbingan')) {
+                            needsImprovement = 'Perlu bimbingan ' + needsImprovement;
                           } else {
-                            if (!secondPart.toLowerCase().startsWith('menunjukkan penguasaan yang baik')) {
-                              secondPart = 'Menunjukkan penguasaan yang baik ' + (secondPart.toLowerCase().startsWith('dalam') ? secondPart : 'dalam ' + secondPart);
-                            } else {
-                              secondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
-                            }
+                            needsImprovement = needsImprovement.charAt(0).toUpperCase() + needsImprovement.slice(1);
                           }
 
                           if (master && !master.endsWith('.')) master += '.';
-                          if (secondPart && !secondPart.endsWith('.')) secondPart += '.';
+                          if (needsImprovement && !needsImprovement.endsWith('.')) needsImprovement += '.';
 
-                          return { master, needsImprovement: secondPart };
+                          return { master, needsImprovement };
                         }
                       }
 
-                      // If there is no negative/positive transition (e.g. single TP or customized description)
-                      const isDescPositive = !desc.toLowerCase().includes('bimbingan') && 
-                                             !desc.toLowerCase().includes('perlu perbaikan') && 
-                                             !desc.toLowerCase().includes('kurang');
-
                       return {
                         master: desc.endsWith('.') ? desc : desc + '.',
-                        needsImprovement: isDescPositive 
-                          ? 'Mampu mempertahankan prestasi belajar dengan sangat baik.' 
-                          : 'Perlu bimbingan dalam pemantapan pemahaman keseluruhan materi.'
+                        needsImprovement: 'Perlu bimbingan dalam pemantapan pemahaman keseluruhan materi.'
                       };
                     };
 

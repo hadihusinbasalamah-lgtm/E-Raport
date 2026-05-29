@@ -277,27 +277,14 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     const weakest = sorted[sorted.length - 1];
 
     let desc = '';
-    
-    if (items.length <= 1 || best.score === weakest.score) {
-      if (best.score >= 80) {
-        desc = `Menunjukkan penguasaan sangat baik dalam ${best.label.toLowerCase()}.`;
-      } else if (best.score >= 75) {
-        desc = `Menunjukkan penguasaan yang cukup baik dalam hal ${best.label.toLowerCase()}.`;
-      } else {
-        desc = `Perlu bimbingan dalam ${best.label.toLowerCase()}.`;
-      }
+    if (best.score >= 80) {
+      desc += `Menunjukan penguasaan sangat baik dalam ${best.label.toLowerCase()}.`;
     } else {
-      if (best.score >= 80) {
-        desc += `Menunjukkan penguasaan sangat baik dalam ${best.label.toLowerCase()}.`;
-      } else {
-        desc += `Menunjukkan penguasaan yang cukup baik dalam hal ${best.label.toLowerCase()}.`;
-      }
+      desc += `Menunjukkan penguasaan yang cukup baik dalam hal ${best.label.toLowerCase()}.`;
+    }
 
-      if (weakest.score < 75) {
-        desc += ` Serta perlu bimbingan dalam ${weakest.label.toLowerCase()}.`;
-      } else {
-        desc += ` Serta menunjukkan penguasaan yang baik dalam ${weakest.label.toLowerCase()}.`;
-      }
+    if (best !== weakest) {
+      desc += ` Serta perlu bimbingan dalam ${weakest.label.toLowerCase()}.`;
     }
 
     setGrades(prev => prev.map(g => {
