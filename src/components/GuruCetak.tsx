@@ -475,13 +475,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             break-inside: avoid !important;
                           }
                           .raport-page td, .raport-page th {
-                            padding: 3px 5px !important;
-                            font-size: 11px !important;
-                            line-height: 1.2 !important;
+                            padding: 4px 6px !important;
+                            font-size: 13.5px !important;
+                            line-height: 1.3 !important;
                           }
                           .raport-page th {
                             font-weight: bold !important;
-                            padding: 4px 5px !important;
+                            padding: 6px 6px !important;
                           }
                           /* Border rules strictly inside tables except border-none */
                           .raport-page table:not(.border-none) {
@@ -503,11 +503,24 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             word-break: break-word !important;
                             overflow-wrap: break-word !important;
                           }
+                          .raport-page-1 table.table-raport-nilai {
+                            height: 180mm !important;
+                          }
+                          .raport-page-2 table.table-raport-nilai {
+                            height: 220mm !important;
+                          }
+                          .raport-page table.table-raport-nilai td {
+                            padding: 6px 10px !important;
+                          }
+                          .raport-page table.table-raport-nilai th {
+                            padding: 8px 10px !important;
+                          }
                           .raport-page table.border-none,
                           .raport-page table.border-none tr,
                           .raport-page table.border-none td {
                             border: none !important;
                             border-width: 0 !important;
+                            padding: 2px 4px !important;
                           }
                           /* Tighter print spacing for elements to fit perfect to sheet */
                           .raport-page .h-20 {
@@ -657,13 +670,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     }
 
                     .raport-page td, .raport-page th {
-                      padding: 3px 5px !important;
-                      font-size: 11px !important;
-                      line-height: 1.2 !important;
+                      padding: 4px 6px !important;
+                      font-size: 13.5px !important;
+                      line-height: 1.3 !important;
                     }
                     .raport-page th {
                       font-weight: bold !important;
-                      padding: 4px 5px !important;
+                      padding: 6px 6px !important;
                     }
 
                     /* Border rules strictly inside tables except border-none */
@@ -687,11 +700,24 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       word-break: break-word !important;
                       overflow-wrap: break-word !important;
                     }
+                    .raport-page-1 table.table-raport-nilai {
+                      height: 180mm !important;
+                    }
+                    .raport-page-2 table.table-raport-nilai {
+                      height: 220mm !important;
+                    }
+                    .raport-page table.table-raport-nilai td {
+                      padding: 6px 10px !important;
+                    }
+                    .raport-page table.table-raport-nilai th {
+                      padding: 8px 10px !important;
+                    }
                     .raport-page table.border-none,
                     .raport-page table.border-none tr,
                     .raport-page table.border-none td {
                       border: none !important;
                       border-width: 0 !important;
+                      padding: 2px 4px !important;
                     }
                     
                     /* Tighter print spacing for elements to fit perfect to sheet */
@@ -859,7 +885,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         </div>
 
                         {/* ================= PAGE 1 ================= */}
-                        <div className="raport-page font-sans text-black">
+                        <div className="raport-page raport-page-1 font-sans text-black">
                           <div>
                             {/* TITLE */}
                             <h1 className="text-center text-[16px] font-bold tracking-widest uppercase mb-6">
@@ -954,7 +980,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         </div>
 
                         {/* ================= PAGE 2 ================= */}
-                        <div className="raport-page font-sans text-black">
+                        <div className="raport-page raport-page-2 font-sans text-black">
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
@@ -1029,7 +1055,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         </div>
 
                         {/* ================= PAGE 3 ================= */}
-                        <div className="raport-page font-sans text-black">
+                        <div className="raport-page raport-page-3 font-sans text-black">
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
