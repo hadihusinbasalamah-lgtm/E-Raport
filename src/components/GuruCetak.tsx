@@ -786,38 +786,60 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       if (!desc || desc.trim() === '') return fallback;
 
                       const separators = [
-                        ' Serta perlu bimbingan ',
-                        ' serta perlu bimbingan ',
-                        ' Serta perlu bimbingan dalam ',
-                        ' serta perlu bimbingan dalam ',
-                        '. Serta perlu bimbingan ',
-                        '. serta perlu bimbingan ',
-                        'perlu bimbingan dalam',
-                        'Perlu bimbingan dalam'
+                        { key: ' Serta perlu bimbingan dalam ', isNegative: true },
+                        { key: ' serta perlu bimbingan dalam ', isNegative: true },
+                        { key: ' Serta perlu bimbingan ', isNegative: true },
+                        { key: ' serta perlu bimbingan ', isNegative: true },
+                        { key: '. Serta perlu bimbingan ', isNegative: true },
+                        { key: '. serta perlu bimbingan ', isNegative: true },
+                        { key: 'perlu bimbingan dalam', isNegative: true },
+                        { key: 'Perlu bimbingan dalam', isNegative: true },
+                        // Positive transitions
+                        { key: ' Serta menunjukkan penguasaan yang baik dalam ', isNegative: false },
+                        { key: ' serta menunjukkan penguasaan yang baik dalam ', isNegative: false },
+                        { key: ' Serta menunjukkan penguasaan yang baik ', isNegative: false },
+                        { key: ' serta menunjukkan penguasaan yang baik ', isNegative: false },
+                        { key: '. Serta menunjukkan penguasaan yang baik ', isNegative: false },
+                        { key: '. serta menunjukkan penguasaan yang baik ', isNegative: false }
                       ];
 
                       for (const sep of separators) {
-                        const idx = desc.toLowerCase().indexOf(sep.toLowerCase());
+                        const idx = desc.toLowerCase().indexOf(sep.key.toLowerCase());
                         if (idx !== -1) {
                           let master = desc.substring(0, idx).trim();
-                          let needsImprovement = desc.substring(idx + sep.length).trim();
+                          let secondPart = desc.substring(idx + sep.key.length).trim();
 
-                          if (!needsImprovement.toLowerCase().startsWith('perlu bimbingan')) {
-                            needsImprovement = 'Perlu bimbingan ' + needsImprovement;
+                          if (sep.isNegative) {
+                            if (!secondPart.toLowerCase().startsWith('perlu bimbingan')) {
+                              secondPart = 'Perlu bimbingan ' + (secondPart.toLowerCase().startsWith('dalam') ? secondPart : 'dalam ' + secondPart);
+                            } else {
+                              secondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
+                            }
                           } else {
-                            needsImprovement = needsImprovement.charAt(0).toUpperCase() + needsImprovement.slice(1);
+                            if (!secondPart.toLowerCase().startsWith('menunjukkan penguasaan yang baik')) {
+                              secondPart = 'Menunjukkan penguasaan yang baik ' + (secondPart.toLowerCase().startsWith('dalam') ? secondPart : 'dalam ' + secondPart);
+                            } else {
+                              secondPart = secondPart.charAt(0).toUpperCase() + secondPart.slice(1);
+                            }
                           }
 
                           if (master && !master.endsWith('.')) master += '.';
-                          if (needsImprovement && !needsImprovement.endsWith('.')) needsImprovement += '.';
+                          if (secondPart && !secondPart.endsWith('.')) secondPart += '.';
 
-                          return { master, needsImprovement };
+                          return { master, needsImprovement: secondPart };
                         }
                       }
 
+                      // If there is no negative/positive transition (e.g. single TP or customized description)
+                      const isDescPositive = !desc.toLowerCase().includes('bimbingan') && 
+                                             !desc.toLowerCase().includes('perlu perbaikan') && 
+                                             !desc.toLowerCase().includes('kurang');
+
                       return {
                         master: desc.endsWith('.') ? desc : desc + '.',
-                        needsImprovement: 'Perlu bimbingan dalam pemantapan pemahaman keseluruhan materi.'
+                        needsImprovement: isDescPositive 
+                          ? 'Mampu mempertahankan prestasi belajar dengan sangat baik.' 
+                          : 'Perlu bimbingan dalam pemantapan pemahaman keseluruhan materi.'
                       };
                     };
 
@@ -1007,7 +1029,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Raport Kurikulum Merdeka • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 1 dari 3</span>
                           </div>
                         </div>
@@ -1087,7 +1109,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 2 dari 3</span>
                           </div>
                         </div>
@@ -1228,7 +1250,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           {/* FOOTER */}
                           <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • Laporan Hasil Belajar • Nama: <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
                             <span>Halaman 3 dari 3</span>
                           </div>
                         </div>

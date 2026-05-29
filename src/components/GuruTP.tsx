@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, Guru } from '../types';
-import { BookOpen, Check, ListChecks } from 'lucide-react';
+import { BookOpen, Check, ListChecks, Save } from 'lucide-react';
 
 interface GuruTPProps {
   db: SchemaDatabase;
@@ -142,6 +142,36 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
   const [message, setMessage] = useState('');
 
   const activeAssignment = groupedAssignments[selectedIdx];
+
+  const existing = activeAssignment
+    ? db.tujuanPembelajaran.find(
+        t => t.periodeId === activePeriod.id &&
+             t.guruId === guruId &&
+             t.mapelId === activeAssignment.mapelId &&
+             (t.kelasId === activeAssignment.jenjang || activeAssignment.kelasIds.includes(t.kelasId))
+      )
+    : undefined;
+
+  const hasChanges = (() => {
+    if (!activeAssignment) return false;
+    if (!existing) {
+      return tp1.trim().length > 0 || tp2.trim().length > 0 || tp3.trim().length > 0 || tp4.trim().length > 0;
+    }
+    const currentTp1 = tp1.trim();
+    const currentTp2 = tp2.trim();
+    const currentTp3 = tp3.trim();
+    const currentTp4 = tp4.trim();
+    
+    const origTp1 = existing.tp1 || '';
+    const origTp2 = existing.tp2 || '';
+    const origTp3 = existing.tp3 || '';
+    const origTp4 = existing.tp4 || '';
+    
+    return currentTp1 !== origTp1 ||
+           currentTp2 !== origTp2 ||
+           currentTp3 !== origTp3 ||
+           currentTp4 !== origTp4;
+  })();
 
   // Load existing TP when assignment or activePeriod Changes
   useEffect(() => {
@@ -282,9 +312,12 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
                   required
                   rows={2}
                   value={tp1}
-                  onChange={e => setTp1(e.target.value)}
+                  onChange={e => {
+                    setTp1(e.target.value);
+                    if (message) setMessage('');
+                  }}
                   placeholder="e.g. Memahami konsep persamaan kuadrat dan cara menyelesaikannya"
-                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -296,9 +329,12 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
                   required
                   rows={2}
                   value={tp2}
-                  onChange={e => setTp2(e.target.value)}
+                  onChange={e => {
+                    setTp2(e.target.value);
+                    if (message) setMessage('');
+                  }}
                   placeholder="e.g. Menerapkan logaritma dalam pemecahan masalah kehidupan sehari-hari"
-                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -309,9 +345,12 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
                 <textarea
                   rows={2}
                   value={tp3}
-                  onChange={e => setTp3(e.target.value)}
+                  onChange={e => {
+                    setTp3(e.target.value);
+                    if (message) setMessage('');
+                  }}
                   placeholder="Deskripsi TP 3..."
-                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
 
@@ -320,9 +359,12 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
                 <textarea
                   rows={2}
                   value={tp4}
-                  onChange={e => setTp4(e.target.value)}
+                  onChange={e => {
+                    setTp4(e.target.value);
+                    if (message) setMessage('');
+                  }}
                   placeholder="Deskripsi TP 4..."
-                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                  className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none focus:border-emerald-500"
                 />
               </div>
             </div>
@@ -334,12 +376,24 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
               </p>
             </div>
 
+            {hasChanges && (
+              <div className="text-[11px] bg-amber-50 text-amber-800 border border-amber-250 p-3 rounded-xl flex items-center gap-1.5 leading-relaxed font-semibold">
+                <span className="text-sm">⚠️</span>
+                <span>Terdapat pembaharuan TP yang belum disimpan. Klik tombol <strong>Simpan Pembaharuan TP</strong> di bawah untuk menerapkan perubahan Anda ke database.</span>
+              </div>
+            )}
+
             <button
               type="submit"
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-sm active:scale-95 transition-all mt-4"
+              disabled={!hasChanges}
+              className={`px-5 py-2.5 text-xs font-bold rounded-xl flex items-center gap-2 transition-all mt-4 shadow-sm active:scale-95 ${
+                hasChanges
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-100 cursor-pointer hover:-translate-y-0.5'
+                  : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
+              }`}
             >
-              <Check className="w-4 h-4" />
-              Simpan Tujuan Pembelajaran
+              {hasChanges ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4 text-emerald-500" />}
+              {hasChanges ? 'Simpan Pembaharuan TP' : 'Tujuan Pembelajaran Tersimpan'}
             </button>
           </form>
         </div>
