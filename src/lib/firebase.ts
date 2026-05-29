@@ -163,57 +163,37 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
   let currentDb: SchemaDatabase = { ...defaultDb };
 
   const unsubscribes: (() => void)[] = [];
+  let isInitializedColRegistered = false;
+  let isDbAlreadyInitialized = false;
 
   const handleEntityUpdate = (entityKey: keyof SchemaDatabase, data: any) => {
     currentDb = { ...currentDb, [entityKey]: data };
     onSync({ ...currentDb });
   };
 
-  // Subscribe to config main settings
-  unsubscribes.push(
-    onSnapshot(doc(db, 'config', 'main'), (snap) => {
-      if (snap.exists()) {
-        const val = snap.data();
-        currentDb.adminUsername = val.adminUsername || defaultDb.adminUsername;
-        currentDb.adminPasswordKey = val.adminPasswordKey || defaultDb.adminPasswordKey;
-        currentDb.activePeriodId = val.activePeriodId || defaultDb.activePeriodId;
-        onSync({ ...currentDb });
-      } else {
-        // Seed config if empty
-        const path = 'config/main';
-        try {
-          setDoc(doc(db, 'config', 'main'), {
-            adminUsername: defaultDb.adminUsername,
-            adminPasswordKey: defaultDb.adminPasswordKey,
-            activePeriodId: defaultDb.activePeriodId
-          });
-        } catch (error) {
-          handleFirestoreError(error, OperationType.WRITE, path);
-        }
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.GET, 'config/main');
-    })
-  );
-
   // Helper function to listen to each separate collection
   const listenCol = (colName: string, entityKey: keyof SchemaDatabase) => {
     unsubscribes.push(
       onSnapshot(collection(db, colName), (snap) => {
         if (snap.empty) {
-          // Sync seed data to remote if collection is completely clean
-          const initialItems = defaultDb[entityKey];
-          if (Array.isArray(initialItems) && initialItems.length > 0) {
-            initialItems.forEach(item => {
-              const itemPath = `${colName}/${item.id}`;
-              try {
-                setDoc(doc(db, colName, item.id), item);
-              } catch (err) {
-                handleFirestoreError(err, OperationType.WRITE, itemPath);
-              }
-            });
+          // Sync seed data to remote only if the database hasn't been initialized yet
+          if (!isDbAlreadyInitialized) {
+            const initialItems = defaultDb[entityKey];
+            if (Array.isArray(initialItems) && initialItems.length > 0) {
+              initialItems.forEach(item => {
+                const itemPath = `${colName}/${item.id}`;
+                try {
+                  setDoc(doc(db, colName, item.id), item);
+                } catch (err) {
+                  handleFirestoreError(err, OperationType.WRITE, itemPath);
+                }
+              });
+            }
+            handleEntityUpdate(entityKey, initialItems);
+          } else {
+            // Database is already initialized, empty means empty! The user wants it empty.
+            handleEntityUpdate(entityKey, []);
           }
-          handleEntityUpdate(entityKey, initialItems);
         } else {
           const list: any[] = [];
           snap.forEach(docSnap => {
@@ -227,14 +207,74 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
     );
   };
 
-  listenCol('kelas', 'kelas');
-  listenCol('mapel', 'mapel');
-  listenCol('siswa', 'siswa');
-  listenCol('guru', 'guru');
-  listenCol('periodList', 'periodList');
-  listenCol('tujuanPembelajaran', 'tujuanPembelajaran');
-  listenCol('nilaiSiswa', 'nilaiSiswa');
-  listenCol('absensiDanCatatan', 'absensiDanCatatan');
+  // Subscribe to config main settings
+  const configUnsub = onSnapshot(doc(db, 'config', 'main'), (snap) => {
+    if (snap.exists()) {
+      const val = snap.data();
+      currentDb.adminUsername = val.adminUsername || defaultDb.adminUsername;
+      currentDb.adminPasswordKey = val.adminPasswordKey || defaultDb.adminPasswordKey;
+      currentDb.activePeriodId = val.activePeriodId || defaultDb.activePeriodId;
+      isDbAlreadyInitialized = val.isSeedInitialized || false;
+
+      // Migration: if config exists but isSeedInitialized is missing, set it to true
+      if (!val.isSeedInitialized) {
+        setDoc(doc(db, 'config', 'main'), {
+          ...val,
+          isSeedInitialized: true
+        }, { merge: true }).catch(err => console.error(err));
+        isDbAlreadyInitialized = true;
+      }
+
+      onSync({ ...currentDb });
+
+      // Start listening to other collections once we know the config state
+      if (!isInitializedColRegistered) {
+        isInitializedColRegistered = true;
+        listenCol('kelas', 'kelas');
+        listenCol('mapel', 'mapel');
+        listenCol('siswa', 'siswa');
+        listenCol('guru', 'guru');
+        listenCol('periodList', 'periodList');
+        listenCol('tujuanPembelajaran', 'tujuanPembelajaran');
+        listenCol('nilaiSiswa', 'nilaiSiswa');
+        listenCol('absensiDanCatatan', 'absensiDanCatatan');
+      }
+    } else {
+      // Config main does not exist in Firestore, which means it's a completely fresh Firestore DB.
+      // We will perform seed initialization for config and all collections now.
+      isDbAlreadyInitialized = false;
+
+      const path = 'config/main';
+      try {
+        setDoc(doc(db, 'config', 'main'), {
+          adminUsername: defaultDb.adminUsername,
+          adminPasswordKey: defaultDb.adminPasswordKey,
+          activePeriodId: defaultDb.activePeriodId,
+          isSeedInitialized: true
+        }).then(() => {
+          isDbAlreadyInitialized = true;
+        });
+      } catch (error) {
+        handleFirestoreError(error, OperationType.WRITE, path);
+      }
+
+      if (!isInitializedColRegistered) {
+        isInitializedColRegistered = true;
+        listenCol('kelas', 'kelas');
+        listenCol('mapel', 'mapel');
+        listenCol('siswa', 'siswa');
+        listenCol('guru', 'guru');
+        listenCol('periodList', 'periodList');
+        listenCol('tujuanPembelajaran', 'tujuanPembelajaran');
+        listenCol('nilaiSiswa', 'nilaiSiswa');
+        listenCol('absensiDanCatatan', 'absensiDanCatatan');
+      }
+    }
+  }, (error) => {
+    handleFirestoreError(error, OperationType.GET, 'config/main');
+  });
+
+  unsubscribes.push(configUnsub);
 
   return () => {
     unsubscribes.forEach(unsub => unsub());

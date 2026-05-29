@@ -31,6 +31,12 @@ export default function App() {
   const [db, setDb] = useState<SchemaDatabase>(getDatabase());
   const [isDbLoading, setIsDbLoading] = useState(true);
 
+  // Keep a ref to the absolute latest db state to prevent stale state closure issues during async updates
+  const dbRef = React.useRef(db);
+  useEffect(() => {
+    dbRef.current = db;
+  }, [db]);
+
   // Subscribe to real-time changes in Firebase
   useEffect(() => {
     const unsubscribe = subscribeToDatabase((syncedDb) => {
@@ -127,7 +133,7 @@ export default function App() {
     }
 
     // Call asynchronous Firebase storage write in background
-    syncDatabaseChange(db, updatedDb);
+    syncDatabaseChange(dbRef.current, updatedDb);
 
     setDb(updatedDb);
     saveDatabase(updatedDb);
