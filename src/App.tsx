@@ -19,15 +19,26 @@ import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
 import { GuruProfile } from './components/GuruProfile';
 import { GuruLeger } from './components/GuruLeger';
+import { subscribeToDatabase, syncDatabaseChange } from './lib/firebase';
 
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
-  LayoutDashboard, ShieldAlert, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X
+  LayoutDashboard, ShieldAlert, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [db, setDb] = useState<SchemaDatabase>(getDatabase());
+  const [isDbLoading, setIsDbLoading] = useState(true);
+
+  // Subscribe to real-time changes in Firebase
+  useEffect(() => {
+    const unsubscribe = subscribeToDatabase((syncedDb) => {
+      setDb(syncedDb);
+      setIsDbLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
   
   // Login Session state (loaded and kept in sessionStorage)
   const [session, setSession] = useState<SessionState>(() => {
@@ -115,6 +126,9 @@ export default function App() {
       });
     }
 
+    // Call asynchronous Firebase storage write in background
+    syncDatabaseChange(db, updatedDb);
+
     setDb(updatedDb);
     saveDatabase(updatedDb);
   };
@@ -179,6 +193,20 @@ export default function App() {
     }] : []),
     { id: 'profile-guru', label: 'Pengaturan Profil', icon: User },
   ];
+
+  if (isDbLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans p-6">
+        <div className="flex flex-col items-center space-y-4 max-w-md text-center">
+          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
+          <h3 className="text-lg font-black text-slate-100 tracking-tight">Menghubungkan Database...</h3>
+          <p className="text-xs text-slate-400 leading-relaxed md:px-6">
+            Mohon tunggu sejenak, sistem sedang sinkronisasi data e-Raport SMP Al Irsyad Surakarta dengan layanan Firebase Cloud Database.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">

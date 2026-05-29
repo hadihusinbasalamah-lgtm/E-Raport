@@ -1,0 +1,168 @@
+{
+  "entities": {
+    "Kelas": {
+      "title": "Kelas",
+      "description": "classroom representation",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "waliKelasId": { "type": "string" }
+      },
+      "required": ["id", "nama", "waliKelasId"]
+    },
+    "Mapel": {
+      "title": "Mapel",
+      "description": "Subject model",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" }
+      },
+      "required": ["id", "nama"]
+    },
+    "Siswa": {
+      "title": "Siswa",
+      "description": "Student record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nisn": { "type": "string" },
+        "nis": { "type": "string" },
+        "nama": { "type": "string" },
+        "jenisKelamin": { "type": "string" },
+        "kelasId": { "type": "string" }
+      },
+      "required": ["id", "nisn", "nis", "nama", "jenisKelamin", "kelasId"]
+    },
+    "Guru": {
+      "title": "Guru",
+      "description": "Teacher profile",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "nama": { "type": "string" },
+        "username": { "type": "string" },
+        "passwordKey": { "type": "string" },
+        "isWaliKelas": { "type": "boolean" },
+        "waliKelasKelasId": { "type": "string" },
+        "mapel1Id": { "type": "string" },
+        "mapel1KelasId": { "type": "string" },
+        "mapel2Id": { "type": "string" },
+        "mapel2KelasId": { "type": "string" }
+      },
+      "required": ["id", "nama", "username", "passwordKey", "isWaliKelas", "waliKelasKelasId", "mapel1Id", "mapel1KelasId"]
+    },
+    "PeriodeAkademik": {
+      "title": "PeriodeAkademik",
+      "description": "Academic period record",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "tahunAjaran": { "type": "string" },
+        "semester": { "type": "string" },
+        "tipeUjian": { "type": "string" },
+        "isPublished": { "type": "boolean" },
+        "tanggalRaport": { "type": "string" }
+      },
+      "required": ["id", "tahunAjaran", "semester", "tipeUjian", "isPublished"]
+    },
+    "TujuanPembelajaran": {
+      "title": "TujuanPembelajaran",
+      "description": "Learning objectives",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodeId": { "type": "string" },
+        "guruId": { "type": "string" },
+        "mapelId": { "type": "string" },
+        "kelasId": { "type": "string" },
+        "tp1": { "type": "string" },
+        "tp2": { "type": "string" }
+      },
+      "required": ["id", "periodeId", "guruId", "mapelId", "kelasId", "tp1", "tp2"]
+    },
+    "NilaiSiswa": {
+      "title": "NilaiSiswa",
+      "description": "Student grades",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodeId": { "type": "string" },
+        "siswaId": { "type": "string" },
+        "mapelId": { "type": "string" },
+        "guruId": { "type": "string" },
+        "tp1Nilai": { "type": "number" },
+        "tp2Nilai": { "type": "number" },
+        "nilaiUjian": { "type": "number" },
+        "nilaiAkhir": { "type": "number" }
+      },
+      "required": ["id", "periodeId", "siswaId", "mapelId", "guruId", "tp1Nilai", "tp2Nilai", "nilaiUjian", "nilaiAkhir"]
+    },
+    "AbsensiDanCatatan": {
+      "title": "AbsensiDanCatatan",
+      "description": "Student attendance and teacher comments",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "periodeId": { "type": "string" },
+        "siswaId": { "type": "string" },
+        "kelasId": { "type": "string" },
+        "sakit": { "type": "number" },
+        "izin": { "type": "number" },
+        "alfa": { "type": "number" },
+        "catatanWaliKelas": { "type": "string" }
+      },
+      "required": ["id", "periodeId", "siswaId", "kelasId", "sakit", "izin", "alfa", "catatanWaliKelas"]
+    },
+    "Config": {
+      "title": "Config",
+      "description": "Global school configuration",
+      "type": "object",
+      "properties": {
+        "adminUsername": { "type": "string" },
+        "adminPasswordKey": { "type": "string" },
+        "activePeriodId": { "type": "string" }
+      },
+      "required": ["adminUsername", "adminPasswordKey", "activePeriodId"]
+    }
+  },
+  "firestore": {
+    "kelas": {
+      "schema": "Kelas",
+      "description": "Classrooms"
+    },
+    "mapel": {
+      "schema": "Mapel",
+      "description": "Subjects"
+    },
+    "siswa": {
+      "schema": "Siswa",
+      "description": "Students list"
+    },
+    "guru": {
+      "schema": "Guru",
+      "description": "Teachers list"
+    },
+    "periodList": {
+      "schema": "PeriodeAkademik",
+      "description": "Academic periods list"
+    },
+    "tujuanPembelajaran": {
+      "schema": "TujuanPembelajaran",
+      "description": "Teacher's learning objectives targets"
+    },
+    "nilaiSiswa": {
+      "schema": "NilaiSiswa",
+      "description": "Grades registry"
+    },
+    "absensiDanCatatan": {
+      "schema": "AbsensiDanCatatan",
+      "description": "Attendance status and homeroom comments"
+    },
+    "config": {
+      "schema": "Config",
+      "description": "Global configuration document"
+    }
+  }
+}

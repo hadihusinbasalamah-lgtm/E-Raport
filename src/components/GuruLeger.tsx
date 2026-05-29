@@ -51,7 +51,13 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
   // Get Wali Kelas classroom info
   const homeroomKelas = activePeriod.snapshotKelas.find(k => k.id === activeTeacher.waliKelasKelasId);
   const homeroomStudents = activePeriod.snapshotSiswa.filter(s => s.kelasId === activeTeacher.waliKelasKelasId);
-  const subjects = activePeriod.snapshotMapel;
+  const rawSubjects = activePeriod.snapshotMapel;
+  const subjects = rawSubjects.filter(mapel => {
+    const nameLower = mapel.nama.toLowerCase();
+    const isPai = nameLower.includes('pai') || nameLower.includes('pendidikan agama islam') || nameLower.includes('agama islam') || nameLower.startsWith('pai');
+    const isTahfidz = nameLower.includes('tahfidz') || nameLower.includes('tahfidh') || nameLower.includes('alqur') || nameLower.includes('qur\'an') || nameLower.includes('quran');
+    return !isPai && !isTahfidz;
+  });
 
   // Process grades, attendance, totals, averages, and rankings for students
   const studentRows = homeroomStudents.map(student => {
