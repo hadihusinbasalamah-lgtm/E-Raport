@@ -680,17 +680,17 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         }
                         #print-helper-area {
                           display: block !important;
-                          width: 210mm !important;
-                          min-height: 297mm !important;
-                          padding: 10mm 12mm !important;
-                          margin: 0 auto !important;
+                          width: 100% !important;
+                          max-width: 100% !important;
                           box-sizing: border-box !important;
                           background: #ffffff !important;
                           color: #000000 !important;
+                          padding: 0 !important;
+                          margin: 0 !important;
                         }
                         @page {
                           size: A4 portrait !important;
-                          margin: 0 !important;
+                          margin: 12mm 12mm 12mm 12mm !important;
                         }
                         .print-no-break {
                           break-inside: avoid !important;

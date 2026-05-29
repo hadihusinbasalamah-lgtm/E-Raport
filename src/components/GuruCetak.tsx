@@ -429,17 +429,37 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           #print-helper-area {
                             display: block !important;
-                            width: 210mm !important;
-                            min-height: 297mm !important;
-                            padding: 15mm 15mm 15mm 15mm !important;
-                            margin: 0 auto !important;
+                            width: 100% !important;
+                            max-width: 100% !important;
                             box-sizing: border-box !important;
                             background: #ffffff !important;
                             color: #000000 !important;
+                            padding: 0 !important;
+                            margin: 0 !important;
                           }
                           @page {
                             size: A4 portrait !important;
+                            margin: 12mm 12mm 12mm 12mm !important;
+                          }
+                          .raport-page {
+                            width: 100% !important;
+                            min-height: 255mm !important;
+                            height: 255mm !important;
+                            padding: 0 !important;
                             margin: 0 !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            background: #ffffff !important;
+                            box-sizing: border-box !important;
+                            display: flex !important;
+                            flex-direction: column !important;
+                            justify-content: space-between !important;
+                            page-break-after: always !important;
+                            break-after: page !important;
+                          }
+                          .raport-page:last-of-type {
+                            page-break-after: avoid !important;
+                            break-after: avoid !important;
                           }
                           .print-no-break {
                             break-inside: avoid !important;
@@ -514,7 +534,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                   @media print {
                     @page {
                       size: A4 portrait;
-                      margin: 15mm 15mm 15mm 15mm !important;
+                      margin: 12mm 12mm 12mm 12mm !important;
                     }
                     
                     /* Hide standard live app UI completely scrollable content, buttons, sidebar, backgrounds */
@@ -544,9 +564,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     /* Page break and force sizing for print sheets */
                     .raport-page {
                       width: 100% !important;
-                      min-height: 260mm !important; /* Fills standard printable vertical page height nicely */
+                      min-height: 255mm !important;
+                      height: 255mm !important;
                       padding: 0 !important;
-                      margin: 0 0 10mm 0 !important;
+                      margin: 0 !important;
                       border: none !important;
                       box-shadow: none !important;
                       background: #ffffff !important;

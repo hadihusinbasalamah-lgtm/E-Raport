@@ -184,18 +184,18 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
         }
         #print-helper-area {
           display: block !important;
-          width: 297mm !important; /* A4 Landscape width */
-          min-height: 210mm !important; /* A4 Landscape height */
-          padding: 10mm !important;
-          margin: 0 auto !important;
+          width: 100% !important;
+          max-width: 100% !important;
           box-sizing: border-box !important;
           background: #ffffff !important;
           color: #000000 !important;
           font-family: "Times New Roman", Times, serif !important;
+          padding: 0 !important;
+          margin: 0 !important;
         }
         @page {
           size: A4 landscape !important;
-          margin: 0 !important;
+          margin: 10mm 10mm 10mm 10mm !important;
         }
         table {
           border-collapse: collapse !important;
