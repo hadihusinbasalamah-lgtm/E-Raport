@@ -485,13 +485,23 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           /* Border rules strictly inside tables except border-none */
                           .raport-page table:not(.border-none) {
-                            border: 1.5px solid #000000 !important;
+                            border: 1px solid #000000 !important;
                             border-collapse: collapse !important;
                             width: 100% !important;
                           }
                           .raport-page table:not(.border-none) th, 
                           .raport-page table:not(.border-none) td {
                             border: 1px solid #000000 !important;
+                          }
+                          .raport-page table.table-raport-nilai {
+                            table-layout: fixed !important;
+                            width: 100% !important;
+                            word-wrap: break-word !important;
+                          }
+                          .raport-page table.table-raport-nilai th,
+                          .raport-page table.table-raport-nilai td {
+                            word-break: break-word !important;
+                            overflow-wrap: break-word !important;
                           }
                           .raport-page table.border-none,
                           .raport-page table.border-none tr,
@@ -658,7 +668,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                     /* Border rules strictly inside tables except border-none */
                     .raport-page table:not(.border-none) {
-                      border: 1.5px solid #000000 !important;
+                      border: 1px solid #000000 !important;
                       border-collapse: collapse !important;
                       width: 100% !important;
                     }
@@ -666,6 +676,16 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page table:not(.border-none) td {
                       border: 1px solid #000000 !important;
                       border-color: #000000 !important;
+                    }
+                    .raport-page table.table-raport-nilai {
+                      table-layout: fixed !important;
+                      width: 100% !important;
+                      word-wrap: break-word !important;
+                    }
+                    .raport-page table.table-raport-nilai th,
+                    .raport-page table.table-raport-nilai td {
+                      word-break: break-word !important;
+                      overflow-wrap: break-word !important;
                     }
                     .raport-page table.border-none,
                     .raport-page table.border-none tr,
@@ -885,7 +905,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </table>
 
                             {/* GRADES TABLE */}
-                            <table className="w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
+                            <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
+                              <colgroup>
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
+                              </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
                                   <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
@@ -931,7 +957,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         <div className="raport-page font-sans text-black">
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
-                            <table className="w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
+                            <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
+                              <colgroup>
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
+                              </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
                                   <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
@@ -1000,7 +1032,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         <div className="raport-page font-sans text-black">
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
-                            <table className="w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
+                            <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
+                              <colgroup>
+                                <col style={{ width: '5%' }} />
+                                <col style={{ width: '27%' }} />
+                                <col style={{ width: '10%' }} />
+                                <col style={{ width: '58%' }} />
+                              </colgroup>
                               <thead>
                                 <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
                                   <th className="border border-black py-2.5 px-1.5 text-center align-middle" style={{ width: '5%' }}>No</th>
