@@ -14,6 +14,7 @@ import { AdminGuru } from './components/AdminGuru';
 import { AdminTahunAjaran } from './components/AdminTahunAjaran';
 import { AdminProfile } from './components/AdminProfile';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminBackup } from './components/AdminBackup';
 import { GuruTP } from './components/GuruTP';
 import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
@@ -23,7 +24,8 @@ import { subscribeToDatabase, syncDatabaseChange } from './lib/firebase';
 
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
-  LayoutDashboard, ShieldAlert, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2
+  LayoutDashboard, ShieldAlert, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -175,6 +177,7 @@ export default function App() {
     { id: 'guru', label: 'Data Guru', icon: GraduationCap },
     { id: 'siswa', label: 'Data Siswa', icon: UserCheck },
     { id: 'tahun-ajaran', label: 'Tahun Ajaran (Release)', icon: Calendar },
+    { id: 'backup', label: 'Backup Data', icon: Database },
     { id: 'profile', label: 'Pengaturan Profil', icon: User },
   ];
 
@@ -486,6 +489,10 @@ export default function App() {
 
                       {activeTab === 'tahun-ajaran' && (
                         <AdminTahunAjaran db={db} onUpdate={handleUpdateDb} />
+                      )}
+
+                      {activeTab === 'backup' && (
+                        <AdminBackup db={db} />
                       )}
 
                       {activeTab === 'profile' && (

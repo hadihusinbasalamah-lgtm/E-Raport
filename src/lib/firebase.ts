@@ -86,6 +86,29 @@ async function testConnection() {
 testConnection();
 
 /**
+ * Recursively removes keys with undefined values from an object, which Firestore doesn't support.
+ */
+function sanitizeObject<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return null as any;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map(sanitizeObject) as any;
+  }
+  if (typeof obj === 'object') {
+    const fresh: any = {};
+    for (const key of Object.keys(obj)) {
+      const val = (obj as any)[key];
+      if (val !== undefined) {
+        fresh[key] = sanitizeObject(val);
+      }
+    }
+    return fresh;
+  }
+  return obj;
+}
+
+/**
  * Synchronizes any local changes made to e-Raport SchemaDatabase collections directly to Firestore.
  */
 export async function syncDatabaseChange(oldDb: SchemaDatabase, newDb: SchemaDatabase) {
@@ -119,7 +142,8 @@ export async function syncDatabaseChange(oldDb: SchemaDatabase, newDb: SchemaDat
         const oldItem = oldArr.find(x => x.id === item.id);
         if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(item)) {
           try {
-            await setDoc(doc(db, colName, item.id), item);
+            const sanitizedItem = sanitizeObject(item);
+            await setDoc(doc(db, colName, item.id), sanitizedItem);
           } catch (error) {
             handleFirestoreError(error, OperationType.WRITE, `${colName}/${item.id}`);
           }
@@ -183,7 +207,8 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
               initialItems.forEach(item => {
                 const itemPath = `${colName}/${item.id}`;
                 try {
-                  setDoc(doc(db, colName, item.id), item);
+                  const sanitizedItem = sanitizeObject(item);
+                  setDoc(doc(db, colName, item.id), sanitizedItem);
                 } catch (err) {
                   handleFirestoreError(err, OperationType.WRITE, itemPath);
                 }

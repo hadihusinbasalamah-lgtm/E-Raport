@@ -107,6 +107,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     tp3Nilai?: number | '';
     tp4Nilai?: number | '';
     nilaiUjian: number | '';
+    nilaiPsts?: number | '';
     capaianKompetensi: string;
   }
 
@@ -149,6 +150,24 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       const gradeLookupKey = `${activePeriod.id}_${student.id}_${activeAssignment.mapelId}`;
       const existingGrade = db.nilaiSiswa.find(n => n.id === gradeLookupKey);
 
+      // Find PSTS grade if applicable
+      let pstsVal: number | '' = '';
+      if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+        const targetTipe = activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2';
+        const targetPeriod = db.periodList.find(p => 
+          p.tahunAjaran === activePeriod.tahunAjaran && 
+          p.semester === activePeriod.semester && 
+          p.tipeUjian === targetTipe
+        );
+        if (targetPeriod) {
+          const pstsLookupKey = `${targetPeriod.id}_${student.id}_${activeAssignment.mapelId}`;
+          const pstsGradeRecord = db.nilaiSiswa.find(n => n.id === pstsLookupKey);
+          if (pstsGradeRecord && typeof pstsGradeRecord.nilaiAkhir === 'number') {
+            pstsVal = pstsGradeRecord.nilaiAkhir;
+          }
+        }
+      }
+
       return {
         siswaId: student.id,
         siswaNama: student.nama,
@@ -157,6 +176,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         tp3Nilai: (existingGrade && existingGrade.tp3Nilai !== undefined) ? existingGrade.tp3Nilai : (tpRef?.tp3 ? '' : undefined),
         tp4Nilai: (existingGrade && existingGrade.tp4Nilai !== undefined) ? existingGrade.tp4Nilai : (tpRef?.tp4 ? '' : undefined),
         nilaiUjian: existingGrade ? existingGrade.nilaiUjian : '',
+        nilaiPsts: pstsVal,
         capaianKompetensi: existingGrade?.capaianKompetensi || ''
       };
     });
@@ -166,7 +186,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   }, [selectedIdx, activePeriod.id, guruId, db.nilaiSiswa, db.tujuanPembelajaran]);
 
   // Handle individual numeric inputs
-  const handleNumChange = (studentId: string, field: 'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai' | 'nilaiUjian', value: string) => {
+  const handleNumChange = (studentId: string, field: 'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai' | 'nilaiUjian' | 'nilaiPsts', value: string) => {
     const rawVal = value === '' ? '' : Math.min(100, Math.max(0, parseInt(value) || 0));
     setGrades(prev => prev.map(g => {
       if (g.siswaId === studentId) {
@@ -202,6 +222,13 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     }
     const avgTP = sumTP / countTP;
     const ujian = g.nilaiUjian === '' ? 0 : g.nilaiUjian;
+
+    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+      if (typeof g.nilaiPsts === 'number') {
+        return Math.round((avgTP + ujian + g.nilaiPsts) / 3);
+      }
+    }
+
     return Math.round((avgTP + ujian) / 2);
   };
 
@@ -333,17 +360,59 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       };
     });
 
+    // Also prepare database records for PSTS periods if user modified them
+    let mergedPstsList: NilaiSiswa[] = [];
+    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+      const targetTipe = activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2';
+      const targetPeriod = db.periodList.find(p => 
+        p.tahunAjaran === activePeriod.tahunAjaran && 
+        p.semester === activePeriod.semester && 
+        p.tipeUjian === targetTipe
+      );
+      if (targetPeriod) {
+        grades.forEach(g => {
+          if (typeof g.nilaiPsts === 'number') {
+            const pstsKey = `${targetPeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
+            const existingPsts = db.nilaiSiswa.find(n => n.id === pstsKey);
+            
+            const basePsts: NilaiSiswa = existingPsts ? {
+              ...existingPsts,
+              nilaiAkhir: g.nilaiPsts,
+              nilaiUjian: existingPsts.nilaiUjian === 0 ? g.nilaiPsts : existingPsts.nilaiUjian
+            } : {
+              id: pstsKey,
+              periodeId: targetPeriod.id,
+              siswaId: g.siswaId,
+              mapelId: activeAssignment.mapelId,
+              guruId: guruId,
+              tp1Nilai: 0,
+              tp2Nilai: 0,
+              nilaiUjian: g.nilaiPsts,
+              nilaiAkhir: g.nilaiPsts,
+              capaianKompetensi: 'Telah mengikuti penilaian tengah semester dengan baik.'
+            };
+            
+            mergedPstsList.push(basePsts);
+          }
+        });
+      }
+    }
+
     // Merge into db
     const updatedKeys = updatedEntries.map(e => e.id);
-    const filteredMasterNilai = db.nilaiSiswa.filter(master => !updatedKeys.includes(master.id));
-    const mergedNilaiList = [...filteredMasterNilai, ...updatedEntries];
+    const pstsKeys = mergedPstsList.map(e => e.id);
+    
+    const filteredMasterNilai = db.nilaiSiswa.filter(master => 
+      !updatedKeys.includes(master.id) && !pstsKeys.includes(master.id)
+    );
+    const mergedNilaiList = [...filteredMasterNilai, ...updatedEntries, ...mergedPstsList];
 
     onUpdate({
       ...db,
       nilaiSiswa: mergedNilaiList
     });
 
-    setMessage("Semua nilai siswa untuk kelas ini BERHASIL disimpan ke database master!");
+    setMessage("Semua nilai siswa (termasuk kelengkapan Rerata PSTS) BERHASIL disimpan ke database master!");
   };
 
   if (assignments.length === 0) {
@@ -456,6 +525,11 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                     <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP2</th>
                     {activeTPs.tp3 && <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP3</th>}
                     {activeTPs.tp4 && <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP4</th>}
+                    {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
+                      <th className="py-3 px-3 text-center w-16 font-mono text-emerald-850 bg-emerald-50/45 border-x border-emerald-100/30">
+                        {activePeriod.tipeUjian === 'PSAS1' ? 'Nilai PSTS 1' : 'Nilai PSTS 2'}
+                      </th>
+                    )}
                     <th className="py-3 px-3 text-center w-12 font-mono">Nilai Ujian</th>
                     <th className="py-3 px-3 text-center w-14 font-semibold text-emerald-700">Nilai Akhir</th>
                     <th className="py-3 px-4 w-[35%]">Deskripsi Capaian Kompetensi (Kurikulum Merdeka)</th>
@@ -552,6 +626,22 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                                   ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
                                   : 'bg-slate-50 border border-slate-200 focus:ring-emerald-500 text-slate-800'
                               }`}
+                            />
+                          </td>
+                        )}
+
+                        {/* Nilai PSTS for averaging */}
+                        {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
+                          <td className="py-3 px-3 text-center bg-emerald-50/15 border-x border-emerald-100/30">
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={g.nilaiPsts ?? ''}
+                              onChange={e => handleNumChange(g.siswaId, 'nilaiPsts', e.target.value)}
+                              placeholder="-"
+                              title={activePeriod.tipeUjian === 'PSAS1' ? 'Nilai Raport PSTS Semester 1 (diambil otomatis & dirata-rata)' : 'Nilai Raport PSTS Semester 2 (diambil otomatis & dirata-rata)'}
+                              className="w-12 text-center py-1 bg-white border border-emerald-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded text-xs font-semibold text-emerald-950 font-mono shadow-2xs"
                             />
                           </td>
                         )}
@@ -802,6 +892,11 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         <th className="border border-black py-1.5 px-1 w-16">Nilai TP 2</th>
                         {activeTPs?.tp3 && <th className="border border-black py-1.5 px-1 w-16">Nilai TP 3</th>}
                         {activeTPs?.tp4 && <th className="border border-black py-1.5 px-1 w-16">Nilai TP 4</th>}
+                        {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
+                          <th className="border border-black py-1.5 px-2 w-20 bg-emerald-50/20 text-emerald-950/90 font-bold">
+                            {activePeriod.tipeUjian === 'PSAS1' ? 'Nilai PSTS 1' : 'Nilai PSTS 2'}
+                          </th>
+                        )}
                         <th className="border border-black py-1.5 px-2 w-20">Nilai {activePeriod?.tipeUjian || 'Ujian'}</th>
                         <th className="border border-black py-1.5 px-2 w-20 bg-emerald-50 text-emerald-950/90 print:bg-white print:text-black font-extrabold">Nilai Raport</th>
                       </tr>
@@ -831,6 +926,11 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                             <td className="border border-black py-1 px-1 font-mono">{tp2Val}</td>
                             {tp3Val !== null && <td className="border border-black py-1 px-1 font-mono">{tp3Val}</td>}
                             {tp4Val !== null && <td className="border border-black py-1 px-1 font-mono">{tp4Val}</td>}
+                            {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
+                              <td className="border border-black py-1 px-1 font-mono bg-emerald-50/10 text-emerald-950">
+                                {g.nilaiPsts === '' || g.nilaiPsts === undefined ? '-' : g.nilaiPsts}
+                              </td>
+                            )}
                             <td className="border border-black py-1 px-1 font-mono">{wrapUjian}</td>
                             <td className="border border-black py-1 px-1 font-mono font-bold bg-emerald-50/40 text-emerald-900 print:bg-white print:text-black">{naVal}</td>
                           </tr>
