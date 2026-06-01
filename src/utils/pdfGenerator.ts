@@ -91,7 +91,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
 
-  // Load classroom and walli info
+  // Load classroom and wali info
   const targetKelas = activePeriod.snapshotKelas.find(k => k.id === student.kelasId) || db.kelas.find(k => k.id === student.kelasId);
   const classTeacher = db.guru.find(g => g.id === targetKelas?.waliKelasId) || activePeriod.snapshotGuru.find(g => g.id === targetKelas?.waliKelasId);
 
@@ -142,14 +142,14 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     ? new Date(activePeriod.tanggalRaport).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
     : new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
-  // Helper to draw header metadata on raport pages
+  // Helper to draw header metadata on raport pages (Only drawn on Page 2 / Halaman 1)
   const drawRaportHeader = () => {
-    doc.setFont('times', 'bold');
-    doc.setFontSize(13);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
     doc.text('PENCAPAIAN KOMPETENSI PESERTA DIDIK', pageWidth / 2, 16, { align: 'center' });
     
-    doc.setFont('times', 'normal');
-    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(8.5);
     
     const leftColX = 15;
     const rightColX = pageWidth - 75;
@@ -163,9 +163,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     // Left Column
     doc.text('Nama Sekolah', leftColX, row1Y);
     doc.text(':', leftColX + 30, row1Y);
-    doc.setFont('times', 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text('SMP Al-Irsyad Surakarta', leftColX + 32, row1Y);
-    doc.setFont('times', 'normal');
+    doc.setFont('helvetica', 'normal');
     
     doc.text('Alamat', leftColX, row2Y);
     doc.text(':', leftColX + 30, row2Y);
@@ -173,20 +173,20 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     
     doc.text('Nama Peserta Didik', leftColX, row3Y);
     doc.text(':', leftColX + 30, row3Y);
-    doc.setFont('times', 'bold');
-    doc.text(student.nama.toUpperCase(), leftColX + 32, row3Y);
-    doc.setFont('times', 'normal');
+    doc.setFont('helvetica', 'bold');
+    doc.text(student.nama, leftColX + 32, row3Y);
+    doc.setFont('helvetica', 'normal');
     
-    doc.text('Nomor Induk / NIS', leftColX, row4Y);
+    doc.text('Nomor Induk', leftColX, row4Y);
     doc.text(':', leftColX + 30, row4Y);
     doc.text(student.nis || '-', leftColX + 32, row4Y);
     
     // Right Column
     doc.text('Kelas', rightColX, row1Y);
     doc.text(':', rightColX + 22, row1Y);
-    doc.setFont('times', 'bold');
+    doc.setFont('helvetica', 'bold');
     doc.text(targetKelas?.nama || '-', rightColX + 24, row1Y);
-    doc.setFont('times', 'normal');
+    doc.setFont('helvetica', 'normal');
     
     doc.text('Fase', rightColX, row2Y);
     doc.text(':', rightColX + 22, row2Y);
@@ -208,9 +208,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   // Helper to draw footer on raport pages
   const drawRaportFooter = (pageNum: number) => {
-    doc.setFont('times', 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(100, 100, 100);
+    doc.setTextColor(120, 120, 120);
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.2);
     doc.line(15, pageHeight - 12, pageWidth - 15, pageHeight - 12);
@@ -260,10 +260,12 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
 
   // ==========================================
-  // PAGE 2: RAPORT PAGE 1
+  // PAGE 2: RAPORT PAGE 1 (Halaman 1)
   // ==========================================
   doc.addPage();
   drawRaportHeader();
+
+  doc.setFont('helvetica', 'normal');
 
   const page1BodyRows: any[] = [];
   // Section Header row
@@ -288,7 +290,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     
     page1BodyRows.push([
       { content: (idx + 1).toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2 } }
     ]);
@@ -316,23 +318,23 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 50 },
+      1: { cellWidth: 49 },
       2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 102 }
+      3: { cellWidth: 103 }
     }
   });
 
   drawRaportFooter(1);
 
   // ==========================================
-  // PAGE 3: RAPORT PAGE 2
+  // PAGE 3: RAPORT PAGE 2 (Halaman 2)
   // ==========================================
   doc.addPage();
-  drawRaportHeader();
+  doc.setFont('helvetica', 'normal');
 
   const page2BodyRows: any[] = [];
   page2Umum.forEach((r, idx) => {
@@ -343,7 +345,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     
     page2BodyRows.push([
       { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2 } }
     ]);
@@ -353,10 +355,10 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   });
 
   if (page2Yayasan.length > 0) {
-    // Add banner: "YAYASAN"
+    // Add banner: "YAYASAN" in uppercase
     page2BodyRows.push([
       {
-        content: 'Yayasan',
+        content: 'YAYASAN',
         colSpan: 4,
         styles: {
           fillColor: [245, 245, 245],
@@ -376,7 +378,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       
       page2BodyRows.push([
         { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-        { content: r.mapelNama, rowSpan: 2, styles: { valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
+        { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
         { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
         { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2 } }
       ]);
@@ -387,7 +389,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   }
 
   autoTable(doc, {
-    startY: 47,
+    startY: 15, // No header, start high to match print
     margin: { left: 15, right: 15 },
     theme: 'grid',
     head: [['No', 'Mata Pelajaran', 'Nilai\nAkhir', 'Capaian Kompetensi']],
@@ -405,23 +407,23 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 50 },
+      1: { cellWidth: 49 },
       2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 102 }
+      3: { cellWidth: 103 }
     }
   });
 
   drawRaportFooter(2);
 
   // ==========================================
-  // PAGE 4: RAPORT PAGE 3 (YAYASAN subjects + EKSKUL + KETIDAKHADIRAN + SIGS)
+  // PAGE 4: RAPORT PAGE 3 (Halaman 3)
   // ==========================================
   doc.addPage();
-  drawRaportHeader();
+  doc.setFont('helvetica', 'normal');
 
   const page3BodyRows: any[] = [];
   page3Yayasan.forEach((r, idx) => {
@@ -432,7 +434,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     
     page3BodyRows.push([
       { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2 } }
     ]);
@@ -442,10 +444,10 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   });
 
   // Render Yayasan list on page 3 if any
-  let tableYayasanEndY = 47;
+  let tableYayasanEndY = 15;
   if (page3BodyRows.length > 0) {
     autoTable(doc, {
-      startY: 47,
+      startY: 15,
       margin: { left: 15, right: 15 },
       theme: 'grid',
       head: [['No', 'Mata Pelajaran', 'Nilai\nAkhir', 'Capaian Kompetensi']],
@@ -463,24 +465,24 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         lineColor: [0, 0, 0],
         lineWidth: 0.2,
         textColor: [0, 0, 0],
-        font: 'times'
+        font: 'helvetica'
       },
       columnStyles: {
         0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 50 },
+        1: { cellWidth: 49 },
         2: { cellWidth: 18, halign: 'center' },
-        3: { cellWidth: 102 }
+        3: { cellWidth: 103 }
       }
     });
-    tableYayasanEndY = (doc as any).lastAutoTable?.finalY || 47;
+    tableYayasanEndY = (doc as any).lastAutoTable?.finalY || 15;
   }
 
-  // Draw Headings for C. Ekstrakurikuler and D. Ketidakhadiran
+  // Draw Headings for C. EKSTRAKURIKULER and D. KETIDAKHADIRAN in uppercase
   const sectionsStartY = tableYayasanEndY + 7;
-  doc.setFont('times', 'bold');
-  doc.setFontSize(10);
-  doc.text('C. Ekstrakurikuler', 15, sectionsStartY);
-  doc.text('D. Ketidakhadiran', 121, sectionsStartY);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(9.5);
+  doc.text('C. EKSTRAKURIKULER', 15, sectionsStartY);
+  doc.text('D. KETIDAKHADIRAN', 121, sectionsStartY);
 
   // Compile Ekstrakurikuler
   const ekskulItems = attendance?.ekstrakurikuler || [];
@@ -517,7 +519,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 10, halign: 'center' },
@@ -547,7 +549,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.2,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 35, fontStyle: 'bold' },
@@ -558,7 +560,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   // Signatures Area
   const sigY = sectionsStartY + 35;
-  doc.setFont('times', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(9.5);
   doc.setTextColor(0, 0, 0);
 
@@ -573,9 +575,17 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   // Signature lines & Names below
   doc.text('.....................................................', 40, sigY + 32, { align: 'center' });
 
-  doc.setFont('times', 'bold');
-  doc.text(classTeacher?.nama || '___________________', pageWidth - 42, sigY + 32, { align: 'center' });
-  doc.setFont('times', 'normal');
+  const teacherName = classTeacher?.nama || '___________________';
+  doc.setFont('helvetica', 'bold');
+  doc.text(teacherName, pageWidth - 42, sigY + 32, { align: 'center' });
+  
+  // Underline class teacher's name
+  const teacherNameWidth = doc.getTextWidth(teacherName);
+  const teacherXStart = (pageWidth - 42) - (teacherNameWidth / 2);
+  doc.setLineWidth(0.25);
+  doc.line(teacherXStart, sigY + 33, teacherXStart + teacherNameWidth, sigY + 33);
+
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
   doc.text(`NIK. ${classTeacher?.username || '-'}`, pageWidth - 42, sigY + 36, { align: 'center' });
@@ -587,9 +597,16 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.text('Mengetahui,', pageWidth / 2, principalY, { align: 'center' });
   doc.text('Kepala Sekolah', pageWidth / 2, principalY + 5, { align: 'center' });
 
-  doc.setFont('times', 'bold');
-  doc.text('Andreas Raymonda, S.Pd, M.Hum', pageWidth / 2, principalY + 28, { align: 'center' });
-  doc.setFont('times', 'normal');
+  const principalName = 'Andreas Raymonda, S.Pd, M.Hum';
+  doc.setFont('helvetica', 'bold');
+  doc.text(principalName, pageWidth / 2, principalY + 28, { align: 'center' });
+  
+  // Underline principal's name
+  const principalNameWidth = doc.getTextWidth(principalName);
+  const principalXStart = (pageWidth / 2) - (principalNameWidth / 2);
+  doc.line(principalXStart, principalY + 29, principalXStart + principalNameWidth, principalY + 29);
+
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
   doc.setTextColor(80, 80, 80);
   doc.text('NIK. 103.244.0072', pageWidth / 2, principalY + 32, { align: 'center' });
