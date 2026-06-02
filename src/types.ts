@@ -78,10 +78,15 @@ export interface NilaiSiswa {
   mapelId: string;
   guruId: string;
   
+  tp1NilaiAsli?: number;
   tp1Nilai: number;
+  tp2NilaiAsli?: number;
   tp2Nilai: number;
+  tp3NilaiAsli?: number;
   tp3Nilai?: number;
+  tp4NilaiAsli?: number;
   tp4Nilai?: number;
+  nilaiUjianAsli?: number;
   nilaiUjian: number;
   nilaiAkhir: number; // calculated
   

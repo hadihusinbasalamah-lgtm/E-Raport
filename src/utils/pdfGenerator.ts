@@ -93,7 +93,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   // Load classroom and wali info
   const targetKelas = activePeriod.snapshotKelas.find(k => k.id === student.kelasId) || db.kelas.find(k => k.id === student.kelasId);
-  const classTeacher = db.guru.find(g => g.id === targetKelas?.waliKelasId) || activePeriod.snapshotGuru.find(g => g.id === targetKelas?.waliKelasId);
+  const classTeacher = activePeriod.snapshotGuru.find(g => g.id === targetKelas?.waliKelasId) || db.guru.find(g => g.id === targetKelas?.waliKelasId);
 
   // Collect grades
   const results: { mapelNama: string; nilaiAkhir: number; capaian: string }[] = [];
@@ -196,7 +196,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     doc.text(':', rightColX + 22, row3Y);
     doc.text(formattedSemester(activePeriod.semester), rightColX + 24, row3Y);
     
-    doc.text('Tahun Pelajaran', rightColX, row4Y);
+    doc.text('Tahun Ajaran', rightColX, row4Y);
     doc.text(':', rightColX + 22, row4Y);
     doc.text(activePeriod.tahunAjaran, rightColX + 24, row4Y);
 

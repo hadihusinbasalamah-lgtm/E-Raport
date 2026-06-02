@@ -7,6 +7,28 @@ import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa } from '../types';
 import { Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle } from 'lucide-react';
 
+// Helper function for custom conditional mapping & interpolation
+const getInterpolatedValueForColumn = (
+  valAsli: number | '',
+  allAsliValues: (number | '')[]
+): number | '' => {
+  if (valAsli === '') return '';
+  if (valAsli >= 96) return valAsli;
+
+  const valid = allAsliValues.filter((v): v is number => typeof v === 'number');
+  if (valid.length === 0) return valAsli;
+
+  const minVal = Math.min(...valid);
+  const maxVal = Math.max(...valid);
+
+  if (maxVal === minVal) {
+    return valAsli;
+  }
+
+  const result = (((valAsli - minVal) * (95 - 80)) / (maxVal - minVal)) + 80;
+  return Math.round(result);
+};
+
 interface GuruNilaiProps {
   db: SchemaDatabase;
   guruId: string;
@@ -102,10 +124,15 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   interface LocalNilaiSiswa {
     siswaId: string;
     siswaNama: string;
+    tp1NilaiAsli: number | '';
     tp1Nilai: number | '';
+    tp2NilaiAsli: number | '';
     tp2Nilai: number | '';
+    tp3NilaiAsli?: number | '';
     tp3Nilai?: number | '';
+    tp4NilaiAsli?: number | '';
     tp4Nilai?: number | '';
+    nilaiUjianAsli: number | '';
     nilaiUjian: number | '';
     nilaiPsts?: number | '';
     capaianKompetensi: string;
@@ -168,32 +195,93 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         }
       }
 
+      const tp1Asli = (existingGrade && existingGrade.tp1NilaiAsli !== undefined) ? existingGrade.tp1NilaiAsli : (existingGrade ? existingGrade.tp1Nilai : '');
+      const tp2Asli = (existingGrade && existingGrade.tp2NilaiAsli !== undefined) ? existingGrade.tp2NilaiAsli : (existingGrade ? existingGrade.tp2Nilai : '');
+      const tp3Asli = (existingGrade && existingGrade.tp3NilaiAsli !== undefined) ? existingGrade.tp3NilaiAsli : ((existingGrade && existingGrade.tp3Nilai !== undefined) ? existingGrade.tp3Nilai : (tpRef?.tp3 ? '' : undefined));
+      const tp4Asli = (existingGrade && existingGrade.tp4NilaiAsli !== undefined) ? existingGrade.tp4NilaiAsli : ((existingGrade && existingGrade.tp4Nilai !== undefined) ? existingGrade.tp4Nilai : (tpRef?.tp4 ? '' : undefined));
+      const ujianAsli = (existingGrade && existingGrade.nilaiUjianAsli !== undefined) ? existingGrade.nilaiUjianAsli : (existingGrade ? existingGrade.nilaiUjian : '');
+
       return {
         siswaId: student.id,
         siswaNama: student.nama,
+        tp1NilaiAsli: tp1Asli,
         tp1Nilai: existingGrade ? existingGrade.tp1Nilai : '',
+        tp2NilaiAsli: tp2Asli,
         tp2Nilai: existingGrade ? existingGrade.tp2Nilai : '',
+        tp3NilaiAsli: tp3Asli,
         tp3Nilai: (existingGrade && existingGrade.tp3Nilai !== undefined) ? existingGrade.tp3Nilai : (tpRef?.tp3 ? '' : undefined),
+        tp4NilaiAsli: tp4Asli,
         tp4Nilai: (existingGrade && existingGrade.tp4Nilai !== undefined) ? existingGrade.tp4Nilai : (tpRef?.tp4 ? '' : undefined),
+        nilaiUjianAsli: ujianAsli,
         nilaiUjian: existingGrade ? existingGrade.nilaiUjian : '',
         nilaiPsts: pstsVal,
         capaianKompetensi: existingGrade?.capaianKompetensi || ''
       };
     });
 
-    setGrades(localGrades);
+    const tp1AsliVals = localGrades.map(g => g.tp1NilaiAsli);
+    const tp2AsliVals = localGrades.map(g => g.tp2NilaiAsli);
+    const tp3AsliVals = localGrades.map(g => g.tp3NilaiAsli !== undefined ? g.tp3NilaiAsli : '');
+    const tp4AsliVals = localGrades.map(g => g.tp4NilaiAsli !== undefined ? g.tp4NilaiAsli : '');
+    const ujianAsliVals = localGrades.map(g => g.nilaiUjianAsli);
+
+    const withInterpolated = localGrades.map(g => {
+      const tp1Nilai = getInterpolatedValueForColumn(g.tp1NilaiAsli, tp1AsliVals);
+      const tp2Nilai = getInterpolatedValueForColumn(g.tp2NilaiAsli, tp2AsliVals);
+      const tp3Nilai = g.tp3NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp3NilaiAsli, tp3AsliVals) : undefined;
+      const tp4Nilai = g.tp4NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp4NilaiAsli, tp4AsliVals) : undefined;
+      const nilaiUjian = getInterpolatedValueForColumn(g.nilaiUjianAsli, ujianAsliVals);
+
+      return {
+        ...g,
+        tp1Nilai,
+        tp2Nilai,
+        tp3Nilai,
+        tp4Nilai,
+        nilaiUjian
+      };
+    });
+
+    setGrades(withInterpolated);
     setMessage('');
   }, [selectedIdx, activePeriod.id, guruId, db.nilaiSiswa, db.tujuanPembelajaran]);
 
-  // Handle individual numeric inputs
-  const handleNumChange = (studentId: string, field: 'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai' | 'nilaiUjian' | 'nilaiPsts', value: string) => {
+  // Handle individual numeric inputs for original values and trigger reciprocal updates
+  const handleNumChange = (studentId: string, field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli' | 'nilaiPsts', value: string) => {
     const rawVal = value === '' ? '' : Math.min(100, Math.max(0, parseInt(value) || 0));
-    setGrades(prev => prev.map(g => {
-      if (g.siswaId === studentId) {
-        return { ...g, [field]: rawVal };
-      }
-      return g;
-    }));
+    setGrades(prev => {
+      // 1. Update the original value in the row
+      const nextGrades = prev.map(g => {
+        if (g.siswaId === studentId) {
+          return { ...g, [field]: rawVal };
+        }
+        return g;
+      });
+
+      // 2. Recalculate all interpolated values for all students because the column min/max changed!
+      const tp1AsliVals = nextGrades.map(g => g.tp1NilaiAsli);
+      const tp2AsliVals = nextGrades.map(g => g.tp2NilaiAsli);
+      const tp3AsliVals = nextGrades.map(g => g.tp3NilaiAsli !== undefined ? g.tp3NilaiAsli : '');
+      const tp4AsliVals = nextGrades.map(g => g.tp4NilaiAsli !== undefined ? g.tp4NilaiAsli : '');
+      const ujianAsliVals = nextGrades.map(g => g.nilaiUjianAsli);
+
+      return nextGrades.map(g => {
+        const tp1Nilai = getInterpolatedValueForColumn(g.tp1NilaiAsli, tp1AsliVals);
+        const tp2Nilai = getInterpolatedValueForColumn(g.tp2NilaiAsli, tp2AsliVals);
+        const tp3Nilai = g.tp3NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp3NilaiAsli, tp3AsliVals) : undefined;
+        const tp4Nilai = g.tp4NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp4NilaiAsli, tp4AsliVals) : undefined;
+        const nilaiUjian = getInterpolatedValueForColumn(g.nilaiUjianAsli, ujianAsliVals);
+
+        return {
+          ...g,
+          tp1Nilai,
+          tp2Nilai,
+          tp3Nilai,
+          tp4Nilai,
+          nilaiUjian
+        };
+      });
+    });
   };
 
   // Handle description change
@@ -249,14 +337,14 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   };
 
   const getDuplicateTPFields = (g: LocalNilaiSiswa) => {
-    const activeFields: { field: 'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai'; val: number | '' }[] = [];
-    activeFields.push({ field: 'tp1Nilai', val: g.tp1Nilai });
-    activeFields.push({ field: 'tp2Nilai', val: g.tp2Nilai });
-    if (g.tp3Nilai !== undefined && activeTPs?.tp3) {
-      activeFields.push({ field: 'tp3Nilai', val: g.tp3Nilai });
+    const activeFields: { field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli'; val: number | '' }[] = [];
+    activeFields.push({ field: 'tp1NilaiAsli', val: g.tp1NilaiAsli });
+    activeFields.push({ field: 'tp2NilaiAsli', val: g.tp2NilaiAsli });
+    if (g.tp3NilaiAsli !== undefined && activeTPs?.tp3) {
+      activeFields.push({ field: 'tp3NilaiAsli', val: g.tp3NilaiAsli });
     }
-    if (g.tp4Nilai !== undefined && activeTPs?.tp4) {
-      activeFields.push({ field: 'tp4Nilai', val: g.tp4Nilai });
+    if (g.tp4NilaiAsli !== undefined && activeTPs?.tp4) {
+      activeFields.push({ field: 'tp4NilaiAsli', val: g.tp4NilaiAsli });
     }
 
     const filledFields = activeFields.filter(item => item.val !== '');
@@ -267,7 +355,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       counts[numericVal] = (counts[numericVal] || 0) + 1;
     });
 
-    const duplicates = new Set<'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai'>();
+    const duplicates = new Set<'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli'>();
     filledFields.forEach(item => {
       const numericVal = Number(item.val);
       if (counts[numericVal] > 1) {
@@ -350,10 +438,15 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         siswaId: g.siswaId,
         mapelId: activeAssignment.mapelId,
         guruId: guruId,
+        tp1NilaiAsli: g.tp1NilaiAsli === '' ? 0 : g.tp1NilaiAsli,
         tp1Nilai: g.tp1Nilai === '' ? 0 : g.tp1Nilai,
+        tp2NilaiAsli: g.tp2NilaiAsli === '' ? 0 : g.tp2NilaiAsli,
         tp2Nilai: g.tp2Nilai === '' ? 0 : g.tp2Nilai,
+        tp3NilaiAsli: g.tp3NilaiAsli === '' || g.tp3NilaiAsli === undefined ? undefined : g.tp3NilaiAsli,
         tp3Nilai: g.tp3Nilai === '' || g.tp3Nilai === undefined ? undefined : g.tp3Nilai,
+        tp4NilaiAsli: g.tp4NilaiAsli === '' || g.tp4NilaiAsli === undefined ? undefined : g.tp4NilaiAsli,
         tp4Nilai: g.tp4Nilai === '' || g.tp4Nilai === undefined ? undefined : g.tp4Nilai,
+        nilaiUjianAsli: g.nilaiUjianAsli === '' ? 0 : g.nilaiUjianAsli,
         nilaiUjian: g.nilaiUjian === '' ? 0 : g.nilaiUjian,
         nilaiAkhir: finalVal,
         capaianKompetensi: g.capaianKompetensi
@@ -413,6 +506,101 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     });
 
     setMessage("Semua nilai siswa (termasuk kelengkapan Rerata PSTS) BERHASIL disimpan ke database master!");
+  };
+
+  // Calculation of summary statistics
+  const getSummaryStats = () => {
+    const metrics: {
+      id: string;
+      label: string;
+      fieldAsli: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli';
+      fieldKatrol: 'tp1Nilai' | 'tp2Nilai' | 'tp3Nilai' | 'tp4Nilai' | 'nilaiUjian';
+      isActive: boolean;
+    }[] = [
+      { id: 'tp1', label: 'TP 1', fieldAsli: 'tp1NilaiAsli', fieldKatrol: 'tp1Nilai', isActive: true },
+      { id: 'tp2', label: 'TP 2', fieldAsli: 'tp2NilaiAsli', fieldKatrol: 'tp2Nilai', isActive: true },
+      { id: 'tp3', label: 'TP 3', fieldAsli: 'tp3NilaiAsli', fieldKatrol: 'tp3Nilai', isActive: !!(activeTPs?.tp3) },
+      { id: 'tp4', label: 'TP 4', fieldAsli: 'tp4NilaiAsli', fieldKatrol: 'tp4Nilai', isActive: !!(activeTPs?.tp4) },
+      { id: 'ujian', label: 'Nilai Ujian', fieldAsli: 'nilaiUjianAsli', fieldKatrol: 'nilaiUjian', isActive: true },
+    ];
+
+    const results = metrics.filter(m => m.isActive).map(m => {
+      const validSubList = grades.filter(g => typeof g[m.fieldAsli] === 'number' && g[m.fieldAsli] !== '');
+      
+      let avgAsli = '-';
+      let avgKatrol = '-';
+      let minInfo: { val: number; valKatrol: number | '-'; students: string[] } | null = null;
+      let maxInfo: { val: number; valKatrol: number | '-'; students: string[] } | null = null;
+
+      if (validSubList.length > 0) {
+        const sumAsli = validSubList.reduce((sum, g) => sum + (g[m.fieldAsli] as number), 0);
+        avgAsli = (sumAsli / validSubList.length).toFixed(1);
+
+        const sumKatrol = validSubList.reduce((sum, g) => {
+          const kVal = g[m.fieldKatrol];
+          return sum + (typeof kVal === 'number' ? kVal : 0);
+        }, 0);
+        avgKatrol = (sumKatrol / validSubList.length).toFixed(1);
+
+        const asliVals = validSubList.map(g => g[m.fieldAsli] as number);
+        const minVal = Math.min(...asliVals);
+        const maxVal = Math.max(...asliVals);
+
+        const minSts = validSubList.filter(g => g[m.fieldAsli] === minVal).map(g => g.siswaNama);
+        const maxSts = validSubList.filter(g => g[m.fieldAsli] === maxVal).map(g => g.siswaNama);
+
+        const minRowFirst = validSubList.find(g => g[m.fieldAsli] === minVal);
+        const maxRowFirst = validSubList.find(g => g[m.fieldAsli] === maxVal);
+        
+        let minKatrolVal: number | '-' = '-';
+        let maxKatrolVal: number | '-' = '-';
+        if (minRowFirst && typeof minRowFirst[m.fieldKatrol] === 'number') {
+          minKatrolVal = minRowFirst[m.fieldKatrol] as number;
+        }
+        if (maxRowFirst && typeof maxRowFirst[m.fieldKatrol] === 'number') {
+          maxKatrolVal = maxRowFirst[m.fieldKatrol] as number;
+        }
+
+        minInfo = { val: minVal, valKatrol: minKatrolVal, students: minSts };
+        maxInfo = { val: maxVal, valKatrol: maxKatrolVal, students: maxSts };
+      }
+
+      return {
+        ...m,
+        avgAsli,
+        avgKatrol,
+        min: minInfo,
+        max: maxInfo
+      };
+    });
+
+    let avgAkhir = '-';
+    let minAkhirInfo: { val: number; students: string[] } | null = null;
+    let maxAkhirInfo: { val: number; students: string[] } | null = null;
+
+    if (grades.length > 0) {
+      const akhirVals = grades.map(g => calculateNilaiAkhirLocal(g));
+      const sumAkhir = akhirVals.reduce((sum, val) => sum + val, 0);
+      avgAkhir = (sumAkhir / grades.length).toFixed(1);
+
+      const minVal = Math.min(...akhirVals);
+      const maxVal = Math.max(...akhirVals);
+
+      const minSts = grades.filter(g => calculateNilaiAkhirLocal(g) === minVal).map(g => g.siswaNama);
+      const maxSts = grades.filter(g => calculateNilaiAkhirLocal(g) === maxVal).map(g => g.siswaNama);
+
+      minAkhirInfo = { val: minVal, students: minSts };
+      maxAkhirInfo = { val: maxVal, students: maxSts };
+    }
+
+    return {
+      metrics: results,
+      akhir: {
+        avg: avgAkhir,
+        min: minAkhirInfo,
+        max: maxAkhirInfo
+      }
+    };
   };
 
   if (assignments.length === 0) {
@@ -519,20 +707,36 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse min-w-[800px]">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] font-bold tracking-wider uppercase">
-                    <th className="py-3 px-4 w-1/5">Nama Siswa</th>
-                    <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP1</th>
-                    <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP2</th>
-                    {activeTPs.tp3 && <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP3</th>}
-                    {activeTPs.tp4 && <th className="py-3 px-3 text-center w-12 font-mono">Nilai TP4</th>}
+                  <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[9px] font-bold tracking-wider uppercase">
+                    <th className="py-3 px-4 w-[16%]">Nama Siswa</th>
+                    
+                    <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP1</th>
+                    <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP1</th>
+                    
+                    <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP2</th>
+                    <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP2</th>
+                    
+                    {activeTPs.tp3 && (
+                      <>
+                        <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP3</th>
+                        <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP3</th>
+                      </>
+                    )}
+                    {activeTPs.tp4 && (
+                      <>
+                        <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP4</th>
+                        <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP4</th>
+                      </>
+                    )}
                     {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
-                      <th className="py-3 px-3 text-center w-16 font-mono text-emerald-850 bg-emerald-50/45 border-x border-emerald-100/30">
+                      <th className="py-3 px-2 text-center w-16 font-mono text-emerald-850 bg-emerald-50/45 border-x border-emerald-100/30">
                         {activePeriod.tipeUjian === 'PSAS1' ? 'Nilai PSTS 1' : 'Nilai PSTS 2'}
                       </th>
                     )}
-                    <th className="py-3 px-3 text-center w-12 font-mono">Nilai Ujian</th>
-                    <th className="py-3 px-3 text-center w-14 font-semibold text-emerald-700">Nilai Akhir</th>
-                    <th className="py-3 px-4 w-[35%]">Deskripsi Capaian Kompetensi (Kurikulum Merdeka)</th>
+                    <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli Ujian</th>
+                    <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai Ujian</th>
+                    <th className="py-3 px-2 text-center w-12 font-semibold text-emerald-700">Nilai Akhir</th>
+                    <th className="py-3 px-4 w-[30%]">Deskripsi Capaian (Kurikulum Merdeka)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-xs text-slate-700">
@@ -555,84 +759,100 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         </td>
                         
                         {/* TP 1 */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3 px-1 text-center bg-amber-50/5">
                           <input
                             type="number"
                             min="0"
                             max="100"
-                            value={g.tp1Nilai}
-                            onChange={e => handleNumChange(g.siswaId, 'tp1Nilai', e.target.value)}
+                            value={g.tp1NilaiAsli}
+                            onChange={e => handleNumChange(g.siswaId, 'tp1NilaiAsli', e.target.value)}
                             placeholder="0"
-                            title={dups.has('tp1Nilai') ? "Nilai TP-1 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
-                            className={`w-12 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
-                              dups.has('tp1Nilai')
+                            title={dups.has('tp1NilaiAsli') ? "Nilai TP-1 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
+                            className={`w-11 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
+                              dups.has('tp1NilaiAsli')
                                 ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
-                                : 'bg-slate-50 border border-slate-200 focus:ring-emerald-500 text-slate-800'
+                                : 'bg-white border border-amber-200 focus:ring-amber-500 text-slate-800'
                             }`}
                           />
                         </td>
+                        <td className="py-3 px-1 text-center font-mono font-bold text-xs text-emerald-800 bg-emerald-50/10">
+                          {g.tp1Nilai === '' ? '-' : g.tp1Nilai}
+                        </td>
 
                         {/* TP 2 */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3 px-1 text-center bg-amber-50/5">
                           <input
                             type="number"
                             min="0"
                             max="100"
-                            value={g.tp2Nilai}
-                            onChange={e => handleNumChange(g.siswaId, 'tp2Nilai', e.target.value)}
+                            value={g.tp2NilaiAsli}
+                            onChange={e => handleNumChange(g.siswaId, 'tp2NilaiAsli', e.target.value)}
                             placeholder="0"
-                            title={dups.has('tp2Nilai') ? "Nilai TP-2 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
-                            className={`w-12 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
-                              dups.has('tp2Nilai')
+                            title={dups.has('tp2NilaiAsli') ? "Nilai TP-2 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
+                            className={`w-11 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
+                              dups.has('tp2NilaiAsli')
                                 ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
-                                : 'bg-slate-50 border border-slate-200 focus:ring-emerald-500 text-slate-800'
+                                : 'bg-white border border-amber-200 focus:ring-amber-500 text-slate-800'
                             }`}
                           />
+                        </td>
+                        <td className="py-3 px-1 text-center font-mono font-bold text-xs text-emerald-800 bg-emerald-50/10">
+                          {g.tp2Nilai === '' ? '-' : g.tp2Nilai}
                         </td>
 
                         {/* TP 3 if exists */}
                         {activeTPs.tp3 && (
-                          <td className="py-3 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={g.tp3Nilai ?? ''}
-                              onChange={e => handleNumChange(g.siswaId, 'tp3Nilai', e.target.value)}
-                              placeholder="0"
-                              title={dups.has('tp3Nilai') ? "Nilai TP-3 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
-                              className={`w-12 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
-                                dups.has('tp3Nilai')
-                                  ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
-                                  : 'bg-slate-50 border border-slate-200 focus:ring-emerald-500 text-slate-800'
-                              }`}
-                            />
-                          </td>
+                          <>
+                            <td className="py-3 px-1 text-center bg-amber-50/5">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={g.tp3NilaiAsli ?? ''}
+                                onChange={e => handleNumChange(g.siswaId, 'tp3NilaiAsli', e.target.value)}
+                                placeholder="0"
+                                title={dups.has('tp3NilaiAsli') ? "Nilai TP-3 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
+                                className={`w-11 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
+                                  dups.has('tp3NilaiAsli')
+                                    ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
+                                    : 'bg-white border border-amber-200 focus:ring-amber-500 text-slate-800'
+                                }`}
+                              />
+                            </td>
+                            <td className="py-3 px-1 text-center font-mono font-bold text-xs text-emerald-800 bg-emerald-50/10">
+                              {g.tp3Nilai === '' || g.tp3Nilai === undefined ? '-' : g.tp3Nilai}
+                            </td>
+                          </>
                         )}
 
                         {/* TP 4 if exists */}
                         {activeTPs.tp4 && (
-                          <td className="py-3 px-3 text-center">
-                            <input
-                              type="number"
-                              min="0"
-                              max="100"
-                              value={g.tp4Nilai ?? ''}
-                              onChange={e => handleNumChange(g.siswaId, 'tp4Nilai', e.target.value)}
-                              placeholder="0"
-                              title={dups.has('tp4Nilai') ? "Nilai TP-4 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
-                              className={`w-12 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
-                                dups.has('tp4Nilai')
-                                  ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
-                                  : 'bg-slate-50 border border-slate-200 focus:ring-emerald-500 text-slate-800'
-                              }`}
-                            />
-                          </td>
+                          <>
+                            <td className="py-3 px-1 text-center bg-amber-50/5">
+                              <input
+                                type="number"
+                                min="0"
+                                max="100"
+                                value={g.tp4NilaiAsli ?? ''}
+                                onChange={e => handleNumChange(g.siswaId, 'tp4NilaiAsli', e.target.value)}
+                                placeholder="0"
+                                title={dups.has('tp4NilaiAsli') ? "Nilai TP-4 duplikat dengan nilai TP lain pada siswa ini!" : undefined}
+                                className={`w-11 text-center py-1 rounded text-xs focus:outline-none focus:ring-1 ${
+                                  dups.has('tp4NilaiAsli')
+                                    ? 'border-2 border-rose-500 bg-rose-50 text-rose-900 font-bold focus:ring-rose-500'
+                                    : 'bg-white border border-amber-200 focus:ring-amber-500 text-slate-800'
+                                }`}
+                              />
+                            </td>
+                            <td className="py-3 px-1 text-center font-mono font-bold text-xs text-emerald-800 bg-emerald-50/10">
+                              {g.tp4Nilai === '' || g.tp4Nilai === undefined ? '-' : g.tp4Nilai}
+                            </td>
+                          </>
                         )}
 
                         {/* Nilai PSTS for averaging */}
                         {(activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && (
-                          <td className="py-3 px-3 text-center bg-emerald-50/15 border-x border-emerald-100/30">
+                          <td className="py-3 px-2 text-center bg-emerald-50/15 border-x border-emerald-100/30">
                             <input
                               type="number"
                               min="0"
@@ -641,22 +861,25 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                               onChange={e => handleNumChange(g.siswaId, 'nilaiPsts', e.target.value)}
                               placeholder="-"
                               title={activePeriod.tipeUjian === 'PSAS1' ? 'Nilai Raport PSTS Semester 1 (diambil otomatis & dirata-rata)' : 'Nilai Raport PSTS Semester 2 (diambil otomatis & dirata-rata)'}
-                              className="w-12 text-center py-1 bg-white border border-emerald-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded text-xs font-semibold text-emerald-950 font-mono shadow-2xs"
+                              className="w-11 text-center py-1 bg-white border border-emerald-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded text-xs font-semibold text-emerald-950 font-mono shadow-2xs"
                             />
                           </td>
                         )}
 
                         {/* Nilai Ujian */}
-                        <td className="py-3 px-3 text-center">
+                        <td className="py-3 px-1 text-center bg-amber-50/5">
                           <input
                             type="number"
                             min="0"
                             max="100"
-                            value={g.nilaiUjian}
-                            onChange={e => handleNumChange(g.siswaId, 'nilaiUjian', e.target.value)}
+                            value={g.nilaiUjianAsli}
+                            onChange={e => handleNumChange(g.siswaId, 'nilaiUjianAsli', e.target.value)}
                             placeholder="0"
-                            className="w-12 text-center py-1 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded text-xs font-semibold"
+                            className="w-11 text-center py-1 bg-white border border-amber-250 focus:outline-none focus:ring-1 focus:ring-amber-500 rounded text-xs font-semibold"
                           />
+                        </td>
+                        <td className="py-3 px-1 text-center font-mono font-bold text-xs text-emerald-800 bg-emerald-50/10">
+                          {g.nilaiUjian === '' ? '-' : g.nilaiUjian}
                         </td>
 
                         {/* Nilai Akhir */}
@@ -715,6 +938,149 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
               </button>
             </div>
           </div>
+
+          {/* Rangkuman Hasil Penilaian */}
+          <div className="bg-gradient-to-br from-slate-50 to-slate-100/50 rounded-2xl border border-slate-200/60 p-5 sm:p-6 shadow-2xs space-y-5">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-200/60 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
+                  <Award className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800">Rangkuman Hasil Penilaian Kelas</h3>
+                  <p className="text-[10px] text-slate-500 font-medium">Analisis nilai asli dan nilai katrol untuk mata pelajaran yang diajar</p>
+                </div>
+              </div>
+              <span className="text-[10px] bg-emerald-50 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-150">
+                Data Terhitung Otomatis
+              </span>
+            </div>
+
+            {(() => {
+              const stats = getSummaryStats();
+              return (
+                <div className="space-y-5">
+                  {/* Row 1: Averages Cards */}
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+                    {stats.metrics.map(m => (
+                      <div key={m.id} className="bg-white p-3 rounded-xl border border-slate-200/50 flex flex-col justify-between shadow-3xs">
+                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{m.label}</span>
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-baseline justify-between">
+                            <span className="text-[9px] text-slate-500">Rerata Asli:</span>
+                            <span className="text-xs font-mono font-bold text-amber-700">{m.avgAsli}</span>
+                          </div>
+                          <div className="flex items-baseline justify-between border-t border-slate-50 pt-1">
+                            <span className="text-[9px] text-slate-500">Rerata Katrol:</span>
+                            <span className="text-xs font-mono font-bold text-emerald-700">{m.avgKatrol}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Nilai Akhir Card */}
+                    <div className="bg-emerald-50/30 p-3 rounded-xl border border-emerald-100/50 flex flex-col justify-between shadow-3xs">
+                      <span className="text-[9px] font-bold text-emerald-800 uppercase tracking-wider">Nilai Rapor</span>
+                      <div className="mt-2 space-y-1">
+                        <div className="flex items-baseline justify-between">
+                          <span className="text-[9px] text-emerald-800/80">Rerata Akhir:</span>
+                          <span className="text-xs font-mono font-bold text-emerald-800">{stats.akhir.avg}</span>
+                        </div>
+                        <div className="text-[8px] text-emerald-600/70 leading-none">Rata-rata Raport Akhir</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Row 2: Extreme Min / Max list */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Nilai Tertinggi Card */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/50 shadow-3xs space-y-3">
+                      <div className="flex items-center gap-1.5 text-emerald-800 border-b border-slate-100 pb-1.5">
+                        <Award className="w-3.5 h-3.5 text-emerald-600" />
+                        <span className="text-xs font-bold text-slate-700">Nilai Tertinggi (Siswa Puncak)</span>
+                      </div>
+                      <div className="divide-y divide-slate-100 text-xs">
+                        {stats.metrics.map(m => {
+                          if (!m.max) return null;
+                          return (
+                            <div key={m.id} className="py-2 flex items-start gap-4 justify-between">
+                              <span className="font-semibold text-slate-600 shrink-0 w-24">{m.label}</span>
+                              <div className="text-right flex-1 min-w-0">
+                                <span className="font-mono font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded mr-1 text-[11px]" title="Nilai Asli">
+                                  {m.max.val}
+                                </span>
+                                <span className="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded" title="Nilai Katrol">
+                                  {m.max.valKatrol}
+                                </span>
+                                <div className="text-[10px] text-emerald-600 mt-1 truncate" title={m.max.students.join(', ')}>
+                                  {m.max.students.join(', ')}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {stats.akhir.max && (
+                          <div className="py-2 flex items-start gap-4 justify-between font-medium">
+                            <span className="font-bold text-emerald-800 shrink-0 w-24">Nilai Rapor</span>
+                            <div className="text-right flex-1 min-w-0">
+                              <span className="font-mono font-bold text-white bg-emerald-600 px-1.5 py-0.2 rounded text-[11px]">
+                                {stats.akhir.max.val}
+                              </span>
+                              <div className="text-[10px] text-emerald-700 mt-1 truncate animate-pulse font-semibold" title={stats.akhir.max.students.join(', ')}>
+                                {stats.akhir.max.students.join(', ')}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Nilai Terendah Card */}
+                    <div className="bg-white p-4 rounded-xl border border-slate-200/50 shadow-3xs space-y-3">
+                      <div className="flex items-center gap-1.5 text-rose-800 border-b border-slate-100 pb-1.5">
+                        <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                        <span className="text-xs font-bold text-slate-700">Nilai Terendah (Siswa Bimbingan)</span>
+                      </div>
+                      <div className="divide-y divide-slate-100 text-xs">
+                        {stats.metrics.map(m => {
+                          if (!m.min) return null;
+                          return (
+                            <div key={m.id} className="py-2 flex items-start gap-4 justify-between">
+                              <span className="font-semibold text-slate-600 shrink-0 w-24">{m.label}</span>
+                              <div className="text-right flex-1 min-w-0">
+                                <span className="font-mono font-bold text-amber-700 bg-amber-50 px-1 py-0.2 rounded mr-1 text-[11px]" title="Nilai Asli">
+                                  {m.min.val}
+                                </span>
+                                <span className="font-mono text-[11px] font-bold text-emerald-700 bg-emerald-50 px-1 py-0.2 rounded" title="Nilai Katrol">
+                                  {m.min.valKatrol}
+                                </span>
+                                <div className="text-[10px] text-slate-500 mt-1 truncate" title={m.min.students.join(', ')}>
+                                  {m.min.students.join(', ')}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {stats.akhir.min && (
+                          <div className="py-2 flex items-start gap-4 justify-between font-medium">
+                            <span className="font-bold text-rose-800 shrink-0 w-24">Nilai Rapor</span>
+                            <div className="text-right flex-1 min-w-0">
+                              <span className="font-mono font-bold text-white bg-rose-500 px-1.5 py-0.2 rounded text-[11px]">
+                                {stats.akhir.min.val}
+                              </span>
+                              <div className="text-[10px] text-rose-600 mt-1 truncate" title={stats.akhir.min.students.join(', ')}>
+                                {stats.akhir.min.students.join(', ')}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
         </div>
       )}
 
