@@ -305,3 +305,60 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
     unsubscribes.forEach(unsub => unsub());
   };
 }
+
+/**
+ * Resets all application data fields to empty (0 records) in Firestore.
+ * Keeps admin credentials intact so the current session remains active.
+ */
+export async function resetFirestoreToZero() {
+  try {
+    const collectionsToClear = [
+      'kelas',
+      'mapel',
+      'siswa',
+      'guru',
+      'periodList',
+      'tujuanPembelajaran',
+      'nilaiSiswa',
+      'absensiDanCatatan'
+    ];
+
+    // Delete in parallel
+    await Promise.all(
+      collectionsToClear.map(async (colName) => {
+        const colRef = collection(db, colName);
+        const snapshot = await getDocs(colRef);
+        const deletePromises = snapshot.docs.map((docSnap) => 
+          deleteDoc(doc(db, colName, docSnap.id))
+        );
+        await Promise.all(deletePromises);
+      })
+    );
+
+    // Keep the admin settings but clear any active period info
+    const configRef = doc(db, 'config', 'main');
+    const configSnap = await getDocFromServer(configRef);
+    let currentAdminUser = 'admin';
+    let currentAdminPass = 'alirsyadsolo';
+
+    if (configSnap.exists()) {
+      const data = configSnap.data();
+      currentAdminUser = data.adminUsername || 'admin';
+      currentAdminPass = data.adminPasswordKey || 'alirsyadsolo';
+    }
+
+    // Rewrite config with activePeriodId empty and isSeedInitialized true
+    await setDoc(configRef, {
+      adminUsername: currentAdminUser,
+      adminPasswordKey: currentAdminPass,
+      activePeriodId: '',
+      isSeedInitialized: true
+    });
+
+    console.log("Firestore reset to 0 finished successfully.");
+  } catch (error) {
+    console.error("Failed to reset Firestore to 0:", error);
+    throw error;
+  }
+}
+
