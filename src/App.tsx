@@ -15,7 +15,6 @@ import { AdminTahunAjaran } from './components/AdminTahunAjaran';
 import { AdminProfile } from './components/AdminProfile';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminBackup } from './components/AdminBackup';
-import { AdminQuota } from './components/AdminQuota';
 import { GuruTP } from './components/GuruTP';
 import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
@@ -26,7 +25,7 @@ import { subscribeToDatabase, syncDatabaseChange } from './lib/firebase';
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database, ShieldAlert
+  Database
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -179,7 +178,6 @@ export default function App() {
     { id: 'siswa', label: 'Data Siswa', icon: UserCheck },
     { id: 'tahun-ajaran', label: 'Tahun Ajaran (Release)', icon: Calendar },
     { id: 'backup', label: 'Backup Data', icon: Database },
-    { id: 'quota', label: 'Cek Kuota Firebase', icon: ShieldAlert },
     { id: 'profile', label: 'Pengaturan Profil', icon: User },
   ];
 
@@ -495,10 +493,6 @@ export default function App() {
 
                       {activeTab === 'backup' && (
                         <AdminBackup db={db} />
-                      )}
-
-                      {activeTab === 'quota' && (
-                        <AdminQuota dbData={db} />
                       )}
 
                       {activeTab === 'profile' && (
