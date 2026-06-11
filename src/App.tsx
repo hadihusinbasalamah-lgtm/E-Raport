@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SchemaDatabase, SessionState } from './types';
+import { SchemaDatabase, SessionState, formatTipeUjian } from './types';
 import { getDatabase, saveDatabase } from './data';
 import { LoginScreen } from './components/LoginScreen';
 import { AdminKelas } from './components/AdminKelas';
@@ -377,7 +377,7 @@ export default function App() {
               <div className="flex items-center space-x-3 sm:space-x-4">
                 {activePeriod ? (
                   <div className="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px] sm:text-xs font-medium uppercase tracking-tight">
-                    Rilis: {activePeriod.tipeUjian} Ready
+                    Rilis: {formatTipeUjian(activePeriod.tipeUjian)} Ready
                   </div>
                 ) : (
                   <div className="px-2.5 py-1 bg-rose-50 border border-rose-250 rounded text-rose-700 text-[10px] sm:text-xs font-medium uppercase">

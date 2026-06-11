@@ -21,6 +21,7 @@ export interface Siswa {
   nama: string;
   jenisKelamin: 'L' | 'P'; // Laki-laki / Perempuan
   kelasId: string;
+  noAbsen?: number;
 }
 
 export interface Guru {
@@ -136,4 +137,9 @@ export interface SessionState {
   role: LoginRole;
   userId: string; // "admin" or Guru.id
   name: string; // "Administrator" or Guru.nama
+}
+
+export function formatTipeUjian(tipe: string | undefined | null): string {
+  if (!tipe) return '';
+  return tipe.replace(/([A-Za-z]+)(\d+)/g, '$1 $2');
 }

@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { SchemaDatabase } from '../types';
+import { SchemaDatabase, formatTipeUjian } from '../types';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell,
   PieChart, Pie
@@ -232,7 +232,7 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
               <h3 className="text-base font-bold text-slate-800">Progres Penginputan Nilai per Mata Pelajaran</h3>
             </div>
             <p className="text-xs text-slate-500 leading-relaxed max-w-2xl">
-              Memantau penyelesaian input nilai guru untuk setiap mata pelajaran secara realtime pada periode ujian aktif: <span className="font-semibold text-emerald-700">{activePeriod ? `${activePeriod.tahunAjaran} - Semester ${activePeriod.semester} (${activePeriod.tipeUjian})` : 'Belum Ada Rilis'}</span>.
+              Memantau penyelesaian input nilai guru untuk setiap mata pelajaran secara realtime pada periode ujian aktif: <span className="font-semibold text-emerald-700">{activePeriod ? `${activePeriod.tahunAjaran} - Semester ${activePeriod.semester} (${formatTipeUjian(activePeriod.tipeUjian)})` : 'Belum Ada Rilis'}</span>.
             </p>
           </div>
           

@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { SchemaDatabase, TipeUjian, PeriodeAkademik } from '../types';
+import { SchemaDatabase, TipeUjian, PeriodeAkademik, formatTipeUjian } from '../types';
 import { Calendar, CheckCircle2, Award, Zap, History, Globe, Trash2, Edit, RefreshCw, X } from 'lucide-react';
 
 interface AdminTahunAjaranProps {
@@ -251,7 +251,7 @@ export function AdminTahunAjaran({ db, onUpdate }: AdminTahunAjaranProps) {
                   </div>
                   <div className="text-xs text-emerald-250 font-semibold font-sans mt-1.5 space-y-1">
                     <p>• Semester: <span className="text-white">{activePeriod.semester}</span></p>
-                    <p>• Jenis Penilaian: <span className="text-white">{activePeriod.tipeUjian}</span></p>
+                    <p>• Jenis Penilaian: <span className="text-white">{formatTipeUjian(activePeriod.tipeUjian)}</span></p>
                     <p>• Tanggal Raportan: <span className="text-amber-350 font-semibold">{activePeriod.tanggalRaport ? new Date(activePeriod.tanggalRaport).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span></p>
                     <p>• Rilis Pada: <span className="text-white">{activePeriod.publishedAt ? new Date(activePeriod.publishedAt).toLocaleDateString('id-ID', { dateStyle: 'medium' }) : '-'}</span></p>
                   </div>
@@ -312,7 +312,7 @@ export function AdminTahunAjaran({ db, onUpdate }: AdminTahunAjaranProps) {
                   <tr key={p.id} className={`hover:bg-slate-50/50 transition-colors ${db.activePeriodId === p.id ? 'bg-emerald-50/20' : ''}`}>
                     <td className="py-3 px-4 font-bold text-slate-800">{p.tahunAjaran}</td>
                     <td className="py-3 px-4 font-medium">{p.semester}</td>
-                    <td className="py-3 px-4 font-mono text-emerald-700">{p.tipeUjian}</td>
+                    <td className="py-3 px-4 font-mono text-emerald-700">{formatTipeUjian(p.tipeUjian)}</td>
                     <td className="py-3 px-4 text-slate-700 font-semibold text-[10px]">
                       {p.tanggalRaport ? new Date(p.tanggalRaport).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}
                     </td>
@@ -388,7 +388,7 @@ export function AdminTahunAjaran({ db, onUpdate }: AdminTahunAjaranProps) {
                   {editingPeriod.tahunAjaran} - Semester {editingPeriod.semester}
                 </div>
                 <div className="text-[13px] text-emerald-700 font-mono font-semibold">
-                  Sistem Penilaian: {editingPeriod.tipeUjian}
+                  Sistem Penilaian: {formatTipeUjian(editingPeriod.tipeUjian)}
                 </div>
               </div>
 

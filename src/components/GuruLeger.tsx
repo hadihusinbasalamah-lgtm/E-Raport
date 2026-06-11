@@ -4,7 +4,7 @@
  */
 
 import React, { useState } from 'react';
-import { SchemaDatabase, Siswa, Mapel, Guru, Kelas, PeriodeAkademik } from '../types';
+import { SchemaDatabase, Siswa, Mapel, Guru, Kelas, PeriodeAkademik, formatTipeUjian } from '../types';
 import { Printer, AlertTriangle, FileSpreadsheet, ClipboardList, Info, TrendingUp, Users } from 'lucide-react';
 
 interface GuruLegerProps {
@@ -50,7 +50,14 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
 
   // Get Wali Kelas classroom info
   const homeroomKelas = activePeriod.snapshotKelas.find(k => k.id === activeTeacher.waliKelasKelasId);
-  const homeroomStudents = activePeriod.snapshotSiswa.filter(s => s.kelasId === activeTeacher.waliKelasKelasId);
+  const homeroomStudents = activePeriod.snapshotSiswa
+    .filter(s => s.kelasId === activeTeacher.waliKelasKelasId)
+    .sort((a, b) => {
+      const noA = a.noAbsen !== undefined && a.noAbsen !== null ? a.noAbsen : 999999;
+      const noB = b.noAbsen !== undefined && b.noAbsen !== null ? b.noAbsen : 999999;
+      if (noA !== noB) return noA - noB;
+      return a.nama.localeCompare(b.nama);
+    });
   const rawSubjects = activePeriod.snapshotMapel;
   const subjects = rawSubjects.filter(mapel => {
     const nameLower = mapel.nama.toLowerCase();
@@ -410,7 +417,7 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
                 </tr>
                 <tr style={{ border: 'none' }}>
                   <td style={{ border: 'none', fontWeight: 'bold', padding: '2px' }}>Semester / Ujian</td>
-                  <td style={{ border: 'none', padding: '2px' }}>: {activePeriod.semester} / {activePeriod.tipeUjian}</td>
+                  <td style={{ border: 'none', padding: '2px' }}>: {activePeriod.semester} / {formatTipeUjian(activePeriod.tipeUjian)}</td>
                   <td style={{ border: 'none', fontWeight: 'none', padding: '2px' }}></td>
                   <td style={{ border: 'none', padding: '2px' }}></td>
                 </tr>

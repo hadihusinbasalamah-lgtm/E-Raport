@@ -65,7 +65,14 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
   // Get Wali Kelas classroom info
   const homeroomKelas = activePeriod.snapshotKelas.find(k => k.id === activeTeacher.waliKelasKelasId);
-  const homeroomStudents = activePeriod.snapshotSiswa.filter(s => s.kelasId === activeTeacher.waliKelasKelasId);
+  const homeroomStudents = activePeriod.snapshotSiswa
+    .filter(s => s.kelasId === activeTeacher.waliKelasKelasId)
+    .sort((a, b) => {
+      const noA = a.noAbsen !== undefined && a.noAbsen !== null ? a.noAbsen : 999999;
+      const noB = b.noAbsen !== undefined && b.noAbsen !== null ? b.noAbsen : 999999;
+      if (noA !== noB) return noA - noB;
+      return a.nama.localeCompare(b.nama);
+    });
 
   // Helper to add, update and remove extracurriculars
   const handleAddEkskul = () => {

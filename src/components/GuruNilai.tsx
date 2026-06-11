@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa } from '../types';
+import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa, formatTipeUjian } from '../types';
 import { Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle } from 'lucide-react';
 
 // Helper function for custom conditional mapping & interpolation
@@ -170,7 +170,14 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     setActiveTPs(tpRef || null);
 
     // 2. Fetch roster of students in this class in the snapshotted period
-    const roster = activePeriod.snapshotSiswa.filter(s => s.kelasId === activeAssignment.kelasId);
+    const roster = activePeriod.snapshotSiswa
+      .filter(s => s.kelasId === activeAssignment.kelasId)
+      .sort((a, b) => {
+        const noA = a.noAbsen !== undefined && a.noAbsen !== null ? a.noAbsen : 999999;
+        const noB = b.noAbsen !== undefined && b.noAbsen !== null ? b.noAbsen : 999999;
+        if (noA !== noB) return noA - noB;
+        return a.nama.localeCompare(b.nama);
+      });
 
     // 3. For each student, find existing grades in Master Database if any
     const localGrades: LocalNilaiSiswa[] = roster.map(student => {
@@ -1230,7 +1237,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                   <div className="space-y-1">
                     <div>Nama Guru Pengampu : <span className="font-semibold">{activeTeacher?.nama}</span></div>
                     <div>NIK Guru : <span className="font-mono">{activeTeacher?.username || '-'}</span></div>
-                    <div>Jenis Penilaian : <span className="font-bold uppercase font-mono text-emerald-800 print:text-black">{activePeriod?.tipeUjian}</span></div>
+                    <div>Jenis Penilaian : <span className="font-bold uppercase font-mono text-emerald-800 print:text-black">{formatTipeUjian(activePeriod?.tipeUjian)}</span></div>
                   </div>
                 </div>
 
@@ -1263,7 +1270,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                             {activePeriod.tipeUjian === 'PSAS1' ? 'Nilai PSTS 1' : 'Nilai PSTS 2'}
                           </th>
                         )}
-                        <th className="border border-black py-1.5 px-2 w-20">Nilai {activePeriod?.tipeUjian || 'Ujian'}</th>
+                        <th className="border border-black py-1.5 px-2 w-20">Nilai {formatTipeUjian(activePeriod?.tipeUjian) || 'Ujian'}</th>
                         <th className="border border-black py-1.5 px-2 w-20 bg-emerald-50 text-emerald-950/90 print:bg-white print:text-black font-extrabold">Nilai Raport</th>
                       </tr>
                     </thead>
