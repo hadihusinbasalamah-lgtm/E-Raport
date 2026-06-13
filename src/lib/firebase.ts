@@ -5,6 +5,9 @@
 
 import { initializeApp } from 'firebase/app';
 import { 
+  initializeFirestore,
+  persistentLocalCache,
+  persistentMultipleTabManager,
   getFirestore, 
   doc, 
   getDocFromServer, 
@@ -12,7 +15,9 @@ import {
   collection, 
   onSnapshot, 
   setDoc, 
-  deleteDoc 
+  deleteDoc,
+  query,
+  where
 } from 'firebase/firestore';
 import firebaseConfig from '../../firebase-applet-config.json';
 import { SchemaDatabase } from '../types';
@@ -21,8 +26,21 @@ import { getDatabase } from '../data';
 // Initialize Firebase App
 const app = initializeApp(firebaseConfig);
 
-// Initialize Firestore
-export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+// Initialize Firestore with robust local disk cache (IndexedDB)
+// This enables lightning-fast offline/cache reads, vastly reducing read billing/quota usage.
+let firestoreDb;
+try {
+  firestoreDb = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  }, firebaseConfig.firestoreDatabaseId);
+} catch (error) {
+  console.warn("Failed to initialize persistent local cache, falling back to memory cache:", error);
+  firestoreDb = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+}
+
+export const db = firestoreDb;
 
 /**
  * Firestore Custom Error Handler to conform with FirestoreErrorInfo specifications.
@@ -181,14 +199,22 @@ export async function syncDatabaseChange(oldDb: SchemaDatabase, newDb: SchemaDat
 /**
  * Subscribes to real-time changes of all school e-Raport entities.
  * Automatically seeds the database with INITIAL state if Firestore is empty.
+ * Optimizes Firebase Quota usage by applying role-aware single-field querying and offline caching.
  */
-export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
+export function subscribeToDatabase(
+  onSync: (db: SchemaDatabase) => void,
+  userRole?: string | null,
+  userId?: string | null
+) {
   const defaultDb = getDatabase();
   let currentDb: SchemaDatabase = { ...defaultDb };
 
   const unsubscribes: (() => void)[] = [];
   let isInitializedColRegistered = false;
   let isDbAlreadyInitialized = false;
+
+  let absensiUnsub: (() => void) | null = null;
+  let currentWaliKelasKelasId: string | null = null;
 
   const handleEntityUpdate = (entityKey: keyof SchemaDatabase, data: any) => {
     currentDb = { ...currentDb, [entityKey]: data };
@@ -197,39 +223,106 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
 
   // Helper function to listen to each separate collection
   const listenCol = (colName: string, entityKey: keyof SchemaDatabase) => {
-    unsubscribes.push(
-      onSnapshot(collection(db, colName), (snap) => {
-        if (snap.empty) {
-          // Sync seed data to remote only if the database hasn't been initialized yet
-          if (!isDbAlreadyInitialized) {
-            const initialItems = defaultDb[entityKey];
-            if (Array.isArray(initialItems) && initialItems.length > 0) {
-              initialItems.forEach(item => {
-                const itemPath = `${colName}/${item.id}`;
-                try {
-                  const sanitizedItem = sanitizeObject(item);
-                  setDoc(doc(db, colName, item.id), sanitizedItem);
-                } catch (err) {
-                  handleFirestoreError(err, OperationType.WRITE, itemPath);
-                }
+    // If the user is not authenticated yet, do not load heavy arrays of grades or lesson target plans
+    if (!userRole && (colName === 'nilaiSiswa' || colName === 'tujuanPembelajaran' || colName === 'absensiDanCatatan')) {
+      handleEntityUpdate(entityKey, []);
+      return;
+    }
+
+    if (colName === 'absensiDanCatatan') {
+      // AbsensiDanCatatan is handled dynamically based on waliKelasKelasId when user is a guru to avoid query leaks
+      if (userRole === 'admin') {
+        const queryRef = collection(db, colName);
+        const unsub = onSnapshot(queryRef, (snap) => {
+          const list: any[] = [];
+          snap.forEach(docSnap => list.push(docSnap.data()));
+          handleEntityUpdate(entityKey, list);
+        }, (error) => {
+          handleFirestoreError(error, OperationType.GET, colName);
+        });
+        unsubscribes.push(unsub);
+      } else {
+        // Initially empty, populated dynamically once the 'guru' master list resolves
+        handleEntityUpdate(entityKey, []);
+      }
+      return;
+    }
+
+    let colRef: any = collection(db, colName);
+
+    // Apply single-field filters only. Highly query-optimized, requires NO custom multi-field indices in Firestore dashboard!
+    if (userRole === 'guru' && userId) {
+      if (colName === 'nilaiSiswa') {
+        colRef = query(collection(db, colName), where('guruId', '==', userId));
+      } else if (colName === 'tujuanPembelajaran') {
+        colRef = query(collection(db, colName), where('guruId', '==', userId));
+      }
+    }
+
+    const unsub = onSnapshot(colRef, (snap) => {
+      if (snap.empty) {
+        // Sync seed data to remote only if the database hasn't been initialized yet
+        if (!isDbAlreadyInitialized && colName !== 'nilaiSiswa' && colName !== 'tujuanPembelajaran') {
+          const initialItems = defaultDb[entityKey];
+          if (Array.isArray(initialItems) && initialItems.length > 0) {
+            initialItems.forEach(item => {
+              const itemPath = `${colName}/${item.id}`;
+              try {
+                const sanitizedItem = sanitizeObject(item);
+                setDoc(doc(db, colName, item.id), sanitizedItem);
+              } catch (err) {
+                handleFirestoreError(err, OperationType.WRITE, itemPath);
+              }
+            });
+          }
+          handleEntityUpdate(entityKey, initialItems);
+        } else {
+          // Database is initialized; empty results mean exactly that, or that this guru has no specific records yet
+          handleEntityUpdate(entityKey, []);
+        }
+      } else {
+        const list: any[] = [];
+        snap.forEach(docSnap => {
+          list.push(docSnap.data());
+        });
+
+        // Dynamic Wali Kelas (Homeroom) Attendance Listener Upgrade
+        if (colName === 'guru' && userRole === 'guru' && userId) {
+          const loggedGuru = list.find((g: any) => g.id === userId);
+          if (loggedGuru && loggedGuru.isWaliKelas && loggedGuru.waliKelasKelasId) {
+            const targetKelasId = loggedGuru.waliKelasKelasId;
+            if (currentWaliKelasKelasId !== targetKelasId) {
+              currentWaliKelasKelasId = targetKelasId;
+              if (absensiUnsub) absensiUnsub();
+              
+              const absensiQuery = query(collection(db, 'absensiDanCatatan'), where('kelasId', '==', targetKelasId));
+              absensiUnsub = onSnapshot(absensiQuery, (absSnap) => {
+                const absList: any[] = [];
+                absSnap.forEach(d => absList.push(d.data()));
+                handleEntityUpdate('absensiDanCatatan', absList);
+              }, (err) => {
+                handleFirestoreError(err, OperationType.GET, 'absensiDanCatatan (filtered)');
               });
             }
-            handleEntityUpdate(entityKey, initialItems);
           } else {
-            // Database is already initialized, empty means empty! The user wants it empty.
-            handleEntityUpdate(entityKey, []);
+            if (currentWaliKelasKelasId !== null) {
+              currentWaliKelasKelasId = null;
+              if (absensiUnsub) {
+                absensiUnsub();
+                absensiUnsub = null;
+              }
+              handleEntityUpdate('absensiDanCatatan', []);
+            }
           }
-        } else {
-          const list: any[] = [];
-          snap.forEach(docSnap => {
-            list.push(docSnap.data());
-          });
-          handleEntityUpdate(entityKey, list);
         }
-      }, (error) => {
-        handleFirestoreError(error, OperationType.GET, colName);
-      })
-    );
+
+        handleEntityUpdate(entityKey, list);
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, colName);
+    });
+
+    unsubscribes.push(unsub);
   };
 
   // Subscribe to config main settings
@@ -303,6 +396,7 @@ export function subscribeToDatabase(onSync: (db: SchemaDatabase) => void) {
 
   return () => {
     unsubscribes.forEach(unsub => unsub());
+    if (absensiUnsub) absensiUnsub();
   };
 }
 

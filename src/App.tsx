@@ -39,15 +39,6 @@ export default function App() {
     dbRef.current = db;
   }, [db]);
 
-  // Subscribe to real-time changes in Firebase
-  useEffect(() => {
-    const unsubscribe = subscribeToDatabase((syncedDb) => {
-      setDb(syncedDb);
-      setIsDbLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
-  
   // Login Session state (loaded and kept in sessionStorage)
   const [session, setSession] = useState<SessionState>(() => {
     const saved = sessionStorage.getItem('e_raport_session');
@@ -56,6 +47,19 @@ export default function App() {
     }
     return { role: null, userId: '', name: '' };
   });
+
+  // Subscribe to real-time changes in Firebase, factoring in current role/user ID for query optimization
+  useEffect(() => {
+    const unsubscribe = subscribeToDatabase(
+      (syncedDb) => {
+        setDb(syncedDb);
+        setIsDbLoading(false);
+      },
+      session.role,
+      session.userId
+    );
+    return () => unsubscribe();
+  }, [session.role, session.userId]);
 
   // Sidebar toggle for mobile layouts
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

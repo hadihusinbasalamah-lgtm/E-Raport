@@ -25,6 +25,11 @@ const getInterpolatedValueForColumn = (
     return valAsli;
   }
 
+  // If the minimum score entered in the class (per column) is 80 or greater, do not convert/interpolate.
+  if (minVal >= 80) {
+    return valAsli;
+  }
+
   const result = (((valAsli - minVal) * (95 - 80)) / (maxVal - minVal)) + 80;
   return Math.round(result);
 };
