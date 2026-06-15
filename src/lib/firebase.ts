@@ -128,24 +128,58 @@ function sanitizeObject<T>(obj: T): T {
 
 /**
  * Synchronizes any local changes made to e-Raport SchemaDatabase collections directly to Firestore.
+ * Highly optimized to minimize CPU overhead, prevent unauthorized writes, and conserve Firebase quota.
  */
-export async function syncDatabaseChange(oldDb: SchemaDatabase, newDb: SchemaDatabase) {
+export async function syncDatabaseChange(
+  oldDb: SchemaDatabase, 
+  newDb: SchemaDatabase,
+  userRole?: string | null,
+  userId?: string | null
+) {
   try {
-    // 1. Sync global config parameters
-    if (
-      oldDb.adminUsername !== newDb.adminUsername || 
-      oldDb.adminPasswordKey !== newDb.adminPasswordKey || 
-      oldDb.activePeriodId !== newDb.activePeriodId
-    ) {
-      const path = 'config/main';
-      try {
-        await setDoc(doc(db, 'config', 'main'), {
-          adminUsername: newDb.adminUsername || 'admin',
-          adminPasswordKey: newDb.adminPasswordKey || 'alirsyadsolo',
-          activePeriodId: newDb.activePeriodId || 'p1'
-        });
-      } catch (error) {
-        handleFirestoreError(error, OperationType.WRITE, path);
+    // 1. Role Authorization & Scope Assessment
+    const collectionsToSync: string[] = [];
+    
+    if (userRole === 'admin') {
+      collectionsToSync.push(
+        'kelas',
+        'mapel',
+        'siswa',
+        'guru',
+        'periodList',
+        'tujuanPembelajaran',
+        'nilaiSiswa',
+        'absensiDanCatatan'
+      );
+    } else if (userRole === 'guru' && userId) {
+      collectionsToSync.push(
+        'tujuanPembelajaran',
+        'nilaiSiswa',
+        'absensiDanCatatan'
+      );
+    } else {
+      // Offline/unauthenticated users are forbidden from executing syncing calls
+      return;
+    }
+
+    // 2. Sync global config parameters (Admin Only)
+    if (userRole === 'admin') {
+      if (
+        oldDb.adminUsername !== newDb.adminUsername || 
+        oldDb.adminPasswordKey !== newDb.adminPasswordKey || 
+        oldDb.activePeriodId !== newDb.activePeriodId
+      ) {
+        const path = 'config/main';
+        try {
+          await setDoc(doc(db, 'config', 'main'), {
+            adminUsername: newDb.adminUsername || 'admin',
+            adminPasswordKey: newDb.adminPasswordKey || 'alirsyadsolo',
+            activePeriodId: newDb.activePeriodId || 'p1',
+            isSeedInitialized: true
+          });
+        } catch (error) {
+          handleFirestoreError(error, OperationType.WRITE, path);
+        }
       }
     }
 
@@ -180,16 +214,18 @@ export async function syncDatabaseChange(oldDb: SchemaDatabase, newDb: SchemaDat
       }
     };
 
-    await Promise.all([
-      syncCollection('kelas', oldDb.kelas || [], newDb.kelas || []),
-      syncCollection('mapel', oldDb.mapel || [], newDb.mapel || []),
-      syncCollection('siswa', oldDb.siswa || [], newDb.siswa || []),
-      syncCollection('guru', oldDb.guru || [], newDb.guru || []),
-      syncCollection('periodList', oldDb.periodList || [], newDb.periodList || []),
-      syncCollection('tujuanPembelajaran', oldDb.tujuanPembelajaran || [], newDb.tujuanPembelajaran || []),
-      syncCollection('nilaiSiswa', oldDb.nilaiSiswa || [], newDb.nilaiSiswa || []),
-      syncCollection('absensiDanCatatan', oldDb.absensiDanCatatan || [], newDb.absensiDanCatatan || []),
-    ]);
+    const syncPromises: Promise<void>[] = [];
+    
+    if (collectionsToSync.includes('kelas')) syncPromises.push(syncCollection('kelas', oldDb.kelas || [], newDb.kelas || []));
+    if (collectionsToSync.includes('mapel')) syncPromises.push(syncCollection('mapel', oldDb.mapel || [], newDb.mapel || []));
+    if (collectionsToSync.includes('siswa')) syncPromises.push(syncCollection('siswa', oldDb.siswa || [], newDb.siswa || []));
+    if (collectionsToSync.includes('guru')) syncPromises.push(syncCollection('guru', oldDb.guru || [], newDb.guru || []));
+    if (collectionsToSync.includes('periodList')) syncPromises.push(syncCollection('periodList', oldDb.periodList || [], newDb.periodList || []));
+    if (collectionsToSync.includes('tujuanPembelajaran')) syncPromises.push(syncCollection('tujuanPembelajaran', oldDb.tujuanPembelajaran || [], newDb.tujuanPembelajaran || []));
+    if (collectionsToSync.includes('nilaiSiswa')) syncPromises.push(syncCollection('nilaiSiswa', oldDb.nilaiSiswa || [], newDb.nilaiSiswa || []));
+    if (collectionsToSync.includes('absensiDanCatatan')) syncPromises.push(syncCollection('absensiDanCatatan', oldDb.absensiDanCatatan || [], newDb.absensiDanCatatan || []));
+
+    await Promise.all(syncPromises);
 
   } catch (error) {
     console.error("General Sync Failure:", error);
@@ -223,8 +259,9 @@ export function subscribeToDatabase(
 
   // Helper function to listen to each separate collection
   const listenCol = (colName: string, entityKey: keyof SchemaDatabase) => {
-    // If the user is not authenticated yet, do not load heavy arrays of grades or lesson target plans
-    if (!userRole && (colName === 'nilaiSiswa' || colName === 'tujuanPembelajaran' || colName === 'absensiDanCatatan')) {
+    // If the user is not authenticated yet, only load the 'guru' credentials list and skip other tables completely.
+    // This saves enormous amount of Firestore reads when users load the application or stay on the login screen.
+    if (!userRole && colName !== 'guru') {
       handleEntityUpdate(entityKey, []);
       return;
     }

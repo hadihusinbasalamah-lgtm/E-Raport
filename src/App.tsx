@@ -138,8 +138,8 @@ export default function App() {
       });
     }
 
-    // Call asynchronous Firebase storage write in background
-    syncDatabaseChange(dbRef.current, updatedDb);
+    // Call asynchronous Firebase storage write in background, passing roles for surgical, highly-efficient syncing
+    syncDatabaseChange(dbRef.current, updatedDb, session.role, session.userId);
 
     setDb(updatedDb);
     saveDatabase(updatedDb);
