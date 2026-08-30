@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { SchemaDatabase, LoginRole, SessionState } from '../types';
-import { BookOpen, Key, User, ShieldCheck, GraduationCap, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { BookOpen, Key, User, ShieldCheck, GraduationCap, ArrowRight, Eye, EyeOff, HelpCircle } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface LoginScreenProps {
@@ -19,6 +19,7 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
   const [role, setRole] = useState<'admin' | 'guru'>('guru');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [showHelp, setShowHelp] = useState(false);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -199,6 +200,48 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
                 <ArrowRight className="w-4 h-4" />
               </button>
             </form>
+
+            <div className="mt-5 border-t border-slate-100 pt-4">
+              <button
+                type="button"
+                onClick={() => setShowHelp(!showHelp)}
+                className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800 transition-colors mx-auto"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+                Lupa Username atau Password?
+              </button>
+              {showHelp && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="mt-3 p-3.5 bg-slate-50 border border-slate-200/60 rounded-xl text-xs text-slate-600 leading-relaxed space-y-2"
+                >
+                  {role === 'admin' ? (
+                    <>
+                      <p className="font-semibold text-emerald-800">Kredensial Default Admin:</p>
+                      <ul className="list-disc pl-4 space-y-1">
+                        <li>Username: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-emerald-700 font-bold select-all">admin</code></li>
+                        <li>Password: <code className="bg-white px-1.5 py-0.5 rounded border border-slate-200 font-mono text-emerald-700 font-bold select-all">alirsyadsolo</code></li>
+                      </ul>
+                      <div className="h-[1px] bg-slate-200/50 my-2" />
+                      <p className="text-[10px] text-slate-500">
+                        * Jika kredensial ini telah diubah sebelumnya, Anda dapat melihat atau mengeditnya langsung di Firebase Console Firestore Anda pada koleksi <strong className="text-slate-700">config</strong> &gt; dokumen <strong className="text-slate-700">main</strong> (field <code className="font-mono">adminUsername</code> dan <code className="font-mono">adminPasswordKey</code>).
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-semibold text-emerald-800">Akun Guru:</p>
+                      <p className="text-slate-600">
+                        Username dan password guru sepenuhnya diatur oleh pihak kurikulum/sekolah melalui panel Administrator pada menu <strong>Manajemen Guru</strong>.
+                      </p>
+                      <p className="text-slate-600">
+                        Silakan hubungi operator sekolah atau admin SMP Al Irsyad Surakarta untuk melakukan reset atau menanyakan username & password Anda.
+                      </p>
+                    </>
+                  )}
+                </motion.div>
+              )}
+            </div>
 
 
 

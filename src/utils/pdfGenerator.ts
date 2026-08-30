@@ -227,37 +227,39 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.setFontSize(20);
   
   doc.text('LAPORAN HASIL BELAJAR SISWA', pageWidth / 2, 45, { align: 'center' });
-  doc.text('SMP AL IRSYAD SURAKARTA', pageWidth / 2, 53, { align: 'center' });
+  doc.text('SMP AL IRSYAD SURAKARTA', pageWidth / 2, 54, { align: 'center' });
   
   const boxWidth = 140;
   const boxHeight = 16;
   const startBoxX = (pageWidth - boxWidth) / 2;
   
+  // Position boxes in lower section as in reference document
+  const nameLabelY = 200;
+  const nameBoxY = 205;
+  const nisnLabelY = 236;
+  const nisnBoxY = 241;
+
+  doc.setFont('times', 'bold');
   doc.setFontSize(14);
-  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 110, { align: 'center' });
+  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, nameLabelY, { align: 'center' });
   
   doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.5);
-  doc.rect(startBoxX, 114, boxWidth, boxHeight);
+  doc.setLineWidth(0.4);
+  doc.rect(startBoxX, nameBoxY, boxWidth, boxHeight);
   
   doc.setFont('times', 'normal');
   doc.setFontSize(13);
-  doc.text(student.nama.toUpperCase(), pageWidth / 2, 124, { align: 'center' });
+  doc.text(student.nama.toUpperCase(), pageWidth / 2, nameBoxY + 10.5, { align: 'center' });
   
   doc.setFont('times', 'bold');
   doc.setFontSize(14);
-  doc.text('NISN', pageWidth / 2, 145, { align: 'center' });
+  doc.text('NISN', pageWidth / 2, nisnLabelY, { align: 'center' });
   
-  doc.rect(startBoxX, 149, boxWidth, boxHeight);
+  doc.rect(startBoxX, nisnBoxY, boxWidth, boxHeight);
   
   doc.setFont('times', 'normal');
   doc.setFontSize(13);
-  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 159, { align: 'center' });
-
-  // Elegant border on cover page
-  doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.5);
-  doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
+  doc.text(student.nisn || student.nis || '-', pageWidth / 2, nisnBoxY + 10.5, { align: 'center' });
 
   // ==========================================
   // PAGE 2: RAPORT PAGE 1 (Halaman 1)
