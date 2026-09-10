@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, Guru } from '../types';
-import { BookOpen, Check, ListChecks, Save } from 'lucide-react';
+import { BookOpen, Check, Copy, ListChecks, Save, Users, HelpCircle } from 'lucide-react';
 
 interface GuruTPProps {
   db: SchemaDatabase;
@@ -21,23 +21,6 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
   // It's safest to find from the activePeriod's snapshotted guru data if exists, otherwise master
   const activeTeacher = activePeriod?.snapshotGuru.find(g => g.id === guruId) || teacher;
 
-  if (!activePeriod) {
-    return (
-      <div className="p-8 text-center bg-amber-50 rounded-2xl border border-amber-200 text-amber-900">
-        <h3 className="text-sm font-bold">Periode Akademik Aktif Belum Dirilis oleh Admin</h3>
-        <p className="text-xs text-slate-500 mt-1">Lembaga Administrasi Akademik harus merilis Tahun Ajaran sebelum Guru dapat melakukan entri TP.</p>
-      </div>
-    );
-  }
-
-  if (!activeTeacher) {
-    return (
-      <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
-        Profil Pengajar tidak terdeteksi dalam database rilis ini.
-      </div>
-    );
-  }
-
   // Build the list of active assignments
   interface RawAssignment {
     mapelId: string;
@@ -47,15 +30,15 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
   }
   const rawAssignments: RawAssignment[] = [];
 
-  const mapel1Obj = activePeriod.snapshotMapel.find(m => m.id === activeTeacher.mapel1Id);
-  if (mapel1Obj) {
+  const mapel1Obj = activePeriod?.snapshotMapel?.find(m => m.id === activeTeacher?.mapel1Id);
+  if (mapel1Obj && activePeriod && activeTeacher) {
     const classIds1 = activeTeacher.mapel1KelasIds && activeTeacher.mapel1KelasIds.length > 0
       ? activeTeacher.mapel1KelasIds
       : (activeTeacher.mapel1KelasId ? [activeTeacher.mapel1KelasId] : []);
     
     classIds1.forEach(cid => {
-      const kelasObj = activePeriod.snapshotKelas.find(k => k.id === cid);
-      if (kelasObj) {
+      const kelasObj = activePeriod.snapshotKelas?.find(k => k.id === cid);
+      if (kelasObj && activeTeacher.mapel1Id) {
         rawAssignments.push({
           mapelId: activeTeacher.mapel1Id,
           mapelNama: mapel1Obj.nama,
@@ -66,46 +49,42 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
     });
   }
 
-  if (activeTeacher.mapel2Id) {
-    const mapel2Obj = activePeriod.snapshotMapel.find(m => m.id === activeTeacher.mapel2Id);
-    if (mapel2Obj) {
-      const classIds2 = activeTeacher.mapel2KelasIds && activeTeacher.mapel2KelasIds.length > 0
-        ? activeTeacher.mapel2KelasIds
-        : (activeTeacher.mapel2KelasId ? [activeTeacher.mapel2KelasId] : []);
-      
-      classIds2.forEach(cid => {
-        const kelasObj = activePeriod.snapshotKelas.find(k => k.id === cid);
-        if (kelasObj) {
-          rawAssignments.push({
-            mapelId: activeTeacher.mapel2Id,
-            mapelNama: mapel2Obj.nama,
-            kelasId: cid,
-            kelasNama: kelasObj.nama
-          });
-        }
-      });
-    }
+  const mapel2Obj = activePeriod?.snapshotMapel?.find(m => m.id === activeTeacher?.mapel2Id);
+  if (mapel2Obj && activePeriod && activeTeacher) {
+    const classIds2 = activeTeacher.mapel2KelasIds && activeTeacher.mapel2KelasIds.length > 0
+      ? activeTeacher.mapel2KelasIds
+      : (activeTeacher.mapel2KelasId ? [activeTeacher.mapel2KelasId] : []);
+    
+    classIds2.forEach(cid => {
+      const kelasObj = activePeriod.snapshotKelas?.find(k => k.id === cid);
+      if (kelasObj && activeTeacher.mapel2Id) {
+        rawAssignments.push({
+          mapelId: activeTeacher.mapel2Id,
+          mapelNama: mapel2Obj.nama,
+          kelasId: cid,
+          kelasNama: kelasObj.nama
+        });
+      }
+    });
   }
 
-  if (activeTeacher.mapel3Id) {
-    const mapel3Obj = activePeriod.snapshotMapel.find(m => m.id === activeTeacher.mapel3Id);
-    if (mapel3Obj) {
-      const classIds3 = activeTeacher.mapel3KelasIds && activeTeacher.mapel3KelasIds.length > 0
-        ? activeTeacher.mapel3KelasIds
-        : (activeTeacher.mapel3KelasId ? [activeTeacher.mapel3KelasId] : []);
-      
-      classIds3.forEach(cid => {
-        const kelasObj = activePeriod.snapshotKelas.find(k => k.id === cid);
-        if (kelasObj) {
-          rawAssignments.push({
-            mapelId: activeTeacher.mapel3Id,
-            mapelNama: mapel3Obj.nama,
-            kelasId: cid,
-            kelasNama: kelasObj.nama
-          });
-        }
-      });
-    }
+  const mapel3Obj = activePeriod?.snapshotMapel?.find(m => m.id === activeTeacher?.mapel3Id);
+  if (mapel3Obj && activePeriod && activeTeacher) {
+    const classIds3 = activeTeacher.mapel3KelasIds && activeTeacher.mapel3KelasIds.length > 0
+      ? activeTeacher.mapel3KelasIds
+      : (activeTeacher.mapel3KelasId ? [activeTeacher.mapel3KelasId] : []);
+    
+    classIds3.forEach(cid => {
+      const kelasObj = activePeriod.snapshotKelas?.find(k => k.id === cid);
+      if (kelasObj && activeTeacher.mapel3Id) {
+        rawAssignments.push({
+          mapelId: activeTeacher.mapel3Id,
+          mapelNama: mapel3Obj.nama,
+          kelasId: cid,
+          kelasNama: kelasObj.nama
+        });
+      }
+    });
   }
 
   // Parse Jenjang/level of classes (e.g., VII A -> VII, VIII B -> VIII, etc.)
@@ -164,6 +143,52 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
 
   const activeAssignment = groupedAssignments[selectedIdx];
 
+  // Check if any peer teacher has already input TP for this same mapel & jenjang in the active period
+  const peerTpCandidates = activeAssignment
+    ? db.tujuanPembelajaran.filter(t => {
+        if (activePeriod?.id && t.periodeId && t.periodeId !== activePeriod.id) return false;
+        if (t.guruId === guruId) return false;
+        
+        // Subject match by ID or by Name
+        const isSameMapel = t.mapelId === activeAssignment.mapelId || (() => {
+          const m1 = activePeriod?.snapshotMapel?.find(m => m.id === t.mapelId) || db.mapel.find(m => m.id === t.mapelId);
+          const m2 = activePeriod?.snapshotMapel?.find(m => m.id === activeAssignment.mapelId) || db.mapel.find(m => m.id === activeAssignment.mapelId);
+          return Boolean(m1 && m2 && m1.nama.trim().toLowerCase() === m2.nama.trim().toLowerCase());
+        })();
+        if (!isSameMapel) return false;
+        
+        const isSameJenjang = t.kelasId === activeAssignment.jenjang || getJenjang(t.kelasId) === activeAssignment.jenjang || (() => {
+          const kl = activePeriod?.snapshotKelas?.find(k => k.id === t.kelasId) || db.kelas.find(k => k.id === t.kelasId);
+          return kl ? getJenjang(kl.nama) === activeAssignment.jenjang : false;
+        })();
+        if (!isSameJenjang) return false;
+
+        return Boolean((t.tp1 && t.tp1.trim().length > 0) || (t.tp2 && t.tp2.trim().length > 0));
+      })
+    : [];
+
+  const peerTp = peerTpCandidates.length > 0 ? peerTpCandidates[0] : null;
+  const peerTeacher = peerTp 
+    ? (db.guru.find(g => g.id === peerTp.guruId) || activePeriod?.snapshotGuru?.find(g => g.id === peerTp.guruId))
+    : null;
+  const peerTeacherName = peerTeacher?.nama || 'Guru Rekan Sejawat';
+
+  const isAlreadyCopiedFromPeer = peerTp
+    ? tp1.trim() === (peerTp.tp1 || '').trim() &&
+      tp2.trim() === (peerTp.tp2 || '').trim() &&
+      tp3.trim() === (peerTp.tp3 || '').trim() &&
+      tp4.trim() === (peerTp.tp4 || '').trim()
+    : false;
+
+  const handleCopyPeerTp = () => {
+    if (!peerTp) return;
+    setTp1(peerTp.tp1 || '');
+    setTp2(peerTp.tp2 || '');
+    setTp3(peerTp.tp3 || '');
+    setTp4(peerTp.tp4 || '');
+    setMessage(`Tujuan Pembelajaran berhasil disalin dari ${peerTeacherName}! Periksa kembali rumusan di atas dan klik tombol "Simpan Pembaharuan TP" di bawah untuk menerapkan.`);
+  };
+
   const existing = activeAssignment
     ? db.tujuanPembelajaran.find(
         t => t.periodeId === activePeriod.id &&
@@ -196,7 +221,7 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
 
   // Load existing TP when assignment or activePeriod Changes
   useEffect(() => {
-    if (!activeAssignment) return;
+    if (!activeAssignment || !activePeriod) return;
     
     const existing = db.tujuanPembelajaran.find(
       t => t.periodeId === activePeriod.id &&
@@ -217,11 +242,11 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
       setTp4('');
     }
     setMessage('');
-  }, [selectedIdx, activePeriod.id, guruId, activeAssignment?.mapelId, activeAssignment?.jenjang]);
+  }, [selectedIdx, activePeriod?.id, guruId, activeAssignment?.mapelId, activeAssignment?.jenjang]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeAssignment) return;
+    if (!activeAssignment || !activePeriod) return;
 
     if (!tp1.trim() || !tp2.trim()) {
       alert("Sesuai instruksi: Tujuan Pembelajaran minimal harus diisi 2 TP (TP 1 & TP 2 wajib)!");
@@ -260,6 +285,23 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
 
     setMessage("Tujuan Pembelajaran berhasil disimpan!");
   };
+
+  if (!activePeriod) {
+    return (
+      <div className="p-8 text-center bg-amber-50 rounded-2xl border border-amber-200 text-amber-900">
+        <h3 className="text-sm font-bold">Periode Akademik Aktif Belum Dirilis oleh Admin</h3>
+        <p className="text-xs text-slate-500 mt-1">Lembaga Administrasi Akademik harus merilis Tahun Ajaran sebelum Guru dapat melakukan entri TP.</p>
+      </div>
+    );
+  }
+
+  if (!activeTeacher) {
+    return (
+      <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
+        Profil Pengajar tidak terdeteksi dalam database rilis ini.
+      </div>
+    );
+  }
 
   if (groupedAssignments.length === 0) {
     return (
@@ -301,7 +343,7 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
 
       {activeAssignment && (
         <div className="bg-white rounded-2xl border border-slate-150 shadow-sm p-6 space-y-4">
-          <div className="flex justify-between items-start border-b border-slate-100 pb-3 gap-4">
+          <div className="flex justify-between items-start border-b border-slate-100 pb-3 gap-4 flex-wrap">
             <div>
               <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">Mata Pelajaran & Jenjang Terpilih</span>
               <strong className="text-base text-slate-800 font-sans mt-0.5 inline-block">
@@ -311,12 +353,69 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
                 Berlaku otomatis untuk semua kelas yang Anda ampu di jenjang ini: <span className="font-semibold text-emerald-700">{activeAssignment.kelasNames.join(', ')}</span>
               </span>
             </div>
-            <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 shrink-0">
-              Periode: {activePeriod.id}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              {peerTp && (
+                <button
+                  type="button"
+                  id="btn-header-salin-tp-rekan"
+                  onClick={handleCopyPeerTp}
+                  className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 hover:text-blue-800 border border-blue-200 text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-2xs cursor-pointer transition-all active:scale-95"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  Salin / Gunakan TP Rekan Sejawat
+                </button>
+              )}
+              <span className="text-[10px] font-mono text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 shrink-0">
+                Periode: {activePeriod.id}
+              </span>
+            </div>
           </div>
 
           <form onSubmit={handleSave} className="space-y-4">
+            {/* Peer Teacher TP Banner - shown only when peer teacher has already input TP */}
+            {peerTp && (
+              <div className="p-4 bg-gradient-to-r from-blue-50 via-indigo-50/60 to-blue-50/40 border-2 border-blue-200/90 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="text-xs font-bold text-slate-900">
+                        Tersedia TP dari Rekan Sejawat: <span className="text-blue-700 font-bold">{peerTeacherName}</span>
+                      </h4>
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-800 text-[10px] font-bold rounded-md">
+                        Jenjang {activeAssignment.jenjang}
+                      </span>
+                      {isAlreadyCopiedFromPeer && (
+                        <span className="px-2 py-0.5 bg-emerald-100 text-emerald-800 text-[10px] font-bold rounded-md flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Sudah Sama
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-slate-600 mt-1 leading-relaxed">
+                      {peerTeacherName} telah menyusun Tujuan Pembelajaran untuk mata pelajaran ini. Klik tombol di samping untuk menyalin rumusan agar capaian kompetensi siswa seragam dan selaras.
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-salin-tp-rekan"
+                  onClick={handleCopyPeerTp}
+                  className={`px-4 py-2.5 text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm active:scale-95 transition-all shrink-0 cursor-pointer ${
+                    isAlreadyCopiedFromPeer
+                      ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-200'
+                      : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-200 hover:shadow-md'
+                  }`}
+                  title="Salin TP dari rekan sejawat ke form Anda"
+                >
+                  <Copy className="w-4 h-4" />
+                  {isAlreadyCopiedFromPeer ? 'Salin Ulang TP Rekan' : 'Salin / Gunakan TP Rekan Sejawat'}
+                </button>
+              </div>
+            )}
+
             {message && (
               <div className="p-3 bg-emerald-50 text-emerald-800 border-emerald-250 text-xs font-semibold rounded-xl flex items-center gap-1.5">
                 <Check className="w-4 h-4 text-emerald-600" />

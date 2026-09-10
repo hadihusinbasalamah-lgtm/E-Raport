@@ -16,6 +16,12 @@ interface GuruProfileProps {
 export function GuruProfile({ db, guruId, onUpdate }: GuruProfileProps) {
   const teacher = db.guru.find(g => g.id === guruId);
 
+  const [username, setUsername] = useState(teacher?.username || '');
+  const [password, setPassword] = useState(teacher?.passwordKey || '');
+  const [confirmPassword, setConfirmPassword] = useState(teacher?.passwordKey || '');
+  const [message, setMessage] = useState('');
+  const [error, setError] = useState('');
+
   if (!teacher) {
     return (
       <div className="p-4 bg-rose-50 border border-rose-200 text-rose-800 rounded-xl text-xs font-semibold">
@@ -23,12 +29,6 @@ export function GuruProfile({ db, guruId, onUpdate }: GuruProfileProps) {
       </div>
     );
   }
-
-  const [username, setUsername] = useState(teacher.username);
-  const [password, setPassword] = useState(teacher.passwordKey);
-  const [confirmPassword, setConfirmPassword] = useState(teacher.passwordKey);
-  const [message, setMessage] = useState('');
-  const [error, setError] = useState('');
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

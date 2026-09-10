@@ -291,15 +291,14 @@ export function subscribeToDatabase(
     if (userRole === 'guru' && userId) {
       if (colName === 'nilaiSiswa') {
         colRef = query(collection(db, colName), where('guruId', '==', userId));
-      } else if (colName === 'tujuanPembelajaran') {
-        colRef = query(collection(db, colName), where('guruId', '==', userId));
       }
+      // Note: 'tujuanPembelajaran' must be shared across all teachers to enable the 'Salin / Gunakan TP Rekan Sejawat' feature
     }
 
     const unsub = onSnapshot(colRef, (snap) => {
       if (snap.empty) {
         // Sync seed data to remote only if the database hasn't been initialized yet
-        if (!isDbAlreadyInitialized && colName !== 'nilaiSiswa' && colName !== 'tujuanPembelajaran') {
+        if (!isDbAlreadyInitialized && colName !== 'nilaiSiswa') {
           const initialItems = defaultDb[entityKey];
           if (Array.isArray(initialItems) && initialItems.length > 0) {
             initialItems.forEach(item => {

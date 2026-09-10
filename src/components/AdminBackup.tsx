@@ -27,6 +27,52 @@ export function AdminBackup({ db }: AdminBackupProps) {
   const [currentExportName, setCurrentExportName] = useState('');
   const [exportSuccess, setExportSuccess] = useState(false);
 
+  // Active snapshot data from class, students, subjects
+  const classesList = activePeriod?.snapshotKelas || [];
+  const studentsList = activePeriod?.snapshotSiswa || [];
+  const subjectsList = activePeriod?.snapshotMapel || [];
+
+  // Filter students by selected Kelas
+  const filteredStudents = useMemo(() => {
+    if (!selectedKelasId) return [];
+    return studentsList.filter(s => s.kelasId === selectedKelasId);
+  }, [selectedKelasId, studentsList]);
+
+  // Selected class detail
+  const selectedKelasInfo = useMemo(() => {
+    if (!selectedKelasId || !activePeriod) return null;
+    const kObj = classesList.find(k => k.id === selectedKelasId);
+    if (!kObj) return null;
+
+    const teacherObj = db.guru.find(g => g.id === kObj.waliKelasId) || activePeriod.snapshotGuru?.find(g => g.id === kObj.waliKelasId);
+    
+    // Compute total class grade completion ratio
+    let totalExpectedMapelGrades = filteredStudents.length * subjectsList.length;
+    let totalGradedMapelGrades = 0;
+    
+    filteredStudents.forEach(stud => {
+      subjectsList.forEach(mapel => {
+        const gradeId = `${activePeriod.id}_${stud.id}_${mapel.id}`;
+        if (db.nilaiSiswa.some(n => n.id === gradeId)) {
+          totalGradedMapelGrades++;
+        }
+      });
+    });
+
+    const completionRate = totalExpectedMapelGrades > 0 
+      ? Math.round((totalGradedMapelGrades / totalExpectedMapelGrades) * 100)
+      : 0;
+
+    return {
+      name: kObj.nama,
+      nama: kObj.nama,
+      waliKelasName: teacherObj ? teacherObj.nama : 'Belum Ditugaskan',
+      waliKelasNama: teacherObj ? teacherObj.nama : 'Belum Ditugaskan',
+      studentCount: filteredStudents.length,
+      completionRate
+    };
+  }, [selectedKelasId, classesList, db.guru, activePeriod, filteredStudents, subjectsList, db.nilaiSiswa]);
+
   // Checks
   if (!activePeriod) {
     return (
@@ -40,17 +86,6 @@ export function AdminBackup({ db }: AdminBackupProps) {
       </div>
     );
   }
-
-  // Active snapshot data from class, students, subjects
-  const classesList = activePeriod.snapshotKelas || [];
-  const studentsList = activePeriod.snapshotSiswa || [];
-  const subjectsList = activePeriod.snapshotMapel || [];
-
-  // Filter students by selected Kelas
-  const filteredStudents = useMemo(() => {
-    if (!selectedKelasId) return [];
-    return studentsList.filter(s => s.kelasId === selectedKelasId);
-  }, [selectedKelasId, studentsList]);
 
   // Handle class select
   const handleClassChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -98,38 +133,6 @@ export function AdminBackup({ db }: AdminBackupProps) {
       isFullyGraded: count === subjectsList.length && subjectsList.length > 0
     };
   };
-
-  // Selected class detail
-  const selectedKelasInfo = useMemo(() => {
-    if (!selectedKelasId) return null;
-    const kObj = classesList.find(k => k.id === selectedKelasId);
-    if (!kObj) return null;
-
-    const teacherObj = db.guru.find(g => g.id === kObj.waliKelasId) || activePeriod.snapshotGuru.find(g => g.id === kObj.waliKelasId);
-    
-    // Compute total class grade completion ratio
-    let totalExpectedMapelGrades = filteredStudents.length * subjectsList.length;
-    let totalGradedMapelGrades = 0;
-    
-    filteredStudents.forEach(stud => {
-      subjectsList.forEach(mapel => {
-        const gradeId = `${activePeriod.id}_${stud.id}_${mapel.id}`;
-        if (db.nilaiSiswa.some(n => n.id === gradeId)) {
-          totalGradedMapelGrades++;
-        }
-      });
-    });
-
-    const completionRate = totalExpectedMapelGrades > 0 
-      ? Math.round((totalGradedMapelGrades / totalExpectedMapelGrades) * 100)
-      : 0;
-
-    return {
-      name: kObj.nama,
-      waliKelasName: teacherObj ? teacherObj.nama : 'Belum Ditugaskan',
-      completionRate
-    };
-  }, [selectedKelasId, classesList, filteredStudents, subjectsList, db.nilaiSiswa, db.guru, activePeriod.snapshotGuru]);
 
   // Core ZIP & PDF Generator Action
   const handleBackupExport = async () => {

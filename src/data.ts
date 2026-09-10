@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { SchemaDatabase, Kelas, Mapel, Siswa, Guru, PeriodeAkademik } from './types';
+import { SchemaDatabase, Kelas, Mapel, Siswa, Guru, PeriodeAkademik, TujuanPembelajaran } from './types';
 
 export const INITIAL_GURU: Guru[] = [
   {
@@ -15,8 +15,10 @@ export const INITIAL_GURU: Guru[] = [
     waliKelasKelasId: 'k1', // VII A
     mapel1Id: 'm1', // Matematika
     mapel1KelasId: 'k1', // VII A
+    mapel1KelasIds: ['k1'],
     mapel2Id: 'm3', // Bahasa Indonesia
-    mapel2KelasId: 'k3', // VIII A
+    mapel2KelasId: 'k2', // VII B (Rekan sejawat Usth. Fatimah di VII A!)
+    mapel2KelasIds: ['k2', 'k3'], // VII B dan VIII A
   },
   {
     id: 'g2',
@@ -27,8 +29,10 @@ export const INITIAL_GURU: Guru[] = [
     waliKelasKelasId: 'k2', // VII B
     mapel1Id: 'm4', // Bahasa Inggris
     mapel1KelasId: 'k2', // VII B
+    mapel1KelasIds: ['k2'],
     mapel2Id: 'm3', // Bahasa Indonesia
-    mapel2KelasId: 'k1', // VII A
+    mapel2KelasId: 'k1', // VII A (Rekan sejawat Ust. Ahmad Fauzi di Jenjang VII!)
+    mapel2KelasIds: ['k1'],
   },
   {
     id: 'g3',
@@ -39,8 +43,10 @@ export const INITIAL_GURU: Guru[] = [
     waliKelasKelasId: '',
     mapel1Id: 'm5', // Pendidikan Agama Islam
     mapel1KelasId: 'k1', // VII A
+    mapel1KelasIds: ['k1'],
     mapel2Id: 'm5', // Pendidikan Agama Islam
     mapel2KelasId: 'k3', // VIII A
+    mapel2KelasIds: ['k3'],
   },
   {
     id: 'g4',
@@ -51,8 +57,10 @@ export const INITIAL_GURU: Guru[] = [
     waliKelasKelasId: 'k3', // VIII A
     mapel1Id: 'm2', // Ilmu Pengetahuan Alam
     mapel1KelasId: 'k1', // VII A
-    mapel2Id: 'm2', // Ilmu Pengetahuan Alam
+    mapel1KelasIds: ['k1', 'k2'], // VII A & VII B
+    mapel2Id: 'm1', // Matematika (Rekan sejawat Ust. Ahmad Fauzi di Jenjang VII!)
     mapel2KelasId: 'k2', // VII B
+    mapel2KelasIds: ['k2'],
   }
 ];
 
@@ -105,6 +113,60 @@ export const INITIAL_PERIODS: PeriodeAkademik[] = [
   }
 ];
 
+export const INITIAL_TP: TujuanPembelajaran[] = [
+  {
+    id: 'tp_init_1',
+    periodeId: 'p1',
+    guruId: 'g1',
+    mapelId: 'm1', // Matematika (Ust. Ahmad Fauzi di VII A)
+    kelasId: 'VII',
+    tp1: 'Memahami konsep bilangan bulat, rasional, dan operasinya dalam masalah kontekstual',
+    tp2: 'Menyelesaikan permasalahan persamaan dan pertidaksamaan aljabar linier satu variabel',
+    tp3: 'Mengaplikasikan konsep aritmetika sosial dalam transaksi ekonomi sehari-hari',
+    tp4: 'Menyajikan dan menafsirkan data dalam bentuk diagram batang dan garis'
+  },
+  {
+    id: 'tp_init_2',
+    periodeId: 'p1',
+    guruId: 'g2',
+    mapelId: 'm4', // Bahasa Inggris (Usth. Fatimah di VII B)
+    kelasId: 'VII',
+    tp1: 'Mengidentifikasi konteks, gagasan utama, dan informasi rinci dari teks deskriptif lisan dan tulis',
+    tp2: 'Menyusun teks interaksi interpersonal perkenalan diri dan sapaan dalam bahasa Inggris',
+    tp3: 'Memahami teks prosedur sederhana tentang resep atau instruksi kerja harian'
+  },
+  {
+    id: 'tp_init_3',
+    periodeId: 'p1',
+    guruId: 'g2',
+    mapelId: 'm3', // Bahasa Indonesia (Usth. Fatimah di VII A - Rekan Ust. Ahmad Fauzi di VII B)
+    kelasId: 'VII',
+    tp1: 'Menganalisis ide pokok, pesan tersirat, dan struktur teks deskripsi secara kritis',
+    tp2: 'Menyusun kerangka dan menulis teks prosedur dengan memperhatikan kaidah kebahasaan',
+    tp3: 'Mempresentasikan hasil karya deskriptif lisan dengan intonasi dan artikulasi yang baik'
+  },
+  {
+    id: 'tp_init_4',
+    periodeId: 'p1',
+    guruId: 'g4',
+    mapelId: 'm2', // IPA Terpadu (Usth. Sarah)
+    kelasId: 'VII',
+    tp1: 'Menerapkan metode ilmiah dan pengukuran besaran fisis dalam penyelidikan sains',
+    tp2: 'Menganalisis sifat zat, perubahan wujud materi, dan pemisahan campuran sederhana',
+    tp3: 'Memahami organisasi kehidupan dari sel hingga organisme dan rantai makanan'
+  },
+  {
+    id: 'tp_init_5',
+    periodeId: 'p1',
+    guruId: 'g3',
+    mapelId: 'm5', // PAI (Ust. Ridwan)
+    kelasId: 'VII',
+    tp1: 'Membaca dan memahami kandungan ayat Al-Quran serta Hadis tentang menuntut ilmu',
+    tp2: 'Meneladani sifat-sifat mulia Asmaul Husna dalam interaksi sosial sehari-hari',
+    tp3: 'Mempraktikkan tata cara thaharah dan salat berjemaah dengan khusyuk'
+  }
+];
+
 export const STORAGE_KEY = 'e_raport_db';
 
 export function getDatabase(): SchemaDatabase {
@@ -119,7 +181,16 @@ export function getDatabase(): SchemaDatabase {
       if (!db.guru) db.guru = INITIAL_GURU;
       if (!db.periodList) db.periodList = INITIAL_PERIODS;
       if (db.activePeriodId === undefined) db.activePeriodId = 'p1';
-      if (!db.tujuanPembelajaran) db.tujuanPembelajaran = [];
+      if (!db.tujuanPembelajaran || db.tujuanPembelajaran.length === 0) {
+        db.tujuanPembelajaran = INITIAL_TP;
+      } else {
+        // Merge missing seed TPs to ensure peer teachers always exist
+        INITIAL_TP.forEach(seedTp => {
+          if (!db.tujuanPembelajaran.some(t => t.id === seedTp.id)) {
+            db.tujuanPembelajaran.push(seedTp);
+          }
+        });
+      }
       if (!db.nilaiSiswa) db.nilaiSiswa = [];
       if (!db.absensiDanCatatan) db.absensiDanCatatan = [];
       if (!db.adminUsername) db.adminUsername = 'admin';
@@ -140,26 +211,7 @@ export function getDatabase(): SchemaDatabase {
     guru: INITIAL_GURU,
     periodList: INITIAL_PERIODS,
     activePeriodId: 'p1',
-    tujuanPembelajaran: [
-      {
-        id: 'tp_init_1',
-        periodeId: 'p1',
-        guruId: 'g1',
-        mapelId: 'm1',
-        kelasId: 'k1',
-        tp1: 'Memahami konsep bilangan bulat dan operasinya',
-        tp2: 'Menyelesaikan permasalahan aljabar sederhana'
-      },
-      {
-        id: 'tp_init_2',
-        periodeId: 'p1',
-        guruId: 'g2',
-        mapelId: 'm4',
-        kelasId: 'k2',
-        tp1: 'Mengidentifikasi teks deskriptif lisan dan tulis',
-        tp2: 'Menyusun naskah perkenalan diri dalam Bahasa Inggris'
-      }
-    ],
+    tujuanPembelajaran: INITIAL_TP,
     nilaiSiswa: [
       {
         id: 'p1_s1_m1',
