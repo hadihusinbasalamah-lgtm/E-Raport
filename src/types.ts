@@ -32,7 +32,7 @@ export interface Guru {
   isWaliKelas: boolean;
   waliKelasKelasId: string; // ID Kelas yang diampu jika isWaliKelas true
   
-  // Setiap guru bisa mengajar 2 mapel dan setiap mapel ditargetnya beda kelas
+  // Setiap guru bisa mengajar hingga 3 mapel dan setiap mapel ditargetnya beda kelas
   mapel1Id: string;
   mapel1KelasId: string;
   mapel1KelasIds?: string[];
@@ -40,6 +40,10 @@ export interface Guru {
   mapel2Id: string; // bisa kosong ""
   mapel2KelasId: string; // bisa kosong ""
   mapel2KelasIds?: string[];
+
+  mapel3Id?: string; // bisa kosong ""
+  mapel3KelasId?: string; // bisa kosong ""
+  mapel3KelasIds?: string[];
 }
 
 export type TipeUjian = 'PSTS1' | 'PSAS1' | 'PSTS2' | 'PSAT';

@@ -160,6 +160,9 @@ export function AdminKelas({ db, onUpdate }: AdminKelasProps) {
       const mapel2Ids = (g.mapel2KelasIds || []).filter(id => id !== kelasId);
       const map2Id = g.mapel2KelasId === kelasId ? (mapel2Ids[0] || '') : g.mapel2KelasId;
 
+      const mapel3Ids = (g.mapel3KelasIds || []).filter(id => id !== kelasId);
+      const map3Id = g.mapel3KelasId === kelasId ? (mapel3Ids[0] || '') : g.mapel3KelasId;
+
       return {
         ...g,
         isWaliKelas: isWali,
@@ -167,7 +170,9 @@ export function AdminKelas({ db, onUpdate }: AdminKelasProps) {
         mapel1KelasId: map1Id,
         mapel1KelasIds: mapel1Ids,
         mapel2KelasId: map2Id,
-        mapel2KelasIds: mapel2Ids
+        mapel2KelasIds: mapel2Ids,
+        mapel3KelasId: map3Id,
+        mapel3KelasIds: mapel3Ids
       };
     });
 

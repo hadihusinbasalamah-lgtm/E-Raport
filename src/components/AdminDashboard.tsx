@@ -79,6 +79,19 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
             }
           });
         }
+        // Mapel 3
+        if (guru.mapel3Id === mapel.id) {
+          const classIds3 = guru.mapel3KelasIds && guru.mapel3KelasIds.length > 0
+            ? guru.mapel3KelasIds
+            : (guru.mapel3KelasId ? [guru.mapel3KelasId] : []);
+          
+          classIds3.forEach(cid => {
+            const kl = currentKelas.find(k => k.id === cid);
+            if (kl) {
+              classMap[cid] = { kelasId: cid, kelasNama: kl.nama, teacherName: guru.nama };
+            }
+          });
+        }
       });
 
       const assignedClasses = Object.values(classMap);

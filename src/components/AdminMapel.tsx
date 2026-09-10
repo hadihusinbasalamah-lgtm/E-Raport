@@ -105,6 +105,16 @@ export function AdminMapel({ db, onUpdate }: AdminMapelProps) {
           .join(', ');
         list.push({ guruNama: g.nama, kelasNama: classNames || '-' });
       }
+      if (g.mapel3Id === mapelId) {
+        const mapel3KelasIds = g.mapel3KelasIds && g.mapel3KelasIds.length > 0
+          ? g.mapel3KelasIds
+          : (g.mapel3KelasId ? [g.mapel3KelasId] : []);
+        const classNames = mapel3KelasIds
+          .map(cid => db.kelas.find(c => c.id === cid)?.nama)
+          .filter(Boolean)
+          .join(', ');
+        list.push({ guruNama: g.nama, kelasNama: classNames || '-' });
+      }
     });
     return list;
   };

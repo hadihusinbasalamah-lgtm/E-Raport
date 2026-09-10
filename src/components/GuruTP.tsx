@@ -87,6 +87,27 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
     }
   }
 
+  if (activeTeacher.mapel3Id) {
+    const mapel3Obj = activePeriod.snapshotMapel.find(m => m.id === activeTeacher.mapel3Id);
+    if (mapel3Obj) {
+      const classIds3 = activeTeacher.mapel3KelasIds && activeTeacher.mapel3KelasIds.length > 0
+        ? activeTeacher.mapel3KelasIds
+        : (activeTeacher.mapel3KelasId ? [activeTeacher.mapel3KelasId] : []);
+      
+      classIds3.forEach(cid => {
+        const kelasObj = activePeriod.snapshotKelas.find(k => k.id === cid);
+        if (kelasObj) {
+          rawAssignments.push({
+            mapelId: activeTeacher.mapel3Id,
+            mapelNama: mapel3Obj.nama,
+            kelasId: cid,
+            kelasNama: kelasObj.nama
+          });
+        }
+      });
+    }
+  }
+
   // Parse Jenjang/level of classes (e.g., VII A -> VII, VIII B -> VIII, etc.)
   const getJenjang = (kelasNama: string): string => {
     const upper = (kelasNama || '').trim().toUpperCase();

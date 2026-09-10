@@ -120,6 +120,28 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     }
   }
 
+  if (activeTeacher.mapel3Id) {
+    const mapel3Obj = activePeriod.snapshotMapel.find(m => m.id === activeTeacher.mapel3Id);
+    if (mapel3Obj) {
+      const classIds3 = activeTeacher.mapel3KelasIds && activeTeacher.mapel3KelasIds.length > 0
+        ? activeTeacher.mapel3KelasIds
+        : (activeTeacher.mapel3KelasId ? [activeTeacher.mapel3KelasId] : []);
+      
+      classIds3.forEach((cid, index) => {
+        const kelasObj = activePeriod.snapshotKelas.find(k => k.id === cid);
+        if (kelasObj) {
+          assignments.push({
+            key: `as3_${index}_${cid}`,
+            mapelId: activeTeacher.mapel3Id,
+            mapelNama: mapel3Obj.nama,
+            kelasId: cid,
+            kelasNama: kelasObj.nama
+          });
+        }
+      });
+    }
+  }
+
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [tempIdx, setTempIdx] = useState(0);
   const activeAssignment = assignments[selectedIdx] || assignments[0];
