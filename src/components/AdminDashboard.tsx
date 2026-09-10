@@ -37,12 +37,44 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
   const currentGurus = activePeriod?.snapshotGuru || db.guru;
   const allNilai = db.nilaiSiswa || [];
 
-  // 1. Helper to extract year/level from Class Name (e.g. VII A -> 7, 8 B -> 8, 9 -> 9)
+  // 1. Helper to extract year/level from Class Name (e.g. VII A -> 7, VIII B -> 8, IX C -> 9)
   const getClassLevel = (kelasNama: string): string => {
     const name = (kelasNama || '').trim().toUpperCase();
-    if (name.startsWith('VII') || name.startsWith('7')) return '7';
-    if (name.startsWith('VIII') || name.startsWith('8')) return '8';
-    if (name.startsWith('IX') || name.startsWith('9')) return '9';
+    // PERINGATAN KRUSIAL: Harus mengecek VIII sebelum VII, karena kata "VIII" diawali dengan "VII"
+    // sehingga name.startsWith('VII') bernilai TRUE untuk kelas VIII ("VIII A", "VIII B", dll.)
+    if (
+      name.startsWith('VIII') ||
+      name.includes('VIII') ||
+      name.startsWith('8') ||
+      /\b8\b/.test(name) ||
+      /\bVIII\b/.test(name) ||
+      name.includes('KELAS 8') ||
+      name.includes('KELAS VIII')
+    ) {
+      return '8';
+    }
+    if (
+      name.startsWith('VII') ||
+      name.includes('VII') ||
+      name.startsWith('7') ||
+      /\b7\b/.test(name) ||
+      /\bVII\b/.test(name) ||
+      name.includes('KELAS 7') ||
+      name.includes('KELAS VII')
+    ) {
+      return '7';
+    }
+    if (
+      name.startsWith('IX') ||
+      name.includes('IX') ||
+      name.startsWith('9') ||
+      /\b9\b/.test(name) ||
+      /\bIX\b/.test(name) ||
+      name.includes('KELAS 9') ||
+      name.includes('KELAS IX')
+    ) {
+      return '9';
+    }
     return 'Other';
   };
 
@@ -52,45 +84,50 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
       // Find classes assigned to this subject via active teacher snapshots
       const classMap: Record<string, { kelasId: string; kelasNama: string; teacherName: string }> = {};
 
+      const addClassToMap = (cid: string, teacherNama: string) => {
+        const kl = currentKelas.find(k => k.id === cid);
+        if (!kl) return;
+        if (classMap[cid]) {
+          if (teacherNama && !classMap[cid].teacherName.includes(teacherNama)) {
+            classMap[cid].teacherName = classMap[cid].teacherName ? `${classMap[cid].teacherName}, ${teacherNama}` : teacherNama;
+          }
+        } else {
+          classMap[cid] = { kelasId: cid, kelasNama: kl.nama, teacherName: teacherNama || '-' };
+        }
+      };
+
       currentGurus.forEach(guru => {
         // Mapel 1
         if (guru.mapel1Id === mapel.id) {
           const classIds1 = guru.mapel1KelasIds && guru.mapel1KelasIds.length > 0
             ? guru.mapel1KelasIds
             : (guru.mapel1KelasId ? [guru.mapel1KelasId] : []);
-          
-          classIds1.forEach(cid => {
-            const kl = currentKelas.find(k => k.id === cid);
-            if (kl) {
-              classMap[cid] = { kelasId: cid, kelasNama: kl.nama, teacherName: guru.nama };
-            }
-          });
+          classIds1.forEach(cid => addClassToMap(cid, guru.nama));
         }
         // Mapel 2
         if (guru.mapel2Id === mapel.id) {
           const classIds2 = guru.mapel2KelasIds && guru.mapel2KelasIds.length > 0
             ? guru.mapel2KelasIds
             : (guru.mapel2KelasId ? [guru.mapel2KelasId] : []);
-          
-          classIds2.forEach(cid => {
-            const kl = currentKelas.find(k => k.id === cid);
-            if (kl) {
-              classMap[cid] = { kelasId: cid, kelasNama: kl.nama, teacherName: guru.nama };
-            }
-          });
+          classIds2.forEach(cid => addClassToMap(cid, guru.nama));
         }
         // Mapel 3
         if (guru.mapel3Id === mapel.id) {
           const classIds3 = guru.mapel3KelasIds && guru.mapel3KelasIds.length > 0
             ? guru.mapel3KelasIds
             : (guru.mapel3KelasId ? [guru.mapel3KelasId] : []);
-          
-          classIds3.forEach(cid => {
-            const kl = currentKelas.find(k => k.id === cid);
-            if (kl) {
-              classMap[cid] = { kelasId: cid, kelasNama: kl.nama, teacherName: guru.nama };
-            }
-          });
+          classIds3.forEach(cid => addClassToMap(cid, guru.nama));
+        }
+      });
+
+      // Pastikan kelas yang sudah memiliki nilai terinput pada mapel ini juga selalu tercatat
+      allNilai.forEach(n => {
+        const periMatch = activePeriod ? n.periodeId === activePeriod.id : true;
+        if (!periMatch || n.mapelId !== mapel.id) return;
+        const student = currentSiswa.find(s => s.id === n.siswaId);
+        if (student && student.kelasId && !classMap[student.kelasId]) {
+          const tGuru = currentGurus.find(g => g.id === n.guruId);
+          addClassToMap(student.kelasId, tGuru?.nama || '');
         }
       });
 
@@ -136,6 +173,9 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
           percentage: studentsInKlass.length > 0 ? Math.round((gradedInKlass / studentsInKlass.length) * 100) : 0
         });
       });
+
+      // Urutkan detail kelas berdasarkan nama kelas (mis. VII A, VII B, VIII A, VIII B, dll.)
+      classDetails.sort((a, b) => a.kelasNama.localeCompare(b.kelasNama, undefined, { numeric: true }));
 
       // Filter expected students by selected level
       let filteredExpected = studentsExpected;
@@ -672,7 +712,7 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
                     activeSubjectDetails.classDetails.map((klass, idx) => (
                       <div key={idx} className="p-3 bg-slate-50 border border-slate-150 rounded-xl space-y-2">
                         <div className="flex items-center justify-between text-xs font-bold">
-                          <span className="text-slate-800">Kelas {klass.kelasNama}</span>
+                          <span className="text-slate-800">{klass.kelasNama.toLowerCase().startsWith('kelas') ? klass.kelasNama : `Kelas ${klass.kelasNama}`}</span>
                           <span className={`px-2 py-0.5 rounded text-[10px] ${
                             klass.percentage === 100 
                               ? 'bg-emerald-100 text-emerald-800'
