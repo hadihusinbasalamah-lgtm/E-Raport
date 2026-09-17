@@ -25,7 +25,7 @@ import { subscribeToDatabase, syncDatabaseChange } from './lib/firebase';
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database
+  Database, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -182,7 +182,7 @@ export default function App() {
     { id: 'siswa', label: 'Data Siswa', icon: UserCheck },
     { id: 'tahun-ajaran', label: 'Tahun Ajaran (Release)', icon: Calendar },
     { id: 'backup', label: 'Backup Data', icon: Database },
-    { id: 'profile', label: 'Pengaturan Profil', icon: User },
+    { id: 'profile', label: 'Pengaturan', icon: Settings },
   ];
 
   // For Guru, dynamically adjust based on homeroom status
@@ -500,7 +500,14 @@ export default function App() {
                       )}
 
                       {activeTab === 'profile' && (
-                        <AdminProfile db={db} onUpdate={handleUpdateDb} />
+                        <AdminProfile 
+                          db={db} 
+                          onUpdate={handleUpdateDb} 
+                          onNavigateToTab={(tabId) => {
+                            setActiveTab(tabId);
+                            setMobileMenuOpen(false);
+                          }}
+                        />
                       )}
                     </>
                   )}

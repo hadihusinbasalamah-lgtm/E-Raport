@@ -16,6 +16,7 @@ import {
   onSnapshot, 
   setDoc, 
   deleteDoc,
+  writeBatch,
   query,
   where
 } from 'firebase/firestore';
@@ -190,29 +191,55 @@ export async function syncDatabaseChange(
       newArr: T[]
     ) => {
       // Find modified or added items
+      const itemsToSet: T[] = [];
       for (const item of newArr) {
         const oldItem = oldArr.find(x => x.id === item.id);
         if (!oldItem || JSON.stringify(oldItem) !== JSON.stringify(item)) {
+          itemsToSet.push(item);
+        }
+      }
+
+      // Batch set if multiple items, or single set if few
+      if (itemsToSet.length > 0) {
+        for (let i = 0; i < itemsToSet.length; i += 400) {
+          const chunk = itemsToSet.slice(i, i + 400);
           try {
-            const sanitizedItem = sanitizeObject(item);
-            await setDoc(doc(db, colName, item.id), sanitizedItem);
+            const batch = writeBatch(db);
+            for (const item of chunk) {
+              const sanitizedItem = sanitizeObject(item);
+              batch.set(doc(db, colName, item.id), sanitizedItem);
+            }
+            await batch.commit();
           } catch (error) {
-            handleFirestoreError(error, OperationType.WRITE, `${colName}/${item.id}`);
+            handleFirestoreError(error, OperationType.WRITE, `${colName} (batch chunk)`);
           }
         }
       }
 
       // Find deleted items
+      const itemsToDelete: T[] = [];
       for (const item of oldArr) {
         if (!newArr.some(x => x.id === item.id)) {
           // Safety guard: a guru cannot delete another guru's grades or records
           if (userRole === 'guru' && colName === 'nilaiSiswa' && (item as any).guruId && (item as any).guruId !== userId) {
             continue;
           }
+          itemsToDelete.push(item);
+        }
+      }
+
+      // Batch delete if items to delete exist
+      if (itemsToDelete.length > 0) {
+        for (let i = 0; i < itemsToDelete.length; i += 400) {
+          const chunk = itemsToDelete.slice(i, i + 400);
           try {
-            await deleteDoc(doc(db, colName, item.id));
+            const batch = writeBatch(db);
+            for (const item of chunk) {
+              batch.delete(doc(db, colName, item.id));
+            }
+            await batch.commit();
           } catch (error) {
-            handleFirestoreError(error, OperationType.DELETE, `${colName}/${item.id}`);
+            handleFirestoreError(error, OperationType.DELETE, `${colName} (batch delete)`);
           }
         }
       }
