@@ -100,10 +100,10 @@ const splitCapaian = (desc: string) => {
 
 // Helper to get active font size for Capaian Kompetensi based on text length
 const getCpFontSize = (text: string) => {
-  if (!text) return 8;
-  if (text.length > 200) return 6.8;
-  if (text.length > 130) return 7.4;
-  return 8;
+  if (!text) return 8.5;
+  if (text.length > 220) return 7.5;
+  if (text.length > 150) return 8;
+  return 8.5;
 };
 
 export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePeriod: PeriodeAkademik): jsPDF {
@@ -336,6 +336,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   const metadataEndY = (doc as any).lastAutoTable?.finalY || 39;
 
   // Build Page 1 Grades Rows (Subjects 1 to 5)
+  const p1Count = page1Umum.length;
+  const p1SubRowHeight = p1Count > 0 ? Math.min(22, Math.max(12, Math.floor(205 / (p1Count * 2)))) : 20;
+
   const page1BodyRows: any[] = [];
   page1BodyRows.push([
     {
@@ -344,10 +347,12 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       styles: {
         fillColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 8.5,
+        fontSize: 9,
         halign: 'left',
+        valign: 'middle',
         textColor: [0, 0, 0],
-        cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 }
+        minCellHeight: 9,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }
       }
     }
   ]);
@@ -358,13 +363,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     const fsNeeds = getCpFontSize(split.needsImprovement);
     
     page1BodyRows.push([
-      { content: (idx + 1).toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: (idx + 1).toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5, minCellHeight: p1SubRowHeight * 2 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p1SubRowHeight * 2 } },
+      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p1SubRowHeight * 2 } },
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', valign: 'middle', minCellHeight: p1SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
     page1BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', valign: 'middle', minCellHeight: p1SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
   });
 
@@ -381,6 +386,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       halign: 'center',
       valign: 'middle',
       fontSize: 8.5,
+      minCellHeight: 9,
       lineColor: [0, 0, 0],
       lineWidth: 0.25
     },
@@ -405,6 +411,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   // =========================================================================
   doc.addPage();
 
+  const p2Count = page2Umum.length + page2Yayasan.length;
+  const p2SubRowHeight = p2Count > 0 ? Math.min(19, Math.max(11, Math.floor(226 / (p2Count * 2)))) : 16;
+
   const page2BodyRows: any[] = [];
   page2Umum.forEach((r, idx) => {
     const split = splitCapaian(r.capaian);
@@ -413,13 +422,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     const fsNeeds = getCpFontSize(split.needsImprovement);
     
     page2BodyRows.push([
-      { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', valign: 'middle', minCellHeight: p2SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
     page2BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', valign: 'middle', minCellHeight: p2SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
   });
 
@@ -432,10 +441,12 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         styles: {
           fillColor: [255, 255, 255],
           fontStyle: 'bold',
-          fontSize: 8.5,
+          fontSize: 9,
           halign: 'left',
+          valign: 'middle',
           textColor: [0, 0, 0],
-          cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 }
+          minCellHeight: 9,
+          cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 }
         }
       }
     ]);
@@ -447,13 +458,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       const fsNeeds = getCpFontSize(split.needsImprovement);
       
       page2BodyRows.push([
-        { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-        { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-        { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-        { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+        { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+        { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+        { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p2SubRowHeight * 2 } },
+        { content: split.master, styles: { fontSize: fsMaster, halign: 'left', valign: 'middle', minCellHeight: p2SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
       ]);
       page2BodyRows.push([
-        { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+        { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', valign: 'middle', minCellHeight: p2SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
       ]);
     });
   }
@@ -471,6 +482,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       halign: 'center',
       valign: 'middle',
       fontSize: 8.5,
+      minCellHeight: 9,
       lineColor: [0, 0, 0],
       lineWidth: 0.25
     },
@@ -495,6 +507,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   // =========================================================================
   doc.addPage();
 
+  const p3Count = page3Yayasan.length;
+  const p3SubRowHeight = p3Count > 0 ? Math.min(16, Math.max(10, Math.floor(96 / (p3Count * 2)))) : 12;
+
   const page3BodyRows: any[] = [];
   page3Yayasan.forEach((r, idx) => {
     const split = splitCapaian(r.capaian);
@@ -503,13 +518,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     const fsNeeds = getCpFontSize(split.needsImprovement);
     
     page3BodyRows.push([
-      { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
-      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5, minCellHeight: p3SubRowHeight * 2 } },
+      { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p3SubRowHeight * 2 } },
+      { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5, minCellHeight: p3SubRowHeight * 2 } },
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', valign: 'middle', minCellHeight: p3SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
     page3BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', valign: 'middle', minCellHeight: p3SubRowHeight, cellPadding: { top: 2.5, bottom: 2.5, left: 3, right: 3 } } }
     ]);
   });
 
@@ -528,6 +543,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         halign: 'center',
         valign: 'middle',
         fontSize: 8.5,
+        minCellHeight: 9,
         lineColor: [0, 0, 0],
         lineWidth: 0.25
       },
@@ -548,7 +564,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   }
 
   // Headings C and D (identical to sample)
-  const sectionsStartY = tableYayasanEndY + 5;
+  const sectionsStartY = tableYayasanEndY + 6;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
   doc.text('C. EKSTRAKURIKULER', 15, sectionsStartY);
@@ -567,7 +583,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   ]);
 
   autoTable(doc, {
-    startY: sectionsStartY + 2,
+    startY: sectionsStartY + 3,
     margin: { left: 15 },
     tableWidth: 98,
     theme: 'grid',
@@ -580,12 +596,15 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       halign: 'center',
       valign: 'middle',
       fontSize: 8.5,
+      minCellHeight: 8.5,
       lineColor: [0, 0, 0],
       lineWidth: 0.25
     },
     styles: {
       fontSize: 8,
-      cellPadding: 2,
+      cellPadding: 2.5,
+      minCellHeight: 8.5,
+      valign: 'middle',
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
@@ -606,7 +625,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   ];
 
   autoTable(doc, {
-    startY: sectionsStartY + 2,
+    startY: sectionsStartY + 3,
     margin: { left: 120 },
     tableWidth: 75,
     theme: 'grid',
@@ -614,7 +633,9 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     body: attendanceRows,
     styles: {
       fontSize: 8.5,
-      cellPadding: 2.6,
+      cellPadding: 3,
+      minCellHeight: 11.33,
+      valign: 'middle',
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
@@ -629,14 +650,14 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   const sectionsEndY = Math.max(
     (doc as any).lastAutoTable?.finalY || 0,
-    sectionsStartY + 22
+    sectionsStartY + 38
   );
 
   // =========================================================================
   // SIGNATURES SECTION (Identical layout to sample)
   // Left column center: X = 55mm | Right column center: X = 155mm
   // =========================================================================
-  const sigY = Math.max(sectionsEndY + 12, 130);
+  const sigY = Math.max(sectionsEndY + 10, 175);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
@@ -670,7 +691,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.text(`NIK. ${teacherNik}`, 155, sigY + 38.5, { align: 'center' });
 
   // Center bottom: Kepala Sekolah (centered at pageWidth / 2 = 105mm)
-  const principalY = sigY + 48;
+  const principalY = sigY + 50;
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.text('Mengetahui,', 105, principalY, { align: 'center' });
