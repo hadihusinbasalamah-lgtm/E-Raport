@@ -586,17 +586,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           /* Expanded table heights to fit paper proportionally */
                           .raport-page-1 table.table-raport-nilai {
-                            height: 220mm !important;
+                            height: 200mm !important;
                           }
                           .raport-page-2 table.table-raport-nilai {
-                            height: 248mm !important;
+                            height: 245mm !important;
                           }
                           .raport-page-3 table.table-raport-nilai {
-                            height: 105mm !important;
+                            height: 75mm !important;
                           }
                           .raport-page table.table-extra,
                           .raport-page table.table-absensi {
-                            height: 38mm !important;
+                            height: 32mm !important;
                           }
                           .raport-page table.table-extra td,
                           .raport-page table.table-absensi td {
@@ -739,17 +739,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       padding-bottom: 4px;
                     }
                     .raport-page-1 table.table-raport-nilai {
-                      height: 220mm;
+                      height: 200mm;
                     }
                     .raport-page-2 table.table-raport-nilai {
-                      height: 248mm;
+                      height: 245mm;
                     }
                     .raport-page-3 table.table-raport-nilai {
-                      height: 105mm;
+                      height: 75mm;
                     }
                     .raport-page table.table-extra,
                     .raport-page table.table-absensi {
-                      height: 38mm;
+                      height: 32mm;
                     }
                     .raport-page table.table-extra td,
                     .raport-page table.table-absensi td {
@@ -869,17 +869,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     }
                     /* Expanded table heights to fit paper proportionally */
                     .raport-page-1 table.table-raport-nilai {
-                      height: 220mm !important;
+                      height: 200mm !important;
                     }
                     .raport-page-2 table.table-raport-nilai {
-                      height: 248mm !important;
+                      height: 245mm !important;
                     }
                     .raport-page-3 table.table-raport-nilai {
-                      height: 105mm !important;
+                      height: 75mm !important;
                     }
                     .raport-page table.table-extra,
                     .raport-page table.table-absensi {
-                      height: 38mm !important;
+                      height: 32mm !important;
                     }
                     .raport-page table.table-extra td,
                     .raport-page table.table-absensi td {
@@ -1019,22 +1019,51 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                     const rawResults = reportData.results;
                     const unfilteredUmum = rawResults.filter(r => !isYayasanSubject(r.mapelNama));
-                    const yayasanList = rawResults.filter(r => isYayasanSubject(r.mapelNama));
+                    const unfilteredYayasan = rawResults.filter(r => isYayasanSubject(r.mapelNama));
 
-                    // Sort umumList to put "Pendidikan Agama Islam" at position 1 (index 0)
-                    const umumList = [...unfilteredUmum].sort((a, b) => {
-                      const aAgama = a.mapelNama.toLowerCase().includes('pendidikan agama islam') || a.mapelNama.toLowerCase().includes('agama islam');
-                      const bAgama = b.mapelNama.toLowerCase().includes('pendidikan agama islam') || b.mapelNama.toLowerCase().includes('agama islam');
-                      if (aAgama && !bAgama) return -1;
-                      if (!aAgama && bAgama) return 1;
-                      return 0;
+                    // Priority ordering matching SMP Al-Irsyad Surakarta official curriculum
+                    const getSubjectPriority = (name: string, isYayasan: boolean): number => {
+                      const n = name.toLowerCase().trim();
+                      if (!isYayasan) {
+                        if (n.includes('matematika')) return 1;
+                        if (n.includes('sosial') || n.includes('ips')) return 2;
+                        if (n.includes('jasmani') || n.includes('pjok') || n.includes('penjas') || n.includes('olahraga')) return 3;
+                        if (n.includes('alam') || n.includes('ipa')) return 4;
+                        if (n.includes('informatika') || n.includes('tik') || n.includes('komputer')) return 5;
+                        if (n.includes('seni') || n.includes('budaya') || n.includes('prakarya')) return 6;
+                        if (n.includes('pancasila') || n.includes('kewarganegaraan') || n.includes('ppkn')) return 7;
+                        if (n.includes('inggris')) return 8;
+                        if (n.includes('indonesia')) return 9;
+                        if (n.includes('jawa')) return 10;
+                        if (n.includes('agama') || n.includes('budi pekerti') || n.includes('pai')) return 11;
+                        return 50;
+                      } else {
+                        if (n.includes('fiqih') || n.includes('fikih')) return 1;
+                        if (n.includes('arab')) return 2;
+                        if (n.includes('ski') || n.includes('sejarah kebudayaan islam')) return 3;
+                        if (n.includes('tahfidz') || n.includes('tahfid') || n.includes('qur\'an') || n.includes('quran') || n.includes('al-qur')) return 4;
+                        if (n.includes('aqidah') || n.includes('akidah')) return 5;
+                        return 50;
+                      }
+                    };
+
+                    const sortedUmum = [...unfilteredUmum].sort((a, b) => {
+                      const pA = getSubjectPriority(a.mapelNama, false);
+                      const pB = getSubjectPriority(b.mapelNama, false);
+                      return pA - pB;
                     });
 
-                    // Distribute subjects to 3 pages exactly as in your document
-                    const page1Umum = umumList.slice(0, 5); // Subjects 1 to 5 (Mata Pelajaran Umum)
-                    const page2Umum = umumList.slice(5, 11); // Subjects 6 to 11 (Mata Pelajaran Umum)
-                    const page2Yayasan = yayasanList.slice(0, 1); // Subject 12 (Aqidah - YAYASAN)
-                    const page3Yayasan = yayasanList.slice(1); // Subjects 13 to 16 (Fiqih, SKI, Arab, Tahfidz)
+                    const sortedYayasan = [...unfilteredYayasan].sort((a, b) => {
+                      const pA = getSubjectPriority(a.mapelNama, true);
+                      const pB = getSubjectPriority(b.mapelNama, true);
+                      return pA - pB;
+                    });
+
+                    // Distribute subjects to 3 pages exactly as in the reference document
+                    const page1Umum = sortedUmum.slice(0, 5); // Subjects 1 to 5 (Matematika, IPS, PJOK, IPA, Informatika)
+                    const page2Umum = sortedUmum.slice(5, 11); // Subjects 6 to 11 (Seni Budaya, PPKn, Bahasa Inggris, Bahasa Indonesia, Bahasa Jawa, PAI)
+                    const page2Yayasan = sortedYayasan.slice(0, 1); // Subject 12 (Fiqih - YAYASAN)
+                    const page3Yayasan = sortedYayasan.slice(1); // Subjects 13 to 16 (Bahasa Arab, SKI, Tahfidz Al Qur'an, Aqidah)
 
                     const formattedSemester = (sem: string) => {
                       if (sem.toLowerCase().includes('ganjil') || sem === '1' || sem.toLowerCase() === 'i') {
@@ -1050,7 +1079,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     return (
                       <>
                         {/* ================= COVER PAGE ================= */}
-                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '260mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '275mm', fontFamily: '"Times New Roman", Times, serif' }}>
                           <div className="text-center mt-12 print:mt-10">
                             <h1 className="text-[20px] font-bold tracking-widest uppercase text-black leading-relaxed">
                               LAPORAN HASIL BELAJAR SISWA
@@ -1060,19 +1089,19 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </h1>
                           </div>
 
-                          <div className="h-[52mm] print:h-[46mm]" />
+                          <div className="h-[120mm] print:h-[112mm]" />
 
                           <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black">
                             <div className="w-full text-center">
-                              <p className="text-[20px] font-bold tracking-widest text-[#000000] uppercase mb-2">NAMA PESERTA DIDIK</p>
-                              <div className="border border-black w-full py-4 px-4 text-center font-normal text-[20px] tracking-wide uppercase bg-white">
+                              <p className="text-[17px] font-bold tracking-widest text-[#000000] uppercase mb-2">NAMA PESERTA DIDIK</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[17px] tracking-wide uppercase bg-white">
                                 {previewSiswa.nama}
                               </div>
                             </div>
 
                             <div className="w-full text-center mt-2">
-                              <p className="text-[20px] font-bold tracking-widest text-[#000000] uppercase mb-2">NISN</p>
-                              <div className="border border-black w-full py-4 px-4 text-center font-normal text-[20px] tracking-widest bg-white">
+                              <p className="text-[17px] font-bold tracking-widest text-[#000000] uppercase mb-2">NISN</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[17px] tracking-widest bg-white">
                                 {previewSiswa.nisn || previewSiswa.nis || '-'}
                               </div>
                             </div>
@@ -1083,28 +1112,28 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         <div className="raport-page raport-page-1 font-sans text-black">
                           <div>
                             {/* TITLE */}
-                            <h1 className="text-center text-[16px] font-bold tracking-widest uppercase mb-6">
+                            <h1 className="text-center text-[15px] font-bold tracking-widest uppercase mb-4">
                               PENCAPAIAN KOMPETENSI PESERTA DIDIK
                             </h1>
 
                             {/* STUDENT METADATA */}
-                            <table className="w-full text-[12px] mb-5 border-none text-left" style={{ border: 'none' }}>
+                            <table className="w-full text-[11.5px] mb-3 border-none text-left" style={{ border: 'none' }}>
                               <tbody>
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5" style={{ width: '18%', border: 'none' }}>Nama Sekolah</td>
                                   <td className="py-0.5" style={{ width: '2%', border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-semibold" style={{ width: '40%', border: 'none' }}>SMP Al-Irsyad Surakarta</td>
+                                  <td className="py-0.5 font-normal" style={{ width: '40%', border: 'none' }}>SMP Al-Irsyad Surakarta</td>
                                   <td className="py-0.5" style={{ width: '15%', border: 'none' }}>Kelas</td>
                                   <td className="py-0.5" style={{ width: '2%', border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-semibold" style={{ width: '23%', border: 'none' }}>{homeroomKelas?.nama}</td>
+                                  <td className="py-0.5 font-bold" style={{ width: '23%', border: 'none' }}>{homeroomKelas?.nama}</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>Alamat</td>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-medium align-top pr-3 text-[11px]" style={{ border: 'none' }}>Jl. Kapten Mulyadi No. 117 Surakarta</td>
+                                  <td className="py-0.5 align-top pr-3" style={{ border: 'none' }}>Jl. Kapten Mulyadi No. 117 Surakarta</td>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>Fase</td>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-semibold align-top" style={{ border: 'none' }}>D</td>
+                                  <td className="py-0.5 font-bold align-top" style={{ border: 'none' }}>D</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5" style={{ border: 'none' }}>Nama Peserta Didik</td>
@@ -1112,15 +1141,15 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                   <td className="py-0.5 font-bold uppercase" style={{ border: 'none' }}>{previewSiswa.nama}</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>Semester</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-semibold" style={{ border: 'none' }}>{formattedSemester(activePeriod.semester)}</td>
+                                  <td className="py-0.5 font-bold" style={{ border: 'none' }}>{formattedSemester(activePeriod.semester)}</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5" style={{ border: 'none' }}>Nomor Induk</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-mono font-semibold" style={{ border: 'none' }}>{previewSiswa.nis}</td>
+                                  <td className="py-0.5" style={{ border: 'none' }}>{previewSiswa.nis || '-'}</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>Tahun Ajaran</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-semibold" style={{ border: 'none' }}>{activePeriod.tahunAjaran}</td>
+                                  <td className="py-0.5 font-bold" style={{ border: 'none' }}>{activePeriod.tahunAjaran}</td>
                                 </tr>
                               </tbody>
                             </table>
@@ -1173,8 +1202,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                            <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 1 dari 3</span>
                           </div>
                         </div>
@@ -1253,8 +1282,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                            <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 2 dari 3</span>
                           </div>
                         </div>
@@ -1396,8 +1425,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9px] text-slate-400 font-mono text-center flex justify-between border-t border-slate-100 pt-3 mt-6 shrink-0">
-                            <span>SMP Al-Irsyad Surakarta • <strong className="font-semibold text-slate-600">{previewSiswa.nama.toUpperCase()}</strong></span>
+                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                            <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 3 dari 3</span>
                           </div>
                         </div>

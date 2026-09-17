@@ -12,7 +12,7 @@ import {
 import { 
   Users, BookOpen, Clock, CheckCircle2, AlertTriangle, Search, Filter, 
   HelpCircle, RefreshCw, BarChart2, ListOrdered, ChevronRight, GraduationCap,
-  LayoutGrid, BarChart3, PieChart as PieIcon
+  LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles
 } from 'lucide-react';
 
 interface AdminDashboardProps {
@@ -329,6 +329,15 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
               }`}
             >
               Tingkat IX
+            </button>
+
+            <button
+              onClick={() => onNavigateToTab('profile')}
+              className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs flex items-center gap-1.5 ml-1 cursor-pointer"
+              title="Menu Pengaturan: Isi Semua Kolom Nilai Siswa (Demo)"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Demo Nilai</span>
             </button>
           </div>
         </div>
