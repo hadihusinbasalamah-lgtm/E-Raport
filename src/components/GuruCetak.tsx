@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { SchemaDatabase, Siswa, AbsensiDanCatatan, NilaiSiswa, EkstrakurikulerItem } from '../types';
+import { SchemaDatabase, Siswa, AbsensiDanCatatan, NilaiSiswa, EkstrakurikulerItem, Mapel } from '../types';
 import { Printer, Save, CheckCircle2, FileText, X, AlertTriangle, UserCheck, Plus, Trash2 } from 'lucide-react';
 
 interface GuruCetakProps {
@@ -153,14 +153,58 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
   // Helper inside report print modal to compile grades
   const getSiswaReportSheet = (student: Siswa) => {
-    // Collect all subjects published in active period snapshot
+    // Build combined unique subjects from active period snapshot, master mapel, and student grade records
+    const mapelList: Mapel[] = [];
+    const seenMapelIds = new Set<string>();
+    const seenMapelNames = new Set<string>();
+
+    const addMapelIfNew = (m: Mapel) => {
+      if (!m || !m.nama) return;
+      const normName = m.nama.trim().toLowerCase();
+      if (!seenMapelIds.has(m.id) && !seenMapelNames.has(normName)) {
+        seenMapelIds.add(m.id);
+        seenMapelNames.add(normName);
+        mapelList.push(m);
+      }
+    };
+
+    (activePeriod.snapshotMapel || []).forEach(addMapelIfNew);
+    (db.mapel || []).forEach(addMapelIfNew);
+
+    // Also include any subjects that have grade records for this student in this period
+    const studentGrades = (db.nilaiSiswa || []).filter(n => 
+      n.siswaId === student.id && (n.periodeId === activePeriod.id || !n.periodeId)
+    );
+
+    studentGrades.forEach(n => {
+      if (!seenMapelIds.has(n.mapelId)) {
+        const found = (db.mapel || []).find(m => m.id === n.mapelId) || 
+                      (activePeriod.snapshotMapel || []).find(m => m.id === n.mapelId);
+        if (found) {
+          addMapelIfNew(found);
+        } else {
+          addMapelIfNew({ id: n.mapelId, nama: (n as any).mapelNama || 'Mata Pelajaran' });
+        }
+      }
+    });
+
     const results: { mapelNama: string; nilaiAkhir: number; capaian: string }[] = [];
 
-    activePeriod.snapshotMapel.forEach(mapel => {
+    mapelList.forEach(mapel => {
       const gradeId = `${activePeriod.id}_${student.id}_${mapel.id}`;
-      const gradeRecord = db.nilaiSiswa.find(n => n.id === gradeId);
-      
-      if (gradeRecord) {
+      // Robust lookup: exact ID, or matching siswaId + mapelId, or matching mapel name
+      const gradeRecord = (db.nilaiSiswa || []).find(n => 
+        n.id === gradeId ||
+        (n.siswaId === student.id && 
+         (n.periodeId === activePeriod.id || !n.periodeId) && 
+         (n.mapelId === mapel.id || 
+          (db.mapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase() ||
+          (activePeriod.snapshotMapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase()
+         )
+        )
+      );
+
+      if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
         results.push({
           mapelNama: mapel.nama,
           nilaiAkhir: gradeRecord.nilaiAkhir,
@@ -169,7 +213,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
       }
     });
 
-    const attendance = db.absensiDanCatatan.find(
+    const attendance = (db.absensiDanCatatan || []).find(
       a => a.periodeId === activePeriod.id && a.siswaId === student.id
     );
 
@@ -203,7 +247,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
             ) : (
               homeroomStudents.map((s, idx) => {
                 const isFormOpened = selectedSiswaId === s.id;
-                const attendanceSaved = db.absensiDanCatatan.some(a => a.periodeId === activePeriod.id && a.siswaId === s.id);
+                const attendanceSaved = (db.absensiDanCatatan || []).some(a => a.periodeId === activePeriod.id && a.siswaId === s.id);
+                const studentGradesCount = (db.nilaiSiswa || []).filter(n => n.siswaId === s.id && (n.periodeId === activePeriod.id || !n.periodeId) && typeof n.nilaiAkhir === 'number').length;
                 
                 return (
                   <div 
@@ -218,7 +263,18 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           <span className="w-2 h-2 bg-emerald-500 rounded-full" title="Kehadiran & Catatan Terisi" />
                         )}
                       </div>
-                      <div className="text-[10px] text-slate-400 font-mono mt-0.5">NISN: {s.nisn} • NIS: {s.nis}</div>
+                      <div className="text-[10px] text-slate-400 font-mono mt-0.5 flex items-center gap-2">
+                        <span>NISN: {s.nisn} • NIS: {s.nis}</span>
+                        {studentGradesCount > 0 ? (
+                          <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-emerald-50 text-emerald-700 rounded border border-emerald-200">
+                            {studentGradesCount} Mapel Terinput
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.2 text-[9px] font-semibold bg-slate-100 text-slate-500 rounded">
+                            Belum ada nilai
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-1">
                       <button
@@ -1103,46 +1159,48 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         <div className="raport-page raport-page-3 font-sans text-black">
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
-                            <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
-                              <colgroup>
-                                <col style={{ width: '5%' }} />
-                                <col style={{ width: '27%' }} />
-                                <col style={{ width: '10%' }} />
-                                <col style={{ width: '58%' }} />
-                              </colgroup>
-                              <thead>
-                                <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
-                                  <th className="border border-black py-2 text-center align-middle cell-no" style={{ width: '5%' }}>No</th>
-                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
-                                  <th className="border border-black py-2 px-1 text-center align-middle font-bold cell-nilai" style={{ width: '10%' }}>
-                                    <div className="flex flex-col items-center justify-center leading-none">
-                                      <span>Nilai</span>
-                                      <span>Akhir</span>
-                                    </div>
-                                  </th>
-                                  <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {page3Yayasan.map((r, idx) => {
-                                  const split = splitCapaian(r.capaian);
-                                  const globalIdx = 12 + idx + 1; // starts from 13
-                                  return (
-                                    <React.Fragment key={r.mapelNama}>
-                                      <tr className="align-top border-b border-black">
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
-                                        <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
-                                        <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
-                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
-                                      </tr>
-                                      <tr className="align-top border-b border-black">
-                                        <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
-                                      </tr>
-                                    </React.Fragment>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
+                            {page3Yayasan.length > 0 && (
+                              <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed mb-6">
+                                <colgroup>
+                                  <col style={{ width: '5%' }} />
+                                  <col style={{ width: '27%' }} />
+                                  <col style={{ width: '10%' }} />
+                                  <col style={{ width: '58%' }} />
+                                </colgroup>
+                                <thead>
+                                  <tr className="bg-slate-50 border-b border-black text-center font-bold text-[12px]">
+                                    <th className="border border-black py-2 text-center align-middle cell-no" style={{ width: '5%' }}>No</th>
+                                    <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '27%' }}>Mata Pelajaran</th>
+                                    <th className="border border-black py-2 px-1 text-center align-middle font-bold cell-nilai" style={{ width: '10%' }}>
+                                      <div className="flex flex-col items-center justify-center leading-none">
+                                        <span>Nilai</span>
+                                        <span>Akhir</span>
+                                      </div>
+                                    </th>
+                                    <th className="border border-black py-2 px-3 text-center align-middle" style={{ width: '58%' }}>Capaian Kompetensi</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {page3Yayasan.map((r, idx) => {
+                                    const split = splitCapaian(r.capaian);
+                                    const globalIdx = 12 + idx + 1; // starts from 13
+                                    return (
+                                      <React.Fragment key={r.mapelNama}>
+                                        <tr className="align-top border-b border-black">
+                                          <td className="border border-black text-center align-middle py-2.5 px-1 text-[12px] cell-no" rowSpan={2}>{globalIdx}</td>
+                                          <td className="border border-black text-center align-middle py-2.5 px-3 font-semibold text-[12px]" rowSpan={2}>{r.mapelNama}</td>
+                                          <td className="border border-black text-center align-middle py-2.5 px-1 font-bold text-[12px] cell-nilai" rowSpan={2}>{r.nilaiAkhir}</td>
+                                          <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.master)}`}>{split.master}</td>
+                                        </tr>
+                                        <tr className="align-top border-b border-black">
+                                          <td className={`border border-black py-2 px-3 text-justify ${getCpFontSizeClass(split.needsImprovement)}`}>{split.needsImprovement}</td>
+                                        </tr>
+                                      </React.Fragment>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            )}
 
                             {/* EXTRA & ATTENDANCE CONTAINER - SPLIT SIDE BY SIDE */}
                             <div className="grid grid-cols-12 gap-5 mb-5 items-start">

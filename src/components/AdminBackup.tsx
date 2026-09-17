@@ -53,7 +53,15 @@ export function AdminBackup({ db }: AdminBackupProps) {
     filteredStudents.forEach(stud => {
       subjectsList.forEach(mapel => {
         const gradeId = `${activePeriod.id}_${stud.id}_${mapel.id}`;
-        if (db.nilaiSiswa.some(n => n.id === gradeId)) {
+        if ((db.nilaiSiswa || []).some(n => 
+          n.id === gradeId || 
+          (n.siswaId === stud.id && 
+           (n.periodeId === activePeriod.id || !n.periodeId) && 
+           (n.mapelId === mapel.id || 
+            (db.mapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase()
+           )
+          )
+        )) {
           totalGradedMapelGrades++;
         }
       });
@@ -122,7 +130,15 @@ export function AdminBackup({ db }: AdminBackupProps) {
     let count = 0;
     subjectsList.forEach(mapel => {
       const gradeId = `${activePeriod.id}_${studentId}_${mapel.id}`;
-      const hasGrade = db.nilaiSiswa.some(n => n.id === gradeId);
+      const hasGrade = (db.nilaiSiswa || []).some(n => 
+        n.id === gradeId || 
+        (n.siswaId === studentId && 
+         (n.periodeId === activePeriod.id || !n.periodeId) && 
+         (n.mapelId === mapel.id || 
+          (db.mapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase()
+         )
+        )
+      );
       if (hasGrade) {
         count++;
       }

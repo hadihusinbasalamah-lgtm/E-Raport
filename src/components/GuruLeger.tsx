@@ -58,7 +58,21 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
       if (noA !== noB) return noA - noB;
       return a.nama.localeCompare(b.nama);
     });
-  const rawSubjects = activePeriod.snapshotMapel;
+  const rawSubjects: Mapel[] = [];
+  const seenMapel = new Set<string>();
+  (activePeriod.snapshotMapel || []).forEach(m => {
+    if (!seenMapel.has(m.id)) {
+      seenMapel.add(m.id);
+      rawSubjects.push(m);
+    }
+  });
+  (db.mapel || []).forEach(m => {
+    if (!seenMapel.has(m.id)) {
+      seenMapel.add(m.id);
+      rawSubjects.push(m);
+    }
+  });
+
   const subjects = rawSubjects.filter(mapel => {
     const nameLower = mapel.nama.toLowerCase();
     const isPai = nameLower.includes('pai') || nameLower.includes('pendidikan agama islam') || nameLower.includes('agama islam') || nameLower.startsWith('pai');
@@ -74,7 +88,16 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
 
     subjects.forEach(mapel => {
       const gradeId = `${activePeriod.id}_${student.id}_${mapel.id}`;
-      const gradeRecord = db.nilaiSiswa.find(n => n.id === gradeId);
+      const gradeRecord = (db.nilaiSiswa || []).find(n => 
+        n.id === gradeId ||
+        (n.siswaId === student.id && 
+         (n.periodeId === activePeriod.id || !n.periodeId) && 
+         (n.mapelId === mapel.id || 
+          (db.mapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase() ||
+          (activePeriod.snapshotMapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase()
+         )
+        )
+      );
       if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
         grades[mapel.id] = gradeRecord.nilaiAkhir;
         totalScore += gradeRecord.nilaiAkhir;

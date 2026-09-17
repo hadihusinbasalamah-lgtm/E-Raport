@@ -5,7 +5,7 @@
 
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { SchemaDatabase, Siswa, PeriodeAkademik } from '../types';
+import { SchemaDatabase, Siswa, PeriodeAkademik, Mapel } from '../types';
 
 // Helper to identify Yayasan religious subjects
 const isYayasanSubject = (name: string): boolean => {
@@ -96,12 +96,55 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   const classTeacher = activePeriod.snapshotGuru.find(g => g.id === targetKelas?.waliKelasId) || db.guru.find(g => g.id === targetKelas?.waliKelasId);
 
   // Collect grades
+  const mapelList: Mapel[] = [];
+  const seenMapelIds = new Set<string>();
+  const seenMapelNames = new Set<string>();
+
+  const addMapelIfNew = (m: Mapel) => {
+    if (!m || !m.nama) return;
+    const normName = m.nama.trim().toLowerCase();
+    if (!seenMapelIds.has(m.id) && !seenMapelNames.has(normName)) {
+      seenMapelIds.add(m.id);
+      seenMapelNames.add(normName);
+      mapelList.push(m);
+    }
+  };
+
+  (activePeriod.snapshotMapel || []).forEach(addMapelIfNew);
+  (db.mapel || []).forEach(addMapelIfNew);
+
+  // Also include any subjects with grade records for this student in this period
+  const studentGrades = (db.nilaiSiswa || []).filter(n => 
+    n.siswaId === student.id && (n.periodeId === activePeriod.id || !n.periodeId)
+  );
+
+  studentGrades.forEach(n => {
+    if (!seenMapelIds.has(n.mapelId)) {
+      const found = (db.mapel || []).find(m => m.id === n.mapelId) || 
+                    (activePeriod.snapshotMapel || []).find(m => m.id === n.mapelId);
+      if (found) {
+        addMapelIfNew(found);
+      } else {
+        addMapelIfNew({ id: n.mapelId, nama: (n as any).mapelNama || 'Mata Pelajaran' });
+      }
+    }
+  });
+
   const results: { mapelNama: string; nilaiAkhir: number; capaian: string }[] = [];
-  activePeriod.snapshotMapel.forEach(mapel => {
+  mapelList.forEach(mapel => {
     const gradeId = `${activePeriod.id}_${student.id}_${mapel.id}`;
-    const gradeRecord = db.nilaiSiswa.find(n => n.id === gradeId);
+    const gradeRecord = (db.nilaiSiswa || []).find(n => 
+      n.id === gradeId ||
+      (n.siswaId === student.id && 
+       (n.periodeId === activePeriod.id || !n.periodeId) && 
+       (n.mapelId === mapel.id || 
+        (db.mapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase() ||
+        (activePeriod.snapshotMapel || []).find(m => m.id === n.mapelId)?.nama.trim().toLowerCase() === mapel.nama.trim().toLowerCase()
+       )
+      )
+    );
     
-    if (gradeRecord) {
+    if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
       results.push({
         mapelNama: mapel.nama,
         nilaiAkhir: gradeRecord.nilaiAkhir,
@@ -110,7 +153,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     }
   });
 
-  const attendance = db.absensiDanCatatan.find(
+  const attendance = (db.absensiDanCatatan || []).find(
     a => a.periodeId === activePeriod.id && a.siswaId === student.id
   );
 

@@ -205,6 +205,10 @@ export async function syncDatabaseChange(
       // Find deleted items
       for (const item of oldArr) {
         if (!newArr.some(x => x.id === item.id)) {
+          // Safety guard: a guru cannot delete another guru's grades or records
+          if (userRole === 'guru' && colName === 'nilaiSiswa' && (item as any).guruId && (item as any).guruId !== userId) {
+            continue;
+          }
           try {
             await deleteDoc(doc(db, colName, item.id));
           } catch (error) {
@@ -249,9 +253,6 @@ export function subscribeToDatabase(
   let isInitializedColRegistered = false;
   let isDbAlreadyInitialized = false;
 
-  let absensiUnsub: (() => void) | null = null;
-  let currentWaliKelasKelasId: string | null = null;
-
   const handleEntityUpdate = (entityKey: keyof SchemaDatabase, data: any) => {
     currentDb = { ...currentDb, [entityKey]: data };
     onSync({ ...currentDb });
@@ -267,33 +268,22 @@ export function subscribeToDatabase(
     }
 
     if (colName === 'absensiDanCatatan') {
-      // AbsensiDanCatatan is handled dynamically based on waliKelasKelasId when user is a guru to avoid query leaks
-      if (userRole === 'admin') {
-        const queryRef = collection(db, colName);
-        const unsub = onSnapshot(queryRef, (snap) => {
-          const list: any[] = [];
-          snap.forEach(docSnap => list.push(docSnap.data()));
-          handleEntityUpdate(entityKey, list);
-        }, (error) => {
-          handleFirestoreError(error, OperationType.GET, colName);
-        });
-        unsubscribes.push(unsub);
-      } else {
-        // Initially empty, populated dynamically once the 'guru' master list resolves
-        handleEntityUpdate(entityKey, []);
-      }
+      const queryRef = collection(db, colName);
+      const unsub = onSnapshot(queryRef, (snap) => {
+        const list: any[] = [];
+        snap.forEach(docSnap => list.push(docSnap.data()));
+        handleEntityUpdate(entityKey, list);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.GET, colName);
+      });
+      unsubscribes.push(unsub);
       return;
     }
 
-    let colRef: any = collection(db, colName);
-
-    // Apply single-field filters only. Highly query-optimized, requires NO custom multi-field indices in Firestore dashboard!
-    if (userRole === 'guru' && userId) {
-      if (colName === 'nilaiSiswa') {
-        colRef = query(collection(db, colName), where('guruId', '==', userId));
-      }
-      // Note: 'tujuanPembelajaran' must be shared across all teachers to enable the 'Salin / Gunakan TP Rekan Sejawat' feature
-    }
+    const colRef = collection(db, colName);
+    // Note: 'nilaiSiswa' and 'tujuanPembelajaran' are shared across all teachers so:
+    // 1. Wali Kelas can view and print complete student report cards containing all subject teacher grades.
+    // 2. Teachers can copy peer TPs ('Salin / Gunakan TP Rekan Sejawat') and view grading status.
 
     const unsub = onSnapshot(colRef, (snap) => {
       if (snap.empty) {
@@ -321,36 +311,6 @@ export function subscribeToDatabase(
         snap.forEach(docSnap => {
           list.push(docSnap.data());
         });
-
-        // Dynamic Wali Kelas (Homeroom) Attendance Listener Upgrade
-        if (colName === 'guru' && userRole === 'guru' && userId) {
-          const loggedGuru = list.find((g: any) => g.id === userId);
-          if (loggedGuru && loggedGuru.isWaliKelas && loggedGuru.waliKelasKelasId) {
-            const targetKelasId = loggedGuru.waliKelasKelasId;
-            if (currentWaliKelasKelasId !== targetKelasId) {
-              currentWaliKelasKelasId = targetKelasId;
-              if (absensiUnsub) absensiUnsub();
-              
-              const absensiQuery = query(collection(db, 'absensiDanCatatan'), where('kelasId', '==', targetKelasId));
-              absensiUnsub = onSnapshot(absensiQuery, (absSnap) => {
-                const absList: any[] = [];
-                absSnap.forEach(d => absList.push(d.data()));
-                handleEntityUpdate('absensiDanCatatan', absList);
-              }, (err) => {
-                handleFirestoreError(err, OperationType.GET, 'absensiDanCatatan (filtered)');
-              });
-            }
-          } else {
-            if (currentWaliKelasKelasId !== null) {
-              currentWaliKelasKelasId = null;
-              if (absensiUnsub) {
-                absensiUnsub();
-                absensiUnsub = null;
-              }
-              handleEntityUpdate('absensiDanCatatan', []);
-            }
-          }
-        }
 
         handleEntityUpdate(entityKey, list);
       }
@@ -432,7 +392,6 @@ export function subscribeToDatabase(
 
   return () => {
     unsubscribes.forEach(unsub => unsub());
-    if (absensiUnsub) absensiUnsub();
   };
 }
 
