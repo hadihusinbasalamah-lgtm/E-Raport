@@ -510,13 +510,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           @page {
                             size: A4 portrait !important;
-                            margin: 10mm 6mm 10mm 6mm !important;
+                            margin: 10mm 8mm 10mm 8mm !important;
                           }
                           .raport-page {
                             width: 100% !important;
-                            min-height: 260mm !important;
-                            height: 260mm !important;
-                            max-height: 260mm !important;
+                            min-height: 275mm !important;
+                            height: 275mm !important;
+                            max-height: 275mm !important;
                             padding: 0 !important;
                             margin: 0 !important;
                             border: none !important;
@@ -539,11 +539,12 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           }
                           .raport-page td, .raport-page th {
                             padding: 4px 6px !important;
-                            font-size: 13.5px !important;
-                            line-height: 1.3 !important;
+                            font-size: 12px !important;
+                            line-height: 1.35 !important;
                           }
                           .raport-page th {
                             font-weight: bold !important;
+                            font-size: 12.5px !important;
                             padding: 6px 6px !important;
                           }
                           /* Border rules strictly inside tables except border-none */
@@ -566,11 +567,38 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             word-break: break-word !important;
                             overflow-wrap: break-word !important;
                           }
+                          .raport-page table.table-raport-nilai td {
+                            vertical-align: middle !important;
+                            padding: 6px 10px !important;
+                          }
+                          .raport-page table.table-raport-nilai thead tr {
+                            height: 32px !important;
+                          }
+                          .raport-page table.table-raport-nilai tr.row-banner {
+                            height: 28px !important;
+                          }
+                          .raport-page table.table-raport-nilai tr.row-banner td {
+                            height: 28px !important;
+                            padding: 4px 10px !important;
+                          }
+                          /* Expanded table heights to fit paper proportionally */
                           .raport-page-1 table.table-raport-nilai {
-                            height: 180mm !important;
+                            height: 220mm !important;
                           }
                           .raport-page-2 table.table-raport-nilai {
-                            height: 205mm !important;
+                            height: 248mm !important;
+                          }
+                          .raport-page-3 table.table-raport-nilai {
+                            height: 105mm !important;
+                          }
+                          .raport-page table.table-extra,
+                          .raport-page table.table-absensi {
+                            height: 38mm !important;
+                          }
+                          .raport-page table.table-extra td,
+                          .raport-page table.table-absensi td {
+                            vertical-align: middle !important;
+                            padding: 4px 8px !important;
                           }
                           .raport-page table.table-raport-nilai td.cell-no,
                           .raport-page table.table-raport-nilai td.cell-nilai {
@@ -582,12 +610,6 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             padding: 8px 2px !important;
                             text-align: center !important;
                           }
-                          .raport-page table.table-raport-nilai td {
-                            padding: 6px 10px !important;
-                          }
-                          .raport-page table.table-raport-nilai th {
-                            padding: 8px 10px !important;
-                          }
                           .raport-page table.border-none,
                           .raport-page table.border-none tr,
                           .raport-page table.border-none td {
@@ -595,9 +617,12 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             border-width: 0 !important;
                             padding: 2px 4px !important;
                           }
-                          /* Tighter print spacing for elements to fit perfect to sheet */
+                          /* Spacious signature spacing */
+                          .raport-page .sig-space {
+                            height: 16mm !important;
+                          }
                           .raport-page .h-20 {
-                            height: 10mm !important;
+                            height: 16mm !important;
                           }
                           .raport-page .mb-6 {
                             margin-bottom: 4mm !important;
@@ -665,7 +690,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page {
                       width: 210mm;
                       min-height: 297mm;
-                      padding: 20mm 15mm;
+                      height: 297mm;
+                      max-height: 297mm;
+                      padding: 12mm 15mm 10mm 15mm;
                       margin: 0 auto;
                       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
                       border: 1px solid #cbd5e1;
@@ -675,15 +702,64 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       display: flex;
                       flex-direction: column;
                       justify-content: space-between;
+                      overflow: hidden;
                     }
                     .raport-page.raport-cover {
                       justify-content: flex-start !important;
+                    }
+                    .raport-page table:not(.border-none) {
+                      border: 1px solid #000000;
+                      border-collapse: collapse;
+                      width: 100%;
+                    }
+                    .raport-page table:not(.border-none) th, 
+                    .raport-page table:not(.border-none) td {
+                      border: 1px solid #000000;
+                    }
+                    .raport-page table.table-raport-nilai {
+                      table-layout: fixed;
+                      width: 100%;
+                      word-wrap: break-word;
+                    }
+                    .raport-page table.table-raport-nilai td {
+                      vertical-align: middle;
+                    }
+                    .raport-page table.table-raport-nilai thead tr {
+                      height: 32px;
+                    }
+                    .raport-page table.table-raport-nilai tr.row-banner {
+                      height: 28px;
+                    }
+                    .raport-page table.table-raport-nilai tr.row-banner td {
+                      height: 28px;
+                      padding-top: 4px;
+                      padding-bottom: 4px;
+                    }
+                    .raport-page-1 table.table-raport-nilai {
+                      height: 220mm;
+                    }
+                    .raport-page-2 table.table-raport-nilai {
+                      height: 248mm;
+                    }
+                    .raport-page-3 table.table-raport-nilai {
+                      height: 105mm;
+                    }
+                    .raport-page table.table-extra,
+                    .raport-page table.table-absensi {
+                      height: 38mm;
+                    }
+                    .raport-page table.table-extra td,
+                    .raport-page table.table-absensi td {
+                      vertical-align: middle;
+                    }
+                    .raport-page .sig-space {
+                      height: 16mm;
                     }
                   }
                   @media print {
                     @page {
                       size: A4 portrait;
-                      margin: 10mm 6mm 10mm 6mm !important;
+                      margin: 10mm 8mm 10mm 8mm !important;
                     }
                     
                     /* Hide standard live app UI completely scrollable content, buttons, sidebar, backgrounds */
@@ -715,9 +791,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     /* Page break and force sizing for print sheets */
                     .raport-page {
                       width: 100% !important;
-                      min-height: 260mm !important;
-                      height: 260mm !important;
-                      max-height: 260mm !important;
+                      min-height: 275mm !important;
+                      height: 275mm !important;
+                      max-height: 275mm !important;
                       padding: 0 !important;
                       margin: 0 !important;
                       border: none !important;
@@ -744,11 +820,12 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                     .raport-page td, .raport-page th {
                       padding: 4px 6px !important;
-                      font-size: 13.5px !important;
-                      line-height: 1.3 !important;
+                      font-size: 12px !important;
+                      line-height: 1.35 !important;
                     }
                     .raport-page th {
                       font-weight: bold !important;
+                      font-size: 12.5px !important;
                       padding: 6px 6px !important;
                     }
 
@@ -773,11 +850,38 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       word-break: break-word !important;
                       overflow-wrap: break-word !important;
                     }
+                    .raport-page table.table-raport-nilai td {
+                      vertical-align: middle !important;
+                      padding: 6px 10px !important;
+                    }
+                    .raport-page table.table-raport-nilai thead tr {
+                      height: 32px !important;
+                    }
+                    .raport-page table.table-raport-nilai tr.row-banner {
+                      height: 28px !important;
+                    }
+                    .raport-page table.table-raport-nilai tr.row-banner td {
+                      height: 28px !important;
+                      padding: 4px 10px !important;
+                    }
+                    /* Expanded table heights to fit paper proportionally */
                     .raport-page-1 table.table-raport-nilai {
-                      height: 180mm !important;
+                      height: 220mm !important;
                     }
                     .raport-page-2 table.table-raport-nilai {
-                      height: 205mm !important;
+                      height: 248mm !important;
+                    }
+                    .raport-page-3 table.table-raport-nilai {
+                      height: 105mm !important;
+                    }
+                    .raport-page table.table-extra,
+                    .raport-page table.table-absensi {
+                      height: 38mm !important;
+                    }
+                    .raport-page table.table-extra td,
+                    .raport-page table.table-absensi td {
+                      vertical-align: middle !important;
+                      padding: 4px 8px !important;
                     }
                     .raport-page table.table-raport-nilai td.cell-no,
                     .raport-page table.table-raport-nilai td.cell-nilai {
@@ -789,12 +893,6 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       padding: 8px 2px !important;
                       text-align: center !important;
                     }
-                    .raport-page table.table-raport-nilai td {
-                      padding: 6px 10px !important;
-                    }
-                    .raport-page table.table-raport-nilai th {
-                      padding: 8px 10px !important;
-                    }
                     .raport-page table.border-none,
                     .raport-page table.border-none tr,
                     .raport-page table.border-none td {
@@ -803,9 +901,12 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       padding: 2px 4px !important;
                     }
                     
-                    /* Tighter print spacing for elements to fit perfect to sheet */
+                    /* Spacious signature spacing */
+                    .raport-page .sig-space {
+                      height: 16mm !important;
+                    }
                     .raport-page .h-20 {
-                      height: 10mm !important;
+                      height: 16mm !important;
                     }
                     .raport-page .mb-6 {
                       margin-bottom: 4mm !important;
@@ -1207,7 +1308,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                               {/* C. Ekstrakurikuler */}
                               <div className="col-span-7">
                                 <h2 className="font-bold text-[12px] uppercase mb-1.5">C. Ekstrakurikuler</h2>
-                                <table className="w-full border-collapse border border-black text-[12px]">
+                                <table className="table-extra w-full border-collapse border border-black text-[12px]">
                                   <thead>
                                     <tr className="bg-slate-50 border-b border-black font-bold h-7 text-center">
                                       <th className="border border-black py-1 px-2" style={{ width: '12%' }}>No</th>
@@ -1237,7 +1338,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                               {/* D. Ketidakhadiran */}
                               <div className="col-span-5">
                                 <h2 className="font-bold text-[12px] uppercase mb-1.5">D. Ketidakhadiran</h2>
-                                <table className="w-full border-collapse border border-black text-[12px]">
+                                <table className="table-absensi w-full border-collapse border border-black text-[12px]">
                                   <tbody>
                                     <tr>
                                       <td className="border border-black py-1.5 px-3 font-medium" style={{ width: '55%' }}>Sakit</td>
@@ -1266,7 +1367,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                 <p>&nbsp;</p> 
                                 <p className="font-semibold">Mengetahui,</p>
                                 <p className="font-semibold">Orangtua/ Wali</p>
-                                <div className="h-20" />
+                                <div className="sig-space h-20" />
                                 <p className="font-medium">.....................................................</p>
                               </div>
 
@@ -1275,7 +1376,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                 <p>Surakarta, {formattedReportDate}</p>
                                 <p className="font-semibold">Mengetahui,</p>
                                 <p className="font-semibold">Wali Kelas</p>
-                                <div className="h-20" />
+                                <div className="sig-space h-20" />
                                 <p className="font-bold underline text-[12px]">{activeTeacher.nama}</p>
                                 <p className="text-[10px] text-slate-500 font-mono">NIK. {activeTeacher.username || '-'}</p>
                               </div>
@@ -1285,7 +1386,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             <div className="text-center text-[12px] mt-4 flex flex-col items-center">
                               <p className="font-semibold">Mengetahui,</p>
                               <p className="font-semibold">Kepala Sekolah</p>
-                              <div className="h-20" />
+                              <div className="sig-space h-20" />
                               <p className="font-bold underline text-[12px]">Andreas Raymonda, S.Pd, M.Hum</p>
                               <p className="text-[10px] text-slate-500 font-mono">NIK. 103.244.0072</p>
                             </div>
