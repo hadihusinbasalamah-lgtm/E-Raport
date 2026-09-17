@@ -1089,7 +1089,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </h1>
                           </div>
 
-                          <div className="h-[120mm] print:h-[112mm]" />
+                          <div className="h-[154mm] print:h-[146mm]" />
 
                           <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black">
                             <div className="w-full text-center">
