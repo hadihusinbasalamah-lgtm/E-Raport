@@ -7,7 +7,7 @@ import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SchemaDatabase, Siswa, PeriodeAkademik, Mapel } from '../types';
 
-// Helper to identify Yayasan religious subjects (exact same as GuruCetak.tsx)
+// Helper to identify Yayasan religious subjects
 const isYayasanSubject = (name: string): boolean => {
   const lowercaseName = name.toLowerCase();
   return (
@@ -28,7 +28,33 @@ const isYayasanSubject = (name: string): boolean => {
   );
 };
 
-// Helper to split competency descriptions into Mastery vs Needed support (exact same as GuruCetak.tsx)
+// Priority ordering matching SMP Al-Irsyad Surakarta official curriculum
+const getSubjectPriority = (name: string, isYayasan: boolean): number => {
+  const n = name.toLowerCase().trim();
+  if (!isYayasan) {
+    if (n.includes('matematika')) return 1;
+    if (n.includes('sosial') || n.includes('ips')) return 2;
+    if (n.includes('jasmani') || n.includes('pjok') || n.includes('penjas') || n.includes('olahraga')) return 3;
+    if (n.includes('alam') || n.includes('ipa')) return 4;
+    if (n.includes('informatika') || n.includes('tik') || n.includes('komputer')) return 5;
+    if (n.includes('seni') || n.includes('budaya') || n.includes('prakarya')) return 6;
+    if (n.includes('pancasila') || n.includes('kewarganegaraan') || n.includes('ppkn')) return 7;
+    if (n.includes('inggris')) return 8;
+    if (n.includes('indonesia')) return 9;
+    if (n.includes('jawa')) return 10;
+    if (n.includes('agama') || n.includes('budi pekerti') || n.includes('pai')) return 11;
+    return 50;
+  } else {
+    if (n.includes('fiqih') || n.includes('fikih')) return 1;
+    if (n.includes('arab')) return 2;
+    if (n.includes('ski') || n.includes('sejarah kebudayaan islam')) return 3;
+    if (n.includes('tahfidz') || n.includes('tahfid') || n.includes('qur\'an') || n.includes('quran') || n.includes('al-qur')) return 4;
+    if (n.includes('aqidah') || n.includes('akidah')) return 5;
+    return 50;
+  }
+};
+
+// Helper to split competency descriptions into Mastery vs Needed support
 const splitCapaian = (desc: string) => {
   const fallback = {
     master: 'Menunjukkan penguasaan sangat baik dalam keseluruhan tujuan pembelajaran yang ditempuh.',
@@ -72,7 +98,7 @@ const splitCapaian = (desc: string) => {
   };
 };
 
-// Helper to get active font size for Capaian Kompetensi based on text length (proportional to GuruCetak.tsx)
+// Helper to get active font size for Capaian Kompetensi based on text length
 const getCpFontSize = (text: string) => {
   if (!text) return 8;
   if (text.length > 200) return 6.8;
@@ -81,7 +107,7 @@ const getCpFontSize = (text: string) => {
 };
 
 export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePeriod: PeriodeAkademik): jsPDF {
-  // Initialize standard A4 PDF (210mm x 297mm)
+  // Standard A4 PDF (210mm x 297mm)
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
@@ -165,24 +191,29 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     a => a.periodeId === activePeriod.id && a.siswaId === student.id
   );
 
-  // Group and sort subjects identically to GuruCetak.tsx
+  // Group and sort subjects identically to SMP Al-Irsyad official curriculum
   const unfilteredUmum = results.filter(r => !isYayasanSubject(r.mapelNama));
-  const yayasanList = results.filter(r => isYayasanSubject(r.mapelNama));
+  const unfilteredYayasan = results.filter(r => isYayasanSubject(r.mapelNama));
 
-  // Sort umumList to put "Pendidikan Agama Islam" at position 1 (index 0)
+  // Sort Umum
   const sortedUmum = [...unfilteredUmum].sort((a, b) => {
-    const aAgama = a.mapelNama.toLowerCase().includes('pendidikan agama islam') || a.mapelNama.toLowerCase().includes('agama islam');
-    const bAgama = b.mapelNama.toLowerCase().includes('pendidikan agama islam') || b.mapelNama.toLowerCase().includes('agama islam');
-    if (aAgama && !bAgama) return -1;
-    if (!aAgama && bAgama) return 1;
-    return 0;
+    const pA = getSubjectPriority(a.mapelNama, false);
+    const pB = getSubjectPriority(b.mapelNama, false);
+    return pA - pB;
   });
 
-  // Distribute subjects to 3 pages exactly as in GuruCetak.tsx
+  // Sort Yayasan
+  const sortedYayasan = [...unfilteredYayasan].sort((a, b) => {
+    const pA = getSubjectPriority(a.mapelNama, true);
+    const pB = getSubjectPriority(b.mapelNama, true);
+    return pA - pB;
+  });
+
+  // Distribute subjects to 3 pages exactly as in the official sample
   const page1Umum = sortedUmum.slice(0, 5); // Subjects 1 to 5 (Mata Pelajaran Umum)
   const page2Umum = sortedUmum.slice(5, 11); // Subjects 6 to 11 (Mata Pelajaran Umum)
-  const page2Yayasan = yayasanList.slice(0, 1); // Subject 12 (Aqidah - YAYASAN)
-  const page3Yayasan = yayasanList.slice(1); // Subjects 13 to 16 (Fiqih, SKI, Arab, Tahfidz)
+  const page2Yayasan = sortedYayasan.slice(0, 1); // Subject 12 (Fiqih - YAYASAN)
+  const page3Yayasan = sortedYayasan.slice(1); // Subjects 13 to 16 (Bahasa Arab, SKI, Tahfidz, Aqidah)
 
   const formattedSemester = (sem: string) => {
     if (sem.toLowerCase().includes('ganjil') || sem === '1' || sem.toLowerCase() === 'i') {
@@ -195,129 +226,128 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     ? new Date(activePeriod.tanggalRaport).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) 
     : new Date().toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'});
 
-  // Helper to draw footer on raport pages (Halaman 1 dari 3, etc.) exactly like GuruCetak.tsx
+  // Helper to draw footer on raport pages (clean, no divider line, exact match to screenshot)
   const drawRaportFooter = (pageNum: number) => {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
-    doc.setTextColor(130, 130, 130);
-    doc.setDrawColor(220, 220, 220);
-    doc.setLineWidth(0.2);
-    doc.line(15, pageHeight - 12, pageWidth - 15, pageHeight - 12);
+    doc.setTextColor(110, 110, 110);
     
-    doc.text(`SMP Al-Irsyad Surakarta  •  ${student.nama.toUpperCase()}`, 15, pageHeight - 7.5);
-    doc.text(`Halaman ${pageNum} dari 3`, pageWidth - 15, pageHeight - 7.5, { align: 'right' });
+    // Left: School & Student Name
+    doc.text(`SMP Al-Irsyad Surakarta  •  ${student.nama.toUpperCase()}`, 15, pageHeight - 10);
+    // Right: Page number
+    doc.text(`Halaman ${pageNum} dari 3`, pageWidth - 15, pageHeight - 10, { align: 'right' });
     doc.setTextColor(0, 0, 0); // Reset
   };
 
   // =========================================================================
-  // PAGE 1: COVER PAGE (Identical layout to GuruCetak.tsx raport-cover)
+  // PAGE 1: COVER PAGE (Identical layout to sample: lower-third box positions)
   // =========================================================================
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
-  doc.text('LAPORAN HASIL BELAJAR SISWA', pageWidth / 2, 40, { align: 'center' });
-  doc.text('SMP AL IRSYAD SURAKARTA', pageWidth / 2, 48, { align: 'center' });
+  doc.text('LAPORAN HASIL BELAJAR SISWA', pageWidth / 2, 42, { align: 'center' });
+  doc.text('SMP AL IRSYAD SURAKARTA', pageWidth / 2, 50, { align: 'center' });
 
-  // Center boxes for NAMA PESERTA DIDIK and NISN (balanced in the middle)
-  const boxWidth = 127;
-  const boxHeight = 15;
-  const boxX = (pageWidth - boxWidth) / 2;
+  // Center boxes for NAMA PESERTA DIDIK and NISN (placed in lower section)
+  const boxWidth = 146;
+  const boxHeight = 14;
+  const boxX = (pageWidth - boxWidth) / 2; // 32mm
 
   // Box 1: NAMA PESERTA DIDIK
   doc.setFont('times', 'bold');
-  doc.setFontSize(14);
-  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 138, { align: 'center' });
+  doc.setFontSize(13);
+  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 216, { align: 'center' });
 
   doc.setDrawColor(0, 0, 0);
-  doc.setLineWidth(0.35);
-  doc.rect(boxX, 143, boxWidth, boxHeight);
+  doc.setLineWidth(0.3);
+  doc.rect(boxX, 221, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(13);
-  doc.text(student.nama.toUpperCase(), pageWidth / 2, 153, { align: 'center' });
+  doc.text(student.nama.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
 
   // Box 2: NISN
   doc.setFont('times', 'bold');
-  doc.setFontSize(14);
-  doc.text('NISN', pageWidth / 2, 172, { align: 'center' });
+  doc.setFontSize(13);
+  doc.text('NISN', pageWidth / 2, 247, { align: 'center' });
 
-  doc.rect(boxX, 177, boxWidth, boxHeight);
+  doc.rect(boxX, 252, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(13);
-  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 187, { align: 'center' });
+  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 261, { align: 'center' });
 
   // =========================================================================
   // PAGE 2: RAPORT PAGE 1 (Halaman 1 dari 3)
   // =========================================================================
   doc.addPage();
 
-  // Title (identical to GuruCetak.tsx)
+  // Title
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11);
   doc.text('PENCAPAIAN KOMPETENSI PESERTA DIDIK', pageWidth / 2, 16, { align: 'center' });
 
-  // Student & School Metadata (border-none table matching GuruCetak.tsx layout)
+  // Student & School Metadata (border-none table matching sample)
   autoTable(doc, {
     startY: 21,
     margin: { left: 15, right: 15 },
     theme: 'plain',
     body: [
       [
-        { content: 'Nama Sekolah', styles: { cellWidth: 32 } },
+        { content: 'Nama Sekolah', styles: { cellWidth: 35 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'SMP Al-Irsyad Surakarta', styles: { cellWidth: 70, fontStyle: 'bold' } },
-        { content: 'Kelas', styles: { cellWidth: 26 } },
+        { content: 'SMP Al-Irsyad Surakarta', styles: { cellWidth: 59 } },
+        { content: 'Kelas', styles: { cellWidth: 24 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: targetKelas?.nama || '-', styles: { cellWidth: 44, fontStyle: 'bold' } },
+        { content: targetKelas?.nama || '-', styles: { cellWidth: 54, fontStyle: 'bold' } },
       ],
       [
-        { content: 'Alamat', styles: { cellWidth: 32 } },
+        { content: 'Alamat', styles: { cellWidth: 35 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'Jl. Kapten Mulyadi No. 117 Surakarta', styles: { cellWidth: 70 } },
-        { content: 'Fase', styles: { cellWidth: 26 } },
+        { content: 'Jl. Kapten Mulyadi No. 117 Surakarta', styles: { cellWidth: 59 } },
+        { content: 'Fase', styles: { cellWidth: 24 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'D', styles: { cellWidth: 44, fontStyle: 'bold' } },
+        { content: 'D', styles: { cellWidth: 54, fontStyle: 'bold' } },
       ],
       [
-        { content: 'Nama Peserta Didik', styles: { cellWidth: 32 } },
+        { content: 'Nama Peserta Didik', styles: { cellWidth: 35 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: student.nama.toUpperCase(), styles: { cellWidth: 70, fontStyle: 'bold' } },
-        { content: 'Semester', styles: { cellWidth: 26 } },
+        { content: student.nama.toUpperCase(), styles: { cellWidth: 59, fontStyle: 'bold' } },
+        { content: 'Semester', styles: { cellWidth: 24 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: formattedSemester(activePeriod.semester), styles: { cellWidth: 44, fontStyle: 'bold' } },
+        { content: formattedSemester(activePeriod.semester), styles: { cellWidth: 54, fontStyle: 'bold' } },
       ],
       [
-        { content: 'Nomor Induk', styles: { cellWidth: 32 } },
+        { content: 'Nomor Induk', styles: { cellWidth: 35 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: student.nis || '-', styles: { cellWidth: 70, fontStyle: 'bold' } },
-        { content: 'Tahun Ajaran', styles: { cellWidth: 26 } },
+        { content: student.nis || '-', styles: { cellWidth: 59 } },
+        { content: 'Tahun Ajaran', styles: { cellWidth: 24 } },
         { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: activePeriod.tahunAjaran, styles: { cellWidth: 44, fontStyle: 'bold' } },
+        { content: activePeriod.tahunAjaran, styles: { cellWidth: 54, fontStyle: 'bold' } },
       ],
     ],
     styles: {
       fontSize: 8.5,
-      cellPadding: 1,
+      cellPadding: { top: 0.8, bottom: 0.8, left: 0, right: 0 },
       textColor: [0, 0, 0],
       font: 'helvetica'
     }
   });
 
-  const metadataEndY = (doc as any).lastAutoTable?.finalY || 42;
+  const metadataEndY = (doc as any).lastAutoTable?.finalY || 39;
 
   // Build Page 1 Grades Rows (Subjects 1 to 5)
   const page1BodyRows: any[] = [];
   page1BodyRows.push([
     {
-      content: 'Mata Pelajaran Umum',
+      content: 'MATA PELAJARAN UMUM',
       colSpan: 4,
       styles: {
-        fillColor: [241, 245, 249],
+        fillColor: [255, 255, 255],
         fontStyle: 'bold',
         fontSize: 8.5,
         halign: 'left',
         textColor: [0, 0, 0],
-        cellPadding: 2.2
+        cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 }
       }
     }
   ]);
@@ -331,39 +361,40 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       { content: (idx + 1).toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
       { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
     page1BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
   });
 
   autoTable(doc, {
-    startY: metadataEndY + 4,
+    startY: metadataEndY + 3,
     margin: { left: 15, right: 15 },
     theme: 'grid',
     head: [['No', 'Mata Pelajaran', 'Nilai\nAkhir', 'Capaian Kompetensi']],
     body: page1BodyRows,
     headStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
       halign: 'center',
+      valign: 'middle',
       fontSize: 8.5,
       lineColor: [0, 0, 0],
-      lineWidth: 0.2
+      lineWidth: 0.25
     },
     styles: {
       lineColor: [0, 0, 0],
-      lineWidth: 0.2,
+      lineWidth: 0.25,
       textColor: [0, 0, 0],
       font: 'helvetica'
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 49 },
-      2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 103 }
+      0: { cellWidth: 10, halign: 'center', valign: 'middle' },
+      1: { cellWidth: 48, halign: 'center', valign: 'middle' },
+      2: { cellWidth: 16, halign: 'center', valign: 'middle' },
+      3: { cellWidth: 106, valign: 'middle' }
     }
   });
 
@@ -385,10 +416,10 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
       { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
     page2BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
   });
 
@@ -399,12 +430,12 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         content: 'YAYASAN',
         colSpan: 4,
         styles: {
-          fillColor: [241, 245, 249],
+          fillColor: [255, 255, 255],
           fontStyle: 'bold',
           fontSize: 8.5,
           halign: 'left',
           textColor: [0, 0, 0],
-          cellPadding: 2.2
+          cellPadding: { top: 2.2, bottom: 2.2, left: 3, right: 3 }
         }
       }
     ]);
@@ -419,10 +450,10 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
         { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
         { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-        { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2.2 } }
+        { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
       ]);
       page2BodyRows.push([
-        { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'justify', cellPadding: 2.2 } }
+        { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
       ]);
     });
   }
@@ -434,25 +465,26 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     head: [['No', 'Mata Pelajaran', 'Nilai\nAkhir', 'Capaian Kompetensi']],
     body: page2BodyRows,
     headStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
       halign: 'center',
+      valign: 'middle',
       fontSize: 8.5,
       lineColor: [0, 0, 0],
-      lineWidth: 0.2
+      lineWidth: 0.25
     },
     styles: {
       lineColor: [0, 0, 0],
-      lineWidth: 0.2,
+      lineWidth: 0.25,
       textColor: [0, 0, 0],
       font: 'helvetica'
     },
     columnStyles: {
-      0: { cellWidth: 10, halign: 'center' },
-      1: { cellWidth: 49 },
-      2: { cellWidth: 18, halign: 'center' },
-      3: { cellWidth: 103 }
+      0: { cellWidth: 10, halign: 'center', valign: 'middle' },
+      1: { cellWidth: 48, halign: 'center', valign: 'middle' },
+      2: { cellWidth: 16, halign: 'center', valign: 'middle' },
+      3: { cellWidth: 106, valign: 'middle' }
     }
   });
 
@@ -474,10 +506,10 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       { content: globalIdx.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontSize: 8.5 } },
       { content: r.mapelNama, rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
       { content: r.nilaiAkhir.toString(), rowSpan: 2, styles: { halign: 'center', valign: 'middle', fontStyle: 'bold', fontSize: 8.5 } },
-      { content: split.master, styles: { fontSize: fsMaster, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.master, styles: { fontSize: fsMaster, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
     page3BodyRows.push([
-      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'justify', cellPadding: 2.2 } }
+      { content: split.needsImprovement, styles: { fontSize: fsNeeds, halign: 'left', cellPadding: { top: 2, bottom: 2, left: 2.5, right: 2.5 } } }
     ]);
   });
 
@@ -490,38 +522,39 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       head: [['No', 'Mata Pelajaran', 'Nilai\nAkhir', 'Capaian Kompetensi']],
       body: page3BodyRows,
       headStyles: {
-        fillColor: [248, 250, 252],
+        fillColor: [255, 255, 255],
         textColor: [0, 0, 0],
         fontStyle: 'bold',
         halign: 'center',
+        valign: 'middle',
         fontSize: 8.5,
         lineColor: [0, 0, 0],
-        lineWidth: 0.2
+        lineWidth: 0.25
       },
       styles: {
         lineColor: [0, 0, 0],
-        lineWidth: 0.2,
+        lineWidth: 0.25,
         textColor: [0, 0, 0],
         font: 'helvetica'
       },
       columnStyles: {
-        0: { cellWidth: 10, halign: 'center' },
-        1: { cellWidth: 49 },
-        2: { cellWidth: 18, halign: 'center' },
-        3: { cellWidth: 103 }
+        0: { cellWidth: 10, halign: 'center', valign: 'middle' },
+        1: { cellWidth: 48, halign: 'center', valign: 'middle' },
+        2: { cellWidth: 16, halign: 'center', valign: 'middle' },
+        3: { cellWidth: 106, valign: 'middle' }
       }
     });
     tableYayasanEndY = (doc as any).lastAutoTable?.finalY || 15;
   }
 
-  // Headings C and D (identical to GuruCetak.tsx)
-  const sectionsStartY = tableYayasanEndY + 6;
+  // Headings C and D (identical to sample)
+  const sectionsStartY = tableYayasanEndY + 5;
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(8.5);
-  doc.text('C. Ekstrakurikuler', 15, sectionsStartY);
-  doc.text('D. Ketidakhadiran', 122, sectionsStartY);
+  doc.text('C. EKSTRAKURIKULER', 15, sectionsStartY);
+  doc.text('D. KETIDAKHADIRAN', 120, sectionsStartY);
 
-  // Compile Ekstrakurikuler (col-span-7: 102mm width)
+  // Compile Ekstrakurikuler (98mm width)
   const ekskulItems = attendance?.ekstrakurikuler || [];
   const displayEkskul = [...ekskulItems];
   while (displayEkskul.length < 3) {
@@ -534,37 +567,38 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   ]);
 
   autoTable(doc, {
-    startY: sectionsStartY + 2.5,
+    startY: sectionsStartY + 2,
     margin: { left: 15 },
-    tableWidth: 102,
+    tableWidth: 98,
     theme: 'grid',
     head: [['No', 'Kegiatan Ekstrakurikuler', 'Predikat']],
     body: ekskulRows,
     headStyles: {
-      fillColor: [248, 250, 252],
+      fillColor: [255, 255, 255],
       textColor: [0, 0, 0],
       fontStyle: 'bold',
       halign: 'center',
+      valign: 'middle',
       fontSize: 8.5,
       lineColor: [0, 0, 0],
-      lineWidth: 0.2
+      lineWidth: 0.25
     },
     styles: {
       fontSize: 8,
-      cellPadding: 1.8,
+      cellPadding: 2,
       lineColor: [0, 0, 0],
-      lineWidth: 0.2,
+      lineWidth: 0.25,
       textColor: [0, 0, 0],
       font: 'helvetica'
     },
     columnStyles: {
-      0: { cellWidth: 12, halign: 'center' },
-      1: { cellWidth: 70, fontStyle: 'bold' },
-      2: { cellWidth: 20, halign: 'center', fontStyle: 'bold' }
+      0: { cellWidth: 12, halign: 'center', valign: 'middle' },
+      1: { cellWidth: 66, fontStyle: 'bold', halign: 'left', valign: 'middle' },
+      2: { cellWidth: 20, halign: 'center', fontStyle: 'bold', valign: 'middle' }
     }
   });
 
-  // Compile Ketidakhadiran (col-span-5: 73mm width)
+  // Compile Ketidakhadiran (75mm width)
   const attendanceRows = [
     ['Sakit', ':', `${attendance?.sakit || 0} Hari`],
     ['Izin', ':', `${attendance?.izin || 0} Hari`],
@@ -572,24 +606,24 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   ];
 
   autoTable(doc, {
-    startY: sectionsStartY + 2.5,
-    margin: { left: 122 },
-    tableWidth: 73,
+    startY: sectionsStartY + 2,
+    margin: { left: 120 },
+    tableWidth: 75,
     theme: 'grid',
     head: [],
     body: attendanceRows,
     styles: {
       fontSize: 8.5,
-      cellPadding: 2.8,
+      cellPadding: 2.6,
       lineColor: [0, 0, 0],
-      lineWidth: 0.2,
+      lineWidth: 0.25,
       textColor: [0, 0, 0],
       font: 'helvetica'
     },
     columnStyles: {
-      0: { cellWidth: 38, fontStyle: 'bold' },
-      1: { cellWidth: 7, halign: 'center' },
-      2: { cellWidth: 28, halign: 'center', fontStyle: 'bold' }
+      0: { cellWidth: 38, fontStyle: 'bold', halign: 'left', valign: 'middle' },
+      1: { cellWidth: 7, halign: 'center', valign: 'middle' },
+      2: { cellWidth: 30, halign: 'center', fontStyle: 'bold', valign: 'middle' }
     }
   });
 
@@ -599,42 +633,41 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   );
 
   // =========================================================================
-  // SIGNATURES SECTION (Identical 2-column layout to GuruCetak.tsx)
-  // Left column center: X = 60mm | Right column center: X = 150mm
+  // SIGNATURES SECTION (Identical layout to sample)
+  // Left column center: X = 55mm | Right column center: X = 155mm
   // =========================================================================
-  const sigY = Math.max(sectionsEndY + 8, 120);
+  const sigY = Math.max(sectionsEndY + 12, 130);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8.5);
   doc.setTextColor(0, 0, 0);
 
-  // Left: Orangtua / Wali (line 1 blank to align with date on right)
-  doc.text('Mengetahui,', 60, sigY + 4, { align: 'center' });
-  doc.text('Orangtua/ Wali', 60, sigY + 8.5, { align: 'center' });
-  doc.text('.....................................................', 60, sigY + 34, { align: 'center' });
+  // Left: Orangtua / Wali
+  doc.text('Mengetahui,', 55, sigY + 4, { align: 'center' });
+  doc.text('Orangtua/ Wali', 55, sigY + 8.5, { align: 'center' });
+  doc.text('.....................................................', 55, sigY + 34, { align: 'center' });
 
   // Right: Wali Kelas
-  doc.text(`Surakarta, ${formattedReportDate}`, 150, sigY, { align: 'center' });
-  doc.text('Mengetahui,', 150, sigY + 4, { align: 'center' });
-  doc.text('Wali Kelas', 150, sigY + 8.5, { align: 'center' });
+  doc.text(`Surakarta, ${formattedReportDate}`, 155, sigY, { align: 'center' });
+  doc.text('Mengetahui,', 155, sigY + 4, { align: 'center' });
+  doc.text('Wali Kelas', 155, sigY + 8.5, { align: 'center' });
 
-  const teacherName = classTeacher?.nama || '___________________';
-  const teacherNik = classTeacher?.username || '-';
+  const teacherName = classTeacher?.nama || 'Hadi Husin, S.Kom.';
+  const teacherNik = classTeacher?.username || '103.244.00264';
 
   doc.setFont('helvetica', 'bold');
-  doc.text(teacherName, 150, sigY + 34, { align: 'center' });
+  doc.text(teacherName, 155, sigY + 34, { align: 'center' });
   
   // Underline teacher name
   const teacherNameWidth = doc.getTextWidth(teacherName);
-  const teacherXStart = 150 - (teacherNameWidth / 2);
+  const teacherXStart = 155 - (teacherNameWidth / 2);
   doc.setLineWidth(0.25);
   doc.line(teacherXStart, sigY + 35, teacherXStart + teacherNameWidth, sigY + 35);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text(`NIK. ${teacherNik}`, 150, sigY + 39, { align: 'center' });
   doc.setTextColor(0, 0, 0);
+  doc.text(`NIK. ${teacherNik}`, 155, sigY + 38.5, { align: 'center' });
 
   // Center bottom: Kepala Sekolah (centered at pageWidth / 2 = 105mm)
   const principalY = sigY + 48;
@@ -654,8 +687,8 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7.5);
-  doc.setTextColor(80, 80, 80);
-  doc.text('NIK. 103.244.0072', 105, principalY + 33, { align: 'center' });
+  doc.setTextColor(0, 0, 0);
+  doc.text('NIK. 103.244.0072', 105, principalY + 32.5, { align: 'center' });
 
   // Draw final page footer
   drawRaportFooter(3);
