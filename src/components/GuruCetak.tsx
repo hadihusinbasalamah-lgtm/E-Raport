@@ -534,6 +534,9 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             page-break-after: avoid !important;
                             break-after: avoid !important;
                           }
+                          .raport-page.raport-cover {
+                            justify-content: flex-start !important;
+                          }
                           .print-no-break {
                             break-inside: avoid !important;
                           }
@@ -1057,7 +1060,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </h1>
                           </div>
 
-                          <div className="flex-grow print:flex-grow h-[80mm] print:h-auto" />
+                          <div className="h-[52mm] print:h-[46mm]" />
 
                           <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black">
                             <div className="w-full text-center">
