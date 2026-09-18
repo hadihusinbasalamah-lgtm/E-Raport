@@ -213,26 +213,26 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   // Box 1: NAMA PESERTA DIDIK
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
-  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 216, { align: 'center' });
+  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 226, { align: 'center' });
 
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.3);
-  doc.rect(boxX, 221, boxWidth, boxHeight);
+  doc.rect(boxX, 231, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(16);
-  doc.text(student.nama.toUpperCase(), pageWidth / 2, 230, { align: 'center' });
+  doc.text(student.nama.toUpperCase(), pageWidth / 2, 240, { align: 'center' });
 
   // Box 2: NISN
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
-  doc.text('NISN', pageWidth / 2, 247, { align: 'center' });
+  doc.text('NISN', pageWidth / 2, 257, { align: 'center' });
 
-  doc.rect(boxX, 252, boxWidth, boxHeight);
+  doc.rect(boxX, 262, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(16);
-  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 261, { align: 'center' });
+  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 271, { align: 'center' });
 
   // =========================================================================
   // PAGE 2: RAPORT PAGE 1 (Halaman 1 dari 3: Font Serif/Book Antiqua size 12)
