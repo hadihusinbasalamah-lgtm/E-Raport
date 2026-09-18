@@ -534,21 +534,50 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             page-break-after: avoid !important;
                             break-after: avoid !important;
                           }
+                          .raport-page.raport-cover,
+                          .raport-page.raport-cover * {
+                            font-family: 'Times New Roman', Times, serif !important;
+                            font-size: 16px !important;
+                          }
+                          .raport-page.raport-cover h1,
+                          .raport-page.raport-cover p,
+                          .raport-page.raport-cover div {
+                            font-family: 'Times New Roman', Times, serif !important;
+                            font-size: 16px !important;
+                          }
                           .raport-page.raport-cover {
                             justify-content: flex-start !important;
+                          }
+                          .raport-page:not(.raport-cover),
+                          .raport-page:not(.raport-cover) * {
+                            font-family: 'Book Antiqua', 'Book Antuqua', Palatino, 'Palatino Linotype', 'Palatino LT STD', Georgia, serif !important;
                           }
                           .print-no-break {
                             break-inside: avoid !important;
                           }
-                          .raport-page td, .raport-page th {
-                            padding: 4px 6px !important;
+                          .raport-page:not(.raport-cover) td, 
+                          .raport-page:not(.raport-cover) th,
+                          .raport-page:not(.raport-cover) p,
+                          .raport-page:not(.raport-cover) span,
+                          .raport-page:not(.raport-cover) h2,
+                          .raport-page:not(.raport-cover) div:not(.title-pencapaian) {
                             font-size: 12px !important;
                             line-height: 1.35 !important;
                           }
-                          .raport-page th {
+                          .raport-page:not(.raport-cover) td, .raport-page:not(.raport-cover) th {
+                            padding: 4px 6px !important;
+                          }
+                          .raport-page:not(.raport-cover) th {
                             font-weight: bold !important;
-                            font-size: 12.5px !important;
+                            font-size: 12px !important;
                             padding: 6px 6px !important;
+                          }
+                          .title-pencapaian,
+                          .raport-page .title-pencapaian,
+                          h1.title-pencapaian {
+                            font-family: 'Book Antiqua', 'Book Antuqua', Palatino, 'Palatino Linotype', 'Palatino LT STD', Georgia, serif !important;
+                            font-size: 16px !important;
+                            font-weight: bold !important;
                           }
                           /* Border rules strictly inside tables except border-none */
                           .raport-page table:not(.border-none) {
@@ -817,19 +846,54 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       margin-bottom: 0 !important;
                     }
 
+                    .raport-page.raport-cover,
+                    .raport-page.raport-cover * {
+                      font-family: 'Times New Roman', Times, serif !important;
+                      font-size: 16px !important;
+                    }
+                    .raport-page.raport-cover h1,
+                    .raport-page.raport-cover p,
+                    .raport-page.raport-cover div {
+                      font-family: 'Times New Roman', Times, serif !important;
+                      font-size: 16px !important;
+                    }
                     .raport-page.raport-cover {
                       justify-content: flex-start !important;
                     }
 
-                    .raport-page td, .raport-page th {
-                      padding: 4px 6px !important;
+                    .raport-page:not(.raport-cover),
+                    .raport-page:not(.raport-cover) * {
+                      font-family: 'Book Antiqua', 'Book Antuqua', Palatino, 'Palatino Linotype', 'Palatino LT STD', Georgia, serif !important;
+                    }
+
+                    .raport-page:not(.raport-cover) td, 
+                    .raport-page:not(.raport-cover) th,
+                    .raport-page:not(.raport-cover) p,
+                    .raport-page:not(.raport-cover) span,
+                    .raport-page:not(.raport-cover) h2,
+                    .raport-page:not(.raport-cover) div:not(.title-pencapaian) {
                       font-size: 12px !important;
                       line-height: 1.35 !important;
                     }
-                    .raport-page th {
+
+                    .raport-page:not(.raport-cover) td, .raport-page:not(.raport-cover) th {
+                      padding: 4px 6px !important;
+                    }
+
+                    .raport-page:not(.raport-cover) th {
                       font-weight: bold !important;
-                      font-size: 12.5px !important;
+                      font-size: 12px !important;
                       padding: 6px 6px !important;
+                    }
+
+                    .title-pencapaian,
+                    .raport-page .title-pencapaian,
+                    h1.title-pencapaian {
+                      font-family: 'Book Antiqua', 'Book Antuqua', Palatino, 'Palatino Linotype', 'Palatino LT STD', Georgia, serif !important;
+                      font-size: 16px !important;
+                      font-weight: bold !important;
+                    }
+                      font-weight: bold !important;
                     }
 
                     /* Border rules strictly inside tables except border-none */
@@ -1079,29 +1143,29 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     return (
                       <>
                         {/* ================= COVER PAGE ================= */}
-                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '275mm', fontFamily: '"Times New Roman", Times, serif' }}>
+                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '275mm', fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                           <div className="text-center mt-12 print:mt-10">
-                            <h1 className="text-[20px] font-bold tracking-widest uppercase text-black leading-relaxed">
+                            <h1 className="text-[16px] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                               LAPORAN HASIL BELAJAR SISWA
                             </h1>
-                            <h1 className="text-[20px] font-bold tracking-widest uppercase text-black leading-relaxed">
+                            <h1 className="text-[16px] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                               SMP AL IRSYAD SURAKARTA
                             </h1>
                           </div>
 
                           <div className="h-[154mm] print:h-[146mm]" />
 
-                          <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black">
+                          <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                             <div className="w-full text-center">
-                              <p className="text-[17px] font-bold tracking-widest text-[#000000] uppercase mb-2">NAMA PESERTA DIDIK</p>
-                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[17px] tracking-wide uppercase bg-white">
+                              <p className="text-[16px] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>NAMA PESERTA DIDIK</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16px] tracking-wide uppercase bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                                 {previewSiswa.nama}
                               </div>
                             </div>
 
                             <div className="w-full text-center mt-2">
-                              <p className="text-[17px] font-bold tracking-widest text-[#000000] uppercase mb-2">NISN</p>
-                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[17px] tracking-widest bg-white">
+                              <p className="text-[16px] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>NISN</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16px] tracking-widest bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
                                 {previewSiswa.nisn || previewSiswa.nis || '-'}
                               </div>
                             </div>
@@ -1109,15 +1173,15 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                         </div>
 
                         {/* ================= PAGE 1 ================= */}
-                        <div className="raport-page raport-page-1 font-sans text-black">
+                        <div className="raport-page raport-page-1 text-black" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                           <div>
                             {/* TITLE */}
-                            <h1 className="text-center text-[15px] font-bold tracking-widest uppercase mb-4">
+                            <h1 className="title-pencapaian text-center text-[16px] font-bold tracking-widest uppercase mb-4" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '16px' }}>
                               PENCAPAIAN KOMPETENSI PESERTA DIDIK
                             </h1>
 
                             {/* STUDENT METADATA */}
-                            <table className="w-full text-[11.5px] mb-3 border-none text-left" style={{ border: 'none' }}>
+                            <table className="w-full text-[12px] mb-3 border-none text-left" style={{ border: 'none', fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                               <tbody>
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5" style={{ width: '18%', border: 'none' }}>Nama Sekolah</td>
@@ -1202,14 +1266,14 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                          <div className="text-[12px] text-slate-500 flex justify-between pt-2 mt-auto shrink-0" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                             <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 1 dari 3</span>
                           </div>
                         </div>
 
                         {/* ================= PAGE 2 ================= */}
-                        <div className="raport-page raport-page-2 font-sans text-black">
+                        <div className="raport-page raport-page-2 text-black" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
                             <table className="table-raport-nilai w-full border-collapse border border-black text-left text-[12px] leading-relaxed">
@@ -1282,14 +1346,14 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                          <div className="text-[12px] text-slate-500 flex justify-between pt-2 mt-auto shrink-0" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                             <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 2 dari 3</span>
                           </div>
                         </div>
 
                         {/* ================= PAGE 3 ================= */}
-                        <div className="raport-page raport-page-3 font-sans text-black">
+                        <div className="raport-page raport-page-3 text-black" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                           <div>
                             {/* GRADES TABLE CONTINUATION */}
                             {page3Yayasan.length > 0 && (
@@ -1410,7 +1474,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                 <p className="font-semibold">Wali Kelas</p>
                                 <div className="sig-space h-20" />
                                 <p className="font-bold underline text-[12px]">{activeTeacher.nama}</p>
-                                <p className="text-[10px] text-slate-500 font-mono">NIK. {activeTeacher.username || '-'}</p>
+                                <p className="text-[12px] text-black">NIK. {activeTeacher.username || '-'}</p>
                               </div>
                             </div>
 
@@ -1420,12 +1484,12 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                               <p className="font-semibold">Kepala Sekolah</p>
                               <div className="sig-space h-20" />
                               <p className="font-bold underline text-[12px]">Andreas Raymonda, S.Pd, M.Hum</p>
-                              <p className="text-[10px] text-slate-500 font-mono">NIK. 103.244.0072</p>
+                              <p className="text-[12px] text-black">NIK. 103.244.0072</p>
                             </div>
                           </div>
 
                           {/* FOOTER */}
-                          <div className="text-[9.5px] text-slate-500 font-sans flex justify-between pt-2 mt-auto shrink-0">
+                          <div className="text-[12px] text-slate-500 flex justify-between pt-2 mt-auto shrink-0" style={{ fontFamily: '"Book Antiqua", Palatino, "Palatino Linotype", "Palatino LT STD", Georgia, serif', fontSize: '12px' }}>
                             <span>SMP Al-Irsyad Surakarta • {previewSiswa.nama.toUpperCase()}</span>
                             <span>Halaman 3 dari 3</span>
                           </div>

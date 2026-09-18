@@ -12,6 +12,8 @@ export interface Kelas {
 export interface Mapel {
   id: string;
   nama: string; // e.g. "Matematika", "Ilmu Pengetahuan Alam", "Bahasa Indonesia"
+  urutan?: number; // Urutan tampil pada raport (1, 2, 3, ...)
+  kategori?: 'umum' | 'yayasan'; // Kelompok mapel (Umum atau Muatan Yayasan/Ciri Khusus)
 }
 
 export interface Siswa {
