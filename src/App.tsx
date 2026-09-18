@@ -446,10 +446,14 @@ export default function App() {
                           </div>
 
                           {/* Interactive Subject-wise Grade Progress Chart */}
-                          <AdminDashboard db={db} onNavigateToTab={(tab) => {
-                            setActiveTab(tab);
-                            setMobileMenuOpen(false);
-                          }} />
+                          <AdminDashboard 
+                            db={db} 
+                            onUpdate={handleUpdateDb}
+                            onNavigateToTab={(tab) => {
+                              setActiveTab(tab);
+                              setMobileMenuOpen(false);
+                            }} 
+                          />
 
                           {/* Snapshot and publish notice board */}
                           <div className="bg-gradient-to-r from-emerald-50 to-amber-50/40 p-5 rounded-2xl border border-emerald-100/50 flex flex-col sm:flex-row items-start sm:items-center gap-4 justify-between">

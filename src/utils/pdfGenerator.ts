@@ -6,53 +6,7 @@
 import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { SchemaDatabase, Siswa, PeriodeAkademik, Mapel } from '../types';
-
-// Helper to identify Yayasan religious subjects
-const isYayasanSubject = (name: string): boolean => {
-  const lowercaseName = name.toLowerCase();
-  return (
-    lowercaseName.includes('aqidah') ||
-    lowercaseName.includes('akidah') ||
-    lowercaseName.includes('fiqih') ||
-    lowercaseName.includes('fikih') ||
-    lowercaseName.includes('ski') ||
-    lowercaseName.includes('sejarah kebudayaan islam') ||
-    lowercaseName.includes('bahasa arab') ||
-    lowercaseName.includes('tahfidz') ||
-    lowercaseName.includes('qur\'an') ||
-    lowercaseName.includes('quran') ||
-    lowercaseName.includes('hadist') ||
-    lowercaseName.includes('hadits') ||
-    lowercaseName.includes('al-qur') ||
-    lowercaseName.includes('ulumul quran')
-  );
-};
-
-// Priority ordering matching SMP Al-Irsyad Surakarta official curriculum
-const getSubjectPriority = (name: string, isYayasan: boolean): number => {
-  const n = name.toLowerCase().trim();
-  if (!isYayasan) {
-    if (n.includes('matematika')) return 1;
-    if (n.includes('sosial') || n.includes('ips')) return 2;
-    if (n.includes('jasmani') || n.includes('pjok') || n.includes('penjas') || n.includes('olahraga')) return 3;
-    if (n.includes('alam') || n.includes('ipa')) return 4;
-    if (n.includes('informatika') || n.includes('tik') || n.includes('komputer')) return 5;
-    if (n.includes('seni') || n.includes('budaya') || n.includes('prakarya')) return 6;
-    if (n.includes('pancasila') || n.includes('kewarganegaraan') || n.includes('ppkn')) return 7;
-    if (n.includes('inggris')) return 8;
-    if (n.includes('indonesia')) return 9;
-    if (n.includes('jawa')) return 10;
-    if (n.includes('agama') || n.includes('budi pekerti') || n.includes('pai')) return 11;
-    return 50;
-  } else {
-    if (n.includes('fiqih') || n.includes('fikih')) return 1;
-    if (n.includes('arab')) return 2;
-    if (n.includes('ski') || n.includes('sejarah kebudayaan islam')) return 3;
-    if (n.includes('tahfidz') || n.includes('tahfid') || n.includes('qur\'an') || n.includes('quran') || n.includes('al-qur')) return 4;
-    if (n.includes('aqidah') || n.includes('akidah')) return 5;
-    return 50;
-  }
-};
+import { isYayasanSubject, getSubjectPriority } from './mapelOrder';
 
 // Helper to split competency descriptions into Mastery vs Needed support
 const splitCapaian = (desc: string) => {
@@ -193,21 +147,24 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   );
 
   // Group and sort subjects identically to SMP Al-Irsyad official curriculum
-  const unfilteredUmum = results.filter(r => !isYayasanSubject(r.mapelNama));
-  const unfilteredYayasan = results.filter(r => isYayasanSubject(r.mapelNama));
+  // mapelList contains both activePeriod.snapshotMapel and db.mapel with explicit urutan and kategori
+  const unfilteredUmum = results.filter(r => !isYayasanSubject(r.mapelNama, mapelList));
+  const unfilteredYayasan = results.filter(r => isYayasanSubject(r.mapelNama, mapelList));
 
   // Sort Umum
   const sortedUmum = [...unfilteredUmum].sort((a, b) => {
-    const pA = getSubjectPriority(a.mapelNama, false);
-    const pB = getSubjectPriority(b.mapelNama, false);
-    return pA - pB;
+    const pA = getSubjectPriority(a.mapelNama, false, mapelList);
+    const pB = getSubjectPriority(b.mapelNama, false, mapelList);
+    if (pA !== pB) return pA - pB;
+    return a.mapelNama.localeCompare(b.mapelNama);
   });
 
   // Sort Yayasan
   const sortedYayasan = [...unfilteredYayasan].sort((a, b) => {
-    const pA = getSubjectPriority(a.mapelNama, true);
-    const pB = getSubjectPriority(b.mapelNama, true);
-    return pA - pB;
+    const pA = getSubjectPriority(a.mapelNama, true, mapelList);
+    const pB = getSubjectPriority(b.mapelNama, true, mapelList);
+    if (pA !== pB) return pA - pB;
+    return a.mapelNama.localeCompare(b.mapelNama);
   });
 
   // Distribute subjects to 3 pages exactly as in the official sample
@@ -296,35 +253,35 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     body: [
       [
         { content: 'Nama Sekolah', styles: { cellWidth: 35 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'SMP Al-Irsyad Surakarta', styles: { cellWidth: 59 } },
-        { content: 'Kelas', styles: { cellWidth: 24 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: targetKelas?.nama || '-', styles: { cellWidth: 54, fontStyle: 'bold' } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: 'SMP Al-Irsyad Surakarta', styles: { cellWidth: 72 } },
+        { content: 'Kelas', styles: { cellWidth: 25 } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: targetKelas?.nama || '-', styles: { cellWidth: 42, fontStyle: 'bold' } },
       ],
       [
         { content: 'Alamat', styles: { cellWidth: 35 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'Jl. Kapten Mulyadi No. 117 Surakarta', styles: { cellWidth: 59 } },
-        { content: 'Fase', styles: { cellWidth: 24 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: 'D', styles: { cellWidth: 54, fontStyle: 'bold' } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: 'Jl. Kapten Mulyadi No. 117 Surakarta', styles: { cellWidth: 72 } },
+        { content: 'Fase', styles: { cellWidth: 25 } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: 'D', styles: { cellWidth: 42, fontStyle: 'bold' } },
       ],
       [
         { content: 'Nama Peserta Didik', styles: { cellWidth: 35 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: student.nama.toUpperCase(), styles: { cellWidth: 59, fontStyle: 'bold' } },
-        { content: 'Semester', styles: { cellWidth: 24 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: formattedSemester(activePeriod.semester), styles: { cellWidth: 54, fontStyle: 'bold' } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: student.nama.toUpperCase(), styles: { cellWidth: 72, fontStyle: 'bold' } },
+        { content: 'Semester', styles: { cellWidth: 25 } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: formattedSemester(activePeriod.semester), styles: { cellWidth: 42, fontStyle: 'bold' } },
       ],
       [
         { content: 'Nomor Induk', styles: { cellWidth: 35 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: student.nis || '-', styles: { cellWidth: 59 } },
-        { content: 'Tahun Ajaran', styles: { cellWidth: 24 } },
-        { content: ':', styles: { cellWidth: 4, halign: 'center' } },
-        { content: activePeriod.tahunAjaran, styles: { cellWidth: 54, fontStyle: 'bold' } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: student.nis || '-', styles: { cellWidth: 72 } },
+        { content: 'Tahun Ajaran', styles: { cellWidth: 25 } },
+        { content: ':', styles: { cellWidth: 3, halign: 'center' } },
+        { content: activePeriod.tahunAjaran, styles: { cellWidth: 42, fontStyle: 'bold' } },
       ],
     ],
     styles: {

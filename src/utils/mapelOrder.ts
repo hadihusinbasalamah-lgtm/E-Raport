@@ -33,16 +33,24 @@ export const DEFAULT_YAYASAN_PRIORITY: { name: string; aliases: string[]; defaul
 /**
  * Checks whether a subject belongs to Yayasan / Ciri Khusus or Umum
  */
-export function isYayasanSubject(mapelOrName: Mapel | string | undefined | null): boolean {
+export function isYayasanSubject(mapelOrName: Mapel | string | undefined | null, allMapels?: Mapel[]): boolean {
   if (!mapelOrName) return false;
 
   if (typeof mapelOrName === 'object') {
     if (mapelOrName.kategori === 'yayasan') return true;
     if (mapelOrName.kategori === 'umum') return false;
-    return isYayasanSubject(mapelOrName.nama);
+    return isYayasanSubject(mapelOrName.nama, allMapels);
   }
 
   const lowercaseName = (mapelOrName || '').toLowerCase().trim();
+
+  // If allMapels is provided, check if the subject has an explicit kategori
+  if (allMapels && allMapels.length > 0) {
+    const found = allMapels.find(m => m.id === mapelOrName || m.nama.toLowerCase().trim() === lowercaseName);
+    if (found?.kategori === 'yayasan') return true;
+    if (found?.kategori === 'umum') return false;
+  }
+
   return (
     lowercaseName.includes('aqidah') ||
     lowercaseName.includes('akidah') ||

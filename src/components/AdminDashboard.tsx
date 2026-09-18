@@ -12,15 +12,17 @@ import {
 import { 
   Users, BookOpen, Clock, CheckCircle2, AlertTriangle, Search, Filter, 
   HelpCircle, RefreshCw, BarChart2, ListOrdered, ChevronRight, GraduationCap,
-  LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles
+  LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles, ArrowUpDown
 } from 'lucide-react';
+import { ModalUrutanMapel } from './ModalUrutanMapel';
 
 interface AdminDashboardProps {
   db: SchemaDatabase;
   onNavigateToTab: (tabId: string) => void;
+  onUpdate?: (updatedDb: SchemaDatabase) => void;
 }
 
-export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
+export function AdminDashboard({ db, onNavigateToTab, onUpdate }: AdminDashboardProps) {
   const activePeriod = db.periodList.find(p => p.id === db.activePeriodId);
 
   // States
@@ -29,6 +31,7 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
   const [metricType, setMetricType] = useState<'percentage' | 'numbers'>('percentage');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [chartType, setChartType] = useState<'column' | 'bar' | 'donut'>('column');
+  const [isModalUrutanOpen, setIsModalUrutanOpen] = useState(false);
 
   // Active snapshots or live data as fallback
   const currentMapels = activePeriod?.snapshotMapel || db.mapel;
@@ -338,6 +341,15 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
             >
               <Sparkles className="w-3.5 h-3.5" />
               <span>Demo Nilai</span>
+            </button>
+
+            <button
+              onClick={() => setIsModalUrutanOpen(true)}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs flex items-center gap-1.5 ml-1 cursor-pointer"
+              title="Atur urutan mata pelajaran yang tampil pada hasil cetak raport"
+            >
+              <ArrowUpDown className="w-3.5 h-3.5" />
+              <span>Urutkan Mapel Raport</span>
             </button>
           </div>
         </div>
@@ -790,6 +802,14 @@ export function AdminDashboard({ db, onNavigateToTab }: AdminDashboardProps) {
         </div>
 
       </div>
+
+      {/* Modal Urutan Mapel Raport */}
+      <ModalUrutanMapel 
+        db={db}
+        isOpen={isModalUrutanOpen}
+        onClose={() => setIsModalUrutanOpen(false)}
+        onUpdate={onUpdate || (() => {})}
+      />
 
     </div>
   );

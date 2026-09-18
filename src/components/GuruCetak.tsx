@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, Siswa, AbsensiDanCatatan, NilaiSiswa, EkstrakurikulerItem, Mapel } from '../types';
 import { Printer, Save, CheckCircle2, FileText, X, AlertTriangle, UserCheck, Plus, Trash2 } from 'lucide-react';
+import { isYayasanSubject, getSubjectPriority } from '../utils/mapelOrder';
 
 interface GuruCetakProps {
   db: SchemaDatabase;
@@ -736,6 +737,17 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       justify-content: space-between;
                       overflow: hidden;
                     }
+                    .raport-page.raport-cover,
+                    .raport-page.raport-cover * {
+                      font-family: 'Times New Roman', Times, serif !important;
+                      font-size: 16px !important;
+                    }
+                    .raport-page.raport-cover h1,
+                    .raport-page.raport-cover p,
+                    .raport-page.raport-cover div {
+                      font-family: 'Times New Roman', Times, serif !important;
+                      font-size: 16px !important;
+                    }
                     .raport-page.raport-cover {
                       justify-content: flex-start !important;
                     }
@@ -891,8 +903,6 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     h1.title-pencapaian {
                       font-family: 'Book Antiqua', 'Book Antuqua', Palatino, 'Palatino Linotype', 'Palatino LT STD', Georgia, serif !important;
                       font-size: 16px !important;
-                      font-weight: bold !important;
-                    }
                       font-weight: bold !important;
                     }
 
@@ -1060,67 +1070,27 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                       return 'text-[12px] leading-relaxed';
                     };
 
-                    // Helper to identify Yayasan religious subjects
-                    const isYayasanSubject = (name: string): boolean => {
-                      const lowercaseName = name.toLowerCase();
-                      return (
-                        lowercaseName.includes('aqidah') ||
-                        lowercaseName.includes('akidah') ||
-                        lowercaseName.includes('fiqih') ||
-                        lowercaseName.includes('fikih') ||
-                        lowercaseName.includes('ski') ||
-                        lowercaseName.includes('sejarah kebudayaan islam') ||
-                        lowercaseName.includes('bahasa arab') ||
-                        lowercaseName.includes('tahfidz') ||
-                        lowercaseName.includes('qur\'an') ||
-                        lowercaseName.includes('quran') ||
-                        lowercaseName.includes('hadist') ||
-                        lowercaseName.includes('hadits') ||
-                        lowercaseName.includes('al-qur') ||
-                        lowercaseName.includes('ulumul quran')
-                      );
-                    };
-
                     const rawResults = reportData.results;
-                    const unfilteredUmum = rawResults.filter(r => !isYayasanSubject(r.mapelNama));
-                    const unfilteredYayasan = rawResults.filter(r => isYayasanSubject(r.mapelNama));
+                    const allKnownMapels = [
+                      ...(activePeriod?.snapshotMapel || []),
+                      ...(db.mapel || [])
+                    ];
 
-                    // Priority ordering matching SMP Al-Irsyad Surakarta official curriculum
-                    const getSubjectPriority = (name: string, isYayasan: boolean): number => {
-                      const n = name.toLowerCase().trim();
-                      if (!isYayasan) {
-                        if (n.includes('matematika')) return 1;
-                        if (n.includes('sosial') || n.includes('ips')) return 2;
-                        if (n.includes('jasmani') || n.includes('pjok') || n.includes('penjas') || n.includes('olahraga')) return 3;
-                        if (n.includes('alam') || n.includes('ipa')) return 4;
-                        if (n.includes('informatika') || n.includes('tik') || n.includes('komputer')) return 5;
-                        if (n.includes('seni') || n.includes('budaya') || n.includes('prakarya')) return 6;
-                        if (n.includes('pancasila') || n.includes('kewarganegaraan') || n.includes('ppkn')) return 7;
-                        if (n.includes('inggris')) return 8;
-                        if (n.includes('indonesia')) return 9;
-                        if (n.includes('jawa')) return 10;
-                        if (n.includes('agama') || n.includes('budi pekerti') || n.includes('pai')) return 11;
-                        return 50;
-                      } else {
-                        if (n.includes('fiqih') || n.includes('fikih')) return 1;
-                        if (n.includes('arab')) return 2;
-                        if (n.includes('ski') || n.includes('sejarah kebudayaan islam')) return 3;
-                        if (n.includes('tahfidz') || n.includes('tahfid') || n.includes('qur\'an') || n.includes('quran') || n.includes('al-qur')) return 4;
-                        if (n.includes('aqidah') || n.includes('akidah')) return 5;
-                        return 50;
-                      }
-                    };
+                    const unfilteredUmum = rawResults.filter(r => !isYayasanSubject(r.mapelNama, allKnownMapels));
+                    const unfilteredYayasan = rawResults.filter(r => isYayasanSubject(r.mapelNama, allKnownMapels));
 
                     const sortedUmum = [...unfilteredUmum].sort((a, b) => {
-                      const pA = getSubjectPriority(a.mapelNama, false);
-                      const pB = getSubjectPriority(b.mapelNama, false);
-                      return pA - pB;
+                      const pA = getSubjectPriority(a.mapelNama, false, allKnownMapels);
+                      const pB = getSubjectPriority(b.mapelNama, false, allKnownMapels);
+                      if (pA !== pB) return pA - pB;
+                      return a.mapelNama.localeCompare(b.mapelNama);
                     });
 
                     const sortedYayasan = [...unfilteredYayasan].sort((a, b) => {
-                      const pA = getSubjectPriority(a.mapelNama, true);
-                      const pB = getSubjectPriority(b.mapelNama, true);
-                      return pA - pB;
+                      const pA = getSubjectPriority(a.mapelNama, true, allKnownMapels);
+                      const pB = getSubjectPriority(b.mapelNama, true, allKnownMapels);
+                      if (pA !== pB) return pA - pB;
+                      return a.mapelNama.localeCompare(b.mapelNama);
                     });
 
                     // Distribute subjects to 3 pages exactly as in the reference document
@@ -1186,32 +1156,32 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                                 <tr style={{ border: 'none' }}>
                                   <td className="py-0.5" style={{ width: '18%', border: 'none' }}>Nama Sekolah</td>
                                   <td className="py-0.5" style={{ width: '2%', border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-normal" style={{ width: '40%', border: 'none' }}>SMP Al-Irsyad Surakarta</td>
-                                  <td className="py-0.5" style={{ width: '15%', border: 'none' }}>Kelas</td>
+                                  <td className="py-0.5 font-normal" style={{ width: '44%', border: 'none' }}>SMP Al-Irsyad Surakarta</td>
+                                  <td className="py-0.5" style={{ width: '14%', border: 'none' }}>Kelas</td>
                                   <td className="py-0.5" style={{ width: '2%', border: 'none' }}>:</td>
-                                  <td className="py-0.5 font-bold" style={{ width: '23%', border: 'none' }}>{homeroomKelas?.nama}</td>
+                                  <td className="py-0.5 font-bold" style={{ width: '20%', border: 'none' }}>{homeroomKelas?.nama}</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
-                                  <td className="py-0.5 align-top" style={{ border: 'none' }}>Alamat</td>
+                                  <td className="py-0.5 align-top whitespace-nowrap" style={{ border: 'none' }}>Alamat</td>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>:</td>
-                                  <td className="py-0.5 align-top pr-3" style={{ border: 'none' }}>Jl. Kapten Mulyadi No. 117 Surakarta</td>
-                                  <td className="py-0.5 align-top" style={{ border: 'none' }}>Fase</td>
+                                  <td className="py-0.5 align-top pr-3 whitespace-nowrap" style={{ border: 'none' }}>Jl. Kapten Mulyadi No. 117 Surakarta</td>
+                                  <td className="py-0.5 align-top whitespace-nowrap" style={{ border: 'none' }}>Fase</td>
                                   <td className="py-0.5 align-top" style={{ border: 'none' }}>:</td>
                                   <td className="py-0.5 font-bold align-top" style={{ border: 'none' }}>D</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
-                                  <td className="py-0.5" style={{ border: 'none' }}>Nama Peserta Didik</td>
+                                  <td className="py-0.5 whitespace-nowrap" style={{ border: 'none' }}>Nama Peserta Didik</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
                                   <td className="py-0.5 font-bold uppercase" style={{ border: 'none' }}>{previewSiswa.nama}</td>
-                                  <td className="py-0.5" style={{ border: 'none' }}>Semester</td>
+                                  <td className="py-0.5 whitespace-nowrap" style={{ border: 'none' }}>Semester</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
                                   <td className="py-0.5 font-bold" style={{ border: 'none' }}>{formattedSemester(activePeriod.semester)}</td>
                                 </tr>
                                 <tr style={{ border: 'none' }}>
-                                  <td className="py-0.5" style={{ border: 'none' }}>Nomor Induk</td>
+                                  <td className="py-0.5 whitespace-nowrap" style={{ border: 'none' }}>Nomor Induk</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>{previewSiswa.nis || '-'}</td>
-                                  <td className="py-0.5" style={{ border: 'none' }}>Tahun Ajaran</td>
+                                  <td className="py-0.5 whitespace-nowrap" style={{ border: 'none' }}>Tahun Ajaran</td>
                                   <td className="py-0.5" style={{ border: 'none' }}>:</td>
                                   <td className="py-0.5 font-bold" style={{ border: 'none' }}>{activePeriod.tahunAjaran}</td>
                                 </tr>
