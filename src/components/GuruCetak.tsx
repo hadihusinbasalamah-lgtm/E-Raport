@@ -1127,6 +1127,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
 
                           <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                             <div className="w-full text-center">
+                              {/* 2 enter (spacing) sebelum NAMA PESERTA DIDIK */}
+                              <div className="h-10 print:h-8" />
                               <p className="text-[16pt] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>NAMA PESERTA DIDIK</p>
                               <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16pt] tracking-wide uppercase bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                                 {previewSiswa.nama}
@@ -1134,6 +1136,8 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             </div>
 
                             <div className="w-full text-center mt-2">
+                              {/* 2 enter (spacing) sebelum NISN */}
+                              <div className="h-10 print:h-8" />
                               <p className="text-[16pt] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>NISN</p>
                               <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16pt] tracking-widest bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                                 {previewSiswa.nisn || previewSiswa.nis || '-'}

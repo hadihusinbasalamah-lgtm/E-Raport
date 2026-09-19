@@ -186,7 +186,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   // Helper to draw footer on raport pages (clean, no divider line, exact match to screenshot)
   const drawRaportFooter = (pageNum: number) => {
-    doc.setFont('times', 'normal');
+    doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
     doc.setTextColor(110, 110, 110);
     
@@ -205,47 +205,47 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.text('LAPORAN HASIL BELAJAR SISWA', pageWidth / 2, 42, { align: 'center' });
   doc.text('SMP AL IRSYAD SURAKARTA', pageWidth / 2, 50, { align: 'center' });
 
-  // Center boxes for NAMA PESERTA DIDIK and NISN (placed in lower section)
+  // Center boxes for NAMA PESERTA DIDIK and NISN (placed in lower section, lowered ~2 enter / 8-10mm)
   const boxWidth = 146;
   const boxHeight = 14;
   const boxX = (pageWidth - boxWidth) / 2; // 32mm
 
-  // Box 1: NAMA PESERTA DIDIK
+  // Box 1: NAMA PESERTA DIDIK (turunkan 2 enter / ~9mm)
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
-  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 226, { align: 'center' });
+  doc.text('NAMA PESERTA DIDIK', pageWidth / 2, 235, { align: 'center' });
 
   doc.setDrawColor(0, 0, 0);
   doc.setLineWidth(0.3);
-  doc.rect(boxX, 231, boxWidth, boxHeight);
+  doc.rect(boxX, 240, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(16);
-  doc.text(student.nama.toUpperCase(), pageWidth / 2, 240, { align: 'center' });
+  doc.text(student.nama.toUpperCase(), pageWidth / 2, 249, { align: 'center' });
 
-  // Box 2: NISN
+  // Box 2: NISN (turunkan 2 enter / ~9mm)
   doc.setFont('times', 'bold');
   doc.setFontSize(16);
-  doc.text('NISN', pageWidth / 2, 257, { align: 'center' });
+  doc.text('NISN', pageWidth / 2, 266, { align: 'center' });
 
-  doc.rect(boxX, 262, boxWidth, boxHeight);
+  doc.rect(boxX, 271, boxWidth, boxHeight);
 
   doc.setFont('times', 'normal');
   doc.setFontSize(16);
-  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 271, { align: 'center' });
+  doc.text(student.nisn || student.nis || '-', pageWidth / 2, 280, { align: 'center' });
 
   // =========================================================================
-  // PAGE 2: RAPORT PAGE 1 (Halaman 1 dari 3: Font Serif/Book Antiqua size 12)
+  // PAGE 2: RAPORT PAGE 1 (Halaman 1 dari 3: Font Book Antiqua size 12)
   // Kecuali PENCAPAIAN KOMPETENSI PESERTA DIDIK size 16
   // =========================================================================
   doc.addPage();
 
   // Title: Size 16
-  doc.setFont('times', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(16);
   doc.text('PENCAPAIAN KOMPETENSI PESERTA DIDIK', pageWidth / 2, 16, { align: 'center' });
 
-  // Student & School Metadata (size 12 / 11.5 font times)
+  // Student & School Metadata (size 12 / 11.5 font Book Antiqua)
   autoTable(doc, {
     startY: 21,
     margin: { left: 15, right: 15 },
@@ -288,7 +288,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       fontSize: 12,
       cellPadding: { top: 0.8, bottom: 0.8, left: 0, right: 0 },
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     }
   });
 
@@ -348,13 +348,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       minCellHeight: 9,
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
-      font: 'times'
+      font: 'helvetica'
     },
     styles: {
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
-      font: 'times',
+      font: 'helvetica',
       fontSize: 12
     },
     columnStyles: {
@@ -368,7 +368,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   drawRaportFooter(1);
 
   // =========================================================================
-  // PAGE 3: RAPORT PAGE 2 (Halaman 2 dari 3: Font Serif/Book Antiqua size 12)
+  // PAGE 3: RAPORT PAGE 2 (Halaman 2 dari 3: Font Book Antiqua size 12)
   // =========================================================================
   doc.addPage();
 
@@ -446,13 +446,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       minCellHeight: 8.5,
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
-      font: 'times'
+      font: 'helvetica'
     },
     styles: {
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
-      font: 'times',
+      font: 'helvetica',
       fontSize: 12
     },
     columnStyles: {
@@ -466,7 +466,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   drawRaportFooter(2);
 
   // =========================================================================
-  // PAGE 4: RAPORT PAGE 3 (Halaman 3 dari 3: Font Serif/Book Antiqua size 12)
+  // PAGE 4: RAPORT PAGE 3 (Halaman 3 dari 3: Font Book Antiqua size 12)
   // =========================================================================
   doc.addPage();
 
@@ -509,13 +509,13 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
         minCellHeight: 9,
         lineColor: [0, 0, 0],
         lineWidth: 0.25,
-        font: 'times'
+        font: 'helvetica'
       },
       styles: {
         lineColor: [0, 0, 0],
         lineWidth: 0.25,
         textColor: [0, 0, 0],
-        font: 'times',
+        font: 'helvetica',
         fontSize: 12
       },
       columnStyles: {
@@ -530,7 +530,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   // Headings C and D (size 12 bold)
   const sectionsStartY = tableYayasanEndY + 6;
-  doc.setFont('times', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text('C. EKSTRAKURIKULER', 15, sectionsStartY);
   doc.text('D. KETIDAKHADIRAN', 120, sectionsStartY);
@@ -564,7 +564,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       minCellHeight: 8.5,
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
-      font: 'times'
+      font: 'helvetica'
     },
     styles: {
       fontSize: 12,
@@ -574,7 +574,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 12, halign: 'center', valign: 'middle' },
@@ -605,7 +605,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       lineColor: [0, 0, 0],
       lineWidth: 0.25,
       textColor: [0, 0, 0],
-      font: 'times'
+      font: 'helvetica'
     },
     columnStyles: {
       0: { cellWidth: 38, fontStyle: 'bold', halign: 'left', valign: 'middle' },
@@ -620,12 +620,12 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   );
 
   // =========================================================================
-  // SIGNATURES SECTION (Font Serif/Book Antiqua size 12)
+  // SIGNATURES SECTION (Font Book Antiqua size 12)
   // Left column center: X = 55mm | Right column center: X = 155mm
   // =========================================================================
   const sigY = Math.max(sectionsEndY + 6, 170);
 
-  doc.setFont('times', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
   doc.setTextColor(0, 0, 0);
 
@@ -642,7 +642,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   const teacherName = classTeacher?.nama || 'Hadi Husin, S.Kom.';
   const teacherNik = classTeacher?.username || '103.244.00264';
 
-  doc.setFont('times', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text(teacherName, 155, sigY + 32, { align: 'center' });
   
@@ -652,20 +652,20 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   doc.setLineWidth(0.25);
   doc.line(teacherXStart, sigY + 33, teacherXStart + teacherNameWidth, sigY + 33);
 
-  doc.setFont('times', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
   doc.text(`NIK. ${teacherNik}`, 155, sigY + 37.5, { align: 'center' });
 
   // Center bottom: Kepala Sekolah (centered at pageWidth / 2 = 105mm)
   const principalY = sigY + 46;
-  doc.setFont('times', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(12);
   doc.text('Mengetahui,', 105, principalY, { align: 'center' });
   doc.text('Kepala Sekolah', 105, principalY + 5, { align: 'center' });
 
   const principalName = 'Andreas Raymonda, S.Pd, M.Hum';
-  doc.setFont('times', 'bold');
+  doc.setFont('helvetica', 'bold');
   doc.setFontSize(12);
   doc.text(principalName, 105, principalY + 26, { align: 'center' });
   
@@ -674,7 +674,7 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
   const principalXStart = 105 - (principalNameWidth / 2);
   doc.line(principalXStart, principalY + 27, principalXStart + principalNameWidth, principalY + 27);
 
-  doc.setFont('times', 'normal');
+  doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(0, 0, 0);
   doc.text('NIK. 103.244.0072', 105, principalY + 31.5, { align: 'center' });
@@ -684,3 +684,33 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
 
   return doc;
 }
+
+/**
+ * Replaces standard Helvetica font references with Book Antiqua in the raw PDF output,
+ * preserving exact byte lengths so the PDF cross-reference (xref) table remains 100% valid.
+ */
+export function applyBookAntiquaFont(rawPdf: string): string {
+  function replaceBaseFontPadded(pdfString: string, origFont: string, newFont: string): string {
+    const origBlock = `<<\n/Type /Font\n/BaseFont /${origFont}\n/Subtype /Type1\n/Encoding /WinAnsiEncoding\n/FirstChar 32\n/LastChar 255\n>>`;
+    const idx = pdfString.indexOf(origBlock);
+    if (idx === -1) {
+      return pdfString;
+    }
+    const targetLen = origBlock.length;
+    const candidate = `<</Type/Font/BaseFont/${newFont}/Subtype/Type1/Encoding/WinAnsiEncoding/FirstChar 32/LastChar 255`;
+    const pad = targetLen - candidate.length - 2; // For closing '>>'
+    if (pad < 0) {
+      return pdfString;
+    }
+    const replacedBlock = candidate + ' '.repeat(pad) + '>>';
+    return pdfString.replace(origBlock, replacedBlock);
+  }
+
+  let result = rawPdf;
+  result = replaceBaseFontPadded(result, 'Helvetica-Bold', 'BookAntiqua-Bold');
+  result = replaceBaseFontPadded(result, 'Helvetica-Oblique', 'BookAntiqua-Italic');
+  result = replaceBaseFontPadded(result, 'Helvetica-BoldOblique', 'BookAntiqua-BoldItalic');
+  result = replaceBaseFontPadded(result, 'Helvetica', 'BookAntiqua');
+  return result;
+}
+
