@@ -8,26 +8,49 @@ import { Mapel } from '../types';
 /**
  * Standard priority ordering matching SMP Al-Irsyad Surakarta official curriculum
  */
+/**
+ * Standard priority ordering matching SMP Al-Irsyad Surakarta official curriculum
+ * Exactly as displayed in the official e-Raport PDF:
+ * Umum (1-11):
+ * 1. Pendidikan Agama dan Budi Pekerti
+ * 2. Pendidikan Pancasila dan Kewarganegaraan
+ * 3. Bahasa Indonesia
+ * 4. Matematika
+ * 5. Ilmu Pengetahuan Alam
+ * 6. Ilmu Pengetahuan Sosial
+ * 7. Bahasa Inggris
+ * 8. Seni Rupa
+ * 9. Pendidikan Jasmani, Olahraga dan Kesehatan
+ * 10. Informatika
+ * 11. Bahasa Jawa
+ * 
+ * Yayasan (12-16):
+ * 12. Aqidah
+ * 13. SKI
+ * 14. Bahasa Arab
+ * 15. Fiqih
+ * 16. Tahfidz Al Qur'an
+ */
 export const DEFAULT_UMUM_PRIORITY: { name: string; aliases: string[]; defaultOrder: number }[] = [
-  { name: 'Matematika', aliases: ['matematika'], defaultOrder: 1 },
-  { name: 'Ilmu Pengetahuan Sosial (IPS)', aliases: ['sosial', 'ips'], defaultOrder: 2 },
-  { name: 'Pendidikan Jasmani, Olahraga, dan Kesehatan (PJOK)', aliases: ['jasmani', 'pjok', 'penjas', 'olahraga'], defaultOrder: 3 },
-  { name: 'Ilmu Pengetahuan Alam (IPA)', aliases: ['alam', 'ipa'], defaultOrder: 4 },
-  { name: 'Informatika', aliases: ['informatika', 'tik', 'komputer'], defaultOrder: 5 },
-  { name: 'Seni Budaya', aliases: ['seni', 'budaya', 'prakarya'], defaultOrder: 6 },
-  { name: 'Pendidikan Pancasila (PPKn)', aliases: ['pancasila', 'kewarganegaraan', 'ppkn'], defaultOrder: 7 },
-  { name: 'Bahasa Inggris', aliases: ['inggris'], defaultOrder: 8 },
-  { name: 'Bahasa Indonesia', aliases: ['indonesia'], defaultOrder: 9 },
-  { name: 'Bahasa Jawa', aliases: ['jawa'], defaultOrder: 10 },
-  { name: 'Pendidikan Agama Islam (PAI)', aliases: ['agama', 'budi pekerti', 'pai'], defaultOrder: 11 },
+  { name: 'Pendidikan Agama dan Budi Pekerti', aliases: ['agama', 'budi pekerti', 'pai', 'pendidikan agama'], defaultOrder: 1 },
+  { name: 'Pendidikan Pancasila dan Kewarganegaraan', aliases: ['pancasila', 'kewarganegaraan', 'ppkn'], defaultOrder: 2 },
+  { name: 'Bahasa Indonesia', aliases: ['indonesia'], defaultOrder: 3 },
+  { name: 'Matematika', aliases: ['matematika'], defaultOrder: 4 },
+  { name: 'Ilmu Pengetahuan Alam', aliases: ['alam', 'ipa'], defaultOrder: 5 },
+  { name: 'Ilmu Pengetahuan Sosial', aliases: ['sosial', 'ips'], defaultOrder: 6 },
+  { name: 'Bahasa Inggris', aliases: ['inggris'], defaultOrder: 7 },
+  { name: 'Seni Rupa', aliases: ['seni rupa', 'seni budaya', 'seni', 'rupa', 'budaya', 'prakarya'], defaultOrder: 8 },
+  { name: 'Pendidikan Jasmani, Olahraga dan Kesehatan', aliases: ['jasmani', 'pjok', 'penjas', 'olahraga'], defaultOrder: 9 },
+  { name: 'Informatika', aliases: ['informatika', 'tik', 'komputer'], defaultOrder: 10 },
+  { name: 'Bahasa Jawa', aliases: ['jawa'], defaultOrder: 11 },
 ];
 
 export const DEFAULT_YAYASAN_PRIORITY: { name: string; aliases: string[]; defaultOrder: number }[] = [
-  { name: 'Fiqih', aliases: ['fiqih', 'fikih'], defaultOrder: 1 }, // Halaman 2 paling bawah
-  { name: 'Bahasa Arab', aliases: ['bahasa arab', 'arab'], defaultOrder: 2 }, // Halaman 3
-  { name: 'Sejarah Kebudayaan Islam (SKI)', aliases: ['ski', 'sejarah kebudayaan islam'], defaultOrder: 3 }, // Halaman 3
-  { name: 'Tahfidz Al-Qur\'an', aliases: ['tahfidz', 'tahfid', 'qur\'an', 'quran', 'al-qur', 'hadist', 'hadits', 'ulumul quran'], defaultOrder: 4 }, // Halaman 3
-  { name: 'Aqidah / Akidah Akhlak', aliases: ['aqidah', 'akidah'], defaultOrder: 5 }, // Halaman 3
+  { name: 'Aqidah', aliases: ['aqidah', 'akidah'], defaultOrder: 1 }, // Halaman 2 paling bawah (No. 12)
+  { name: 'SKI', aliases: ['ski', 'sejarah kebudayaan islam'], defaultOrder: 2 }, // Halaman 3 (No. 13)
+  { name: 'Bahasa Arab', aliases: ['bahasa arab', 'arab'], defaultOrder: 3 }, // Halaman 3 (No. 14)
+  { name: 'Fiqih', aliases: ['fiqih', 'fikih'], defaultOrder: 4 }, // Halaman 3 (No. 15)
+  { name: "Tahfidz Al Qur'an", aliases: ['tahfidz', 'tahfid', 'qur\'an', 'quran', 'al-qur', 'hadist', 'hadits', 'ulumul quran'], defaultOrder: 5 }, // Halaman 3 (No. 16)
 ];
 
 /**

@@ -7,18 +7,31 @@ import { SchemaDatabase, Kelas, Mapel, Siswa, Guru, PeriodeAkademik, TujuanPembe
 
 export const INITIAL_GURU: Guru[] = [
   {
+    id: 'g_hadi',
+    nama: 'Hadi Husin, S.Kom.',
+    username: '103.244.00264',
+    passwordKey: 'guru123',
+    isWaliKelas: true,
+    waliKelasKelasId: 'k5', // IX C - Putra
+    mapel1Id: 'm10', // Informatika
+    mapel1KelasId: 'k5',
+    mapel1KelasIds: ['k5'],
+    mapel2Id: '',
+    mapel2KelasId: '',
+  },
+  {
     id: 'g1',
     nama: 'Ust. Ahmad Fauzi, S.Pd.',
     username: 'ahmadfauzi',
     passwordKey: 'guru123',
     isWaliKelas: true,
     waliKelasKelasId: 'k1', // VII A
-    mapel1Id: 'm1', // Matematika
+    mapel1Id: 'm4', // Matematika
     mapel1KelasId: 'k1', // VII A
     mapel1KelasIds: ['k1'],
     mapel2Id: 'm3', // Bahasa Indonesia
-    mapel2KelasId: 'k2', // VII B (Rekan sejawat Usth. Fatimah di VII A!)
-    mapel2KelasIds: ['k2', 'k3'], // VII B dan VIII A
+    mapel2KelasId: 'k2', // VII B
+    mapel2KelasIds: ['k2', 'k3'],
   },
   {
     id: 'g2',
@@ -27,11 +40,11 @@ export const INITIAL_GURU: Guru[] = [
     passwordKey: 'guru123',
     isWaliKelas: true,
     waliKelasKelasId: 'k2', // VII B
-    mapel1Id: 'm4', // Bahasa Inggris
+    mapel1Id: 'm7', // Bahasa Inggris
     mapel1KelasId: 'k2', // VII B
     mapel1KelasIds: ['k2'],
     mapel2Id: 'm3', // Bahasa Indonesia
-    mapel2KelasId: 'k1', // VII A (Rekan sejawat Ust. Ahmad Fauzi di Jenjang VII!)
+    mapel2KelasId: 'k1', // VII A
     mapel2KelasIds: ['k1'],
   },
   {
@@ -41,10 +54,10 @@ export const INITIAL_GURU: Guru[] = [
     passwordKey: 'guru123',
     isWaliKelas: false,
     waliKelasKelasId: '',
-    mapel1Id: 'm5', // Pendidikan Agama Islam
+    mapel1Id: 'm1', // Pendidikan Agama dan Budi Pekerti
     mapel1KelasId: 'k1', // VII A
     mapel1KelasIds: ['k1'],
-    mapel2Id: 'm5', // Pendidikan Agama Islam
+    mapel2Id: 'm1',
     mapel2KelasId: 'k3', // VIII A
     mapel2KelasIds: ['k3'],
   },
@@ -55,16 +68,17 @@ export const INITIAL_GURU: Guru[] = [
     passwordKey: 'guru123',
     isWaliKelas: true,
     waliKelasKelasId: 'k3', // VIII A
-    mapel1Id: 'm2', // Ilmu Pengetahuan Alam
+    mapel1Id: 'm5', // Ilmu Pengetahuan Alam
     mapel1KelasId: 'k1', // VII A
-    mapel1KelasIds: ['k1', 'k2'], // VII A & VII B
-    mapel2Id: 'm1', // Matematika (Rekan sejawat Ust. Ahmad Fauzi di Jenjang VII!)
+    mapel1KelasIds: ['k1', 'k2'],
+    mapel2Id: 'm4', // Matematika
     mapel2KelasId: 'k2', // VII B
     mapel2KelasIds: ['k2'],
   }
 ];
 
 export const INITIAL_KELAS: Kelas[] = [
+  { id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' },
   { id: 'k1', nama: 'VII A', waliKelasId: 'g1' },
   { id: 'k2', nama: 'VII B', waliKelasId: 'g2' },
   { id: 'k3', nama: 'VIII A', waliKelasId: 'g4' },
@@ -72,30 +86,43 @@ export const INITIAL_KELAS: Kelas[] = [
 ];
 
 export const INITIAL_MAPEL: Mapel[] = [
-  { id: 'm5', nama: 'Pendidikan Agama Islam' },
-  { id: 'm1', nama: 'Matematika' },
-  { id: 'm2', nama: 'Ilmu Pengetahuan Alam (IPA)' },
-  { id: 'm3', nama: 'Bahasa Indonesia' },
-  { id: 'm4', nama: 'Bahasa Inggris' },
-  { id: 'm6', nama: 'Pendidikan Pancasila' },
+  { id: 'm1', nama: 'Pendidikan Agama dan Budi Pekerti', urutan: 1, kategori: 'umum' },
+  { id: 'm2', nama: 'Pendidikan Pancasila dan Kewarganegaraan', urutan: 2, kategori: 'umum' },
+  { id: 'm3', nama: 'Bahasa Indonesia', urutan: 3, kategori: 'umum' },
+  { id: 'm4', nama: 'Matematika', urutan: 4, kategori: 'umum' },
+  { id: 'm5', nama: 'Ilmu Pengetahuan Alam', urutan: 5, kategori: 'umum' },
+  { id: 'm6', nama: 'Ilmu Pengetahuan Sosial', urutan: 6, kategori: 'umum' },
+  { id: 'm7', nama: 'Bahasa Inggris', urutan: 7, kategori: 'umum' },
+  { id: 'm8', nama: 'Seni Rupa', urutan: 8, kategori: 'umum' },
+  { id: 'm9', nama: 'Pendidikan Jasmani, Olahraga dan Kesehatan', urutan: 9, kategori: 'umum' },
+  { id: 'm10', nama: 'Informatika', urutan: 10, kategori: 'umum' },
+  { id: 'm11', nama: 'Bahasa Jawa', urutan: 11, kategori: 'umum' },
+  { id: 'm12', nama: 'Aqidah', urutan: 12, kategori: 'yayasan' },
+  { id: 'm13', nama: 'SKI', urutan: 13, kategori: 'yayasan' },
+  { id: 'm14', nama: 'Bahasa Arab', urutan: 14, kategori: 'yayasan' },
+  { id: 'm15', nama: 'Fiqih', urutan: 15, kategori: 'yayasan' },
+  { id: 'm16', nama: "Tahfidz Al Qur'an", urutan: 16, kategori: 'yayasan' },
 ];
 
 export const INITIAL_SISWA: Siswa[] = [
+  // IX C - Putra (Student from reference report card)
+  { id: 's_daffa', nama: 'ABDURRAHMAN AD DAFFA', nisn: '3120547764', nis: '4715', jenisKelamin: 'L', kelasId: 'k5', noAbsen: 1 },
+
   // VII A Students
-  { id: 's1', nama: 'Faisal Rahman', nisn: '0101234561', nis: '2324001', jenisKelamin: 'L', kelasId: 'k1' },
-  { id: 's2', nama: 'Hasna Nabilah', nisn: '0101234562', nis: '2324002', jenisKelamin: 'P', kelasId: 'k1' },
-  { id: 's3', nama: 'Ibrahim Ali', nisn: '0101234563', nis: '2324003', jenisKelamin: 'L', kelasId: 'k1' },
-  { id: 's4', nama: 'Khadijah Maryam', nisn: '0101234564', nis: '2324004', jenisKelamin: 'P', kelasId: 'k1' },
+  { id: 's1', nama: 'Faisal Rahman', nisn: '0101234561', nis: '2324001', jenisKelamin: 'L', kelasId: 'k1', noAbsen: 1 },
+  { id: 's2', nama: 'Hasna Nabilah', nisn: '0101234562', nis: '2324002', jenisKelamin: 'P', kelasId: 'k1', noAbsen: 2 },
+  { id: 's3', nama: 'Ibrahim Ali', nisn: '0101234563', nis: '2324003', jenisKelamin: 'L', kelasId: 'k1', noAbsen: 3 },
+  { id: 's4', nama: 'Khadijah Maryam', nisn: '0101234564', nis: '2324004', jenisKelamin: 'P', kelasId: 'k1', noAbsen: 4 },
   
   // VII B Students
-  { id: 's5', nama: 'Muhammad Yusuf', nisn: '0101234565', nis: '2324005', jenisKelamin: 'L', kelasId: 'k2' },
-  { id: 's6', nama: 'Aisyah Humaira', nisn: '0101234566', nis: '2324006', jenisKelamin: 'P', kelasId: 'k2' },
-  { id: 's7', nama: 'Zaid bin Haritsah', nisn: '0101234567', nis: '2324007', jenisKelamin: 'L', kelasId: 'k2' },
-  { id: 's8', nama: 'Safiyya Nabila', nisn: '0101234568', nis: '2324008', jenisKelamin: 'P', kelasId: 'k2' },
+  { id: 's5', nama: 'Muhammad Yusuf', nisn: '0101234565', nis: '2324005', jenisKelamin: 'L', kelasId: 'k2', noAbsen: 1 },
+  { id: 's6', nama: 'Aisyah Humaira', nisn: '0101234566', nis: '2324006', jenisKelamin: 'P', kelasId: 'k2', noAbsen: 2 },
+  { id: 's7', nama: 'Zaid bin Haritsah', nisn: '0101234567', nis: '2324007', jenisKelamin: 'L', kelasId: 'k2', noAbsen: 3 },
+  { id: 's8', nama: 'Safiyya Nabila', nisn: '0101234568', nis: '2324008', jenisKelamin: 'P', kelasId: 'k2', noAbsen: 4 },
 
   // VIII A Students
-  { id: 's9', nama: 'Abdullah Azzam', nisn: '0091234571', nis: '2223001', jenisKelamin: 'L', kelasId: 'k3' },
-  { id: 's10', nama: 'Fatima Zahra', nisn: '0091234572', nis: '2223002', jenisKelamin: 'P', kelasId: 'k3' },
+  { id: 's9', nama: 'Abdullah Azzam', nisn: '0091234571', nis: '2223001', jenisKelamin: 'L', kelasId: 'k3', noAbsen: 1 },
+  { id: 's10', nama: 'Fatima Zahra', nisn: '0091234572', nis: '2223002', jenisKelamin: 'P', kelasId: 'k3', noAbsen: 2 },
 ];
 
 export const INITIAL_PERIODS: PeriodeAkademik[] = [
@@ -167,6 +194,25 @@ export const INITIAL_TP: TujuanPembelajaran[] = [
   }
 ];
 
+export const SAMPLE_DAFFA_GRADES = [
+  { mapelId: 'm1', nilaiAkhir: 75, capaian: 'Menunjukkan penguasaan sangat baik dalam membaca dan memahami kandungan ayat al-quran serta hadis tentang ilmu. Perlu bimbingan dalam memahami sejarah perkembangan dakwah islam pada masa rasulullah saw.' },
+  { mapelId: 'm2', nilaiAkhir: 81, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran pendidikan pancasila dan kewarganegaraan. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran pendidikan pancasila dan kewarganegaraan secara kolaboratif.' },
+  { mapelId: 'm3', nilaiAkhir: 75, capaian: 'Menunjukkan penguasaan sangat baik dalam menganalisis ide pokok, pesan tersirat, dan struktur teks deskripsi secara kritis. Perlu bimbingan dalam menulis tanggapan kritis terhadap buku fiksi dan nonfiksi yang dibaca.' },
+  { mapelId: 'm4', nilaiAkhir: 75, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep bilangan, aljabar, dan operasinya dalam masalah kontekstual. Perlu bimbingan dalam menyajikan dan menganalisis data dalam diagram batang dan garis.' },
+  { mapelId: 'm5', nilaiAkhir: 87, capaian: 'Menunjukkan penguasaan sangat baik dalam ini adalah tp 1. Perlu bimbingan dalam menyajikan laporan dan refleksi pembelajaran ilmu pengetahuan alam secara kritis.' },
+  { mapelId: 'm6', nilaiAkhir: 78, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami interaksi antarruang dan pengaruhnya terhadap aktivitas ekonomi masyarakat. Perlu bimbingan dalam menelusuri peninggalan sejarah dan kebudayaan masa praaksara hingga kolonial.' },
+  { mapelId: 'm7', nilaiAkhir: 87, capaian: 'Menunjukkan penguasaan sangat baik dalam mengidentifikasi gagasan utama dan informasi rinci teks deskriptif lisan dan tulis. Perlu bimbingan dalam mempresentasikan teks deskriptif sederhana dengan pelafalan yang tepat.' },
+  { mapelId: 'm8', nilaiAkhir: 78, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran seni budaya. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran seni budaya secara kolaboratif.' },
+  { mapelId: 'm9', nilaiAkhir: 81, capaian: 'Menunjukkan penguasaan sangat baik dalam mempraktikkan variasi gerak spesifik dalam permainan bola besar dan kecil. Perlu bimbingan dalam mempraktikkan keterampilan aktivitas gerak berirama secara kompak.' },
+  { mapelId: 'm10', nilaiAkhir: 75, capaian: 'Menunjukkan penguasaan sangat baik dalam tp 1. Perlu bimbingan dalam menyajikan laporan dan refleksi pembelajaran informatika secara kritis.' },
+  { mapelId: 'm11', nilaiAkhir: 81, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran bahasa jawa. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran bahasa jawa secara kolaboratif.' },
+  { mapelId: 'm12', nilaiAkhir: 87, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran aqidah. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran aqidah secara kolaboratif.' },
+  { mapelId: 'm13', nilaiAkhir: 78, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran ski. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran ski secara kolaboratif.' },
+  { mapelId: 'm14', nilaiAkhir: 84, capaian: 'Menunjukkan penguasaan sangat baik dalam mendengarkan dan menirukan ungkapan sapaan dan perkenalan bahasa arab. Perlu bimbingan dalam mendemonstrasikan percakapan pendek bahasa arab dengan intonasi fasih.' },
+  { mapelId: 'm15', nilaiAkhir: 84, capaian: 'Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran fiqih. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran fiqih secara kolaboratif.' },
+  { mapelId: 'm16', nilaiAkhir: 84, capaian: "Menunjukkan penguasaan sangat baik dalam memahami konsep dasar dan materi pokok pembelajaran tahfidz al qur'an. Perlu bimbingan dalam menyajikan laporan serta refleksi pembelajaran tahfidz al qur'an secara kolaboratif." },
+];
+
 export const STORAGE_KEY = 'e_raport_db';
 
 export function getDatabase(): SchemaDatabase {
@@ -181,6 +227,44 @@ export function getDatabase(): SchemaDatabase {
       if (!db.guru) db.guru = INITIAL_GURU;
       if (!db.periodList) db.periodList = INITIAL_PERIODS;
       if (db.activePeriodId === undefined) db.activePeriodId = 'p1';
+
+      // Ensure IX C - Putra and Abdurrahman Ad Daffa exist in existing db
+      if (!db.kelas.some(k => k.id === 'k5' || k.nama.toLowerCase().includes('ix c'))) {
+        db.kelas.unshift({ id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' });
+      }
+      if (!db.guru.some(g => g.id === 'g_hadi' || g.nama.toLowerCase().includes('hadi husin'))) {
+        db.guru.unshift(INITIAL_GURU[0]);
+      }
+      if (!db.siswa.some(s => s.id === 's_daffa' || s.nama.toLowerCase().includes('abdurrahman ad daffa'))) {
+        db.siswa.unshift(INITIAL_SISWA[0]);
+      }
+
+      // Merge all 16 official subjects if missing
+      INITIAL_MAPEL.forEach(im => {
+        if (!db.mapel.some(m => m.id === im.id || m.nama.toLowerCase().trim() === im.nama.toLowerCase().trim())) {
+          db.mapel.push(im);
+        }
+      });
+
+      // Ensure active period's snapshot has the full class and mapels
+      const activeP = db.periodList.find(p => p.id === db.activePeriodId);
+      if (activeP) {
+        if (!activeP.snapshotKelas?.some(k => k.id === 'k5' || k.nama.toLowerCase().includes('ix c'))) {
+          activeP.snapshotKelas = [...(activeP.snapshotKelas || []), { id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' }];
+        }
+        if (!activeP.snapshotGuru?.some(g => g.id === 'g_hadi' || g.nama.toLowerCase().includes('hadi husin'))) {
+          activeP.snapshotGuru = [...(activeP.snapshotGuru || []), INITIAL_GURU[0]];
+        }
+        if (!activeP.snapshotSiswa?.some(s => s.id === 's_daffa' || s.nama.toLowerCase().includes('abdurrahman ad daffa'))) {
+          activeP.snapshotSiswa = [...(activeP.snapshotSiswa || []), INITIAL_SISWA[0]];
+        }
+        INITIAL_MAPEL.forEach(im => {
+          if (!activeP.snapshotMapel?.some(m => m.id === im.id || m.nama.toLowerCase().trim() === im.nama.toLowerCase().trim())) {
+            activeP.snapshotMapel = [...(activeP.snapshotMapel || []), im];
+          }
+        });
+      }
+
       if (!db.tujuanPembelajaran || db.tujuanPembelajaran.length === 0) {
         db.tujuanPembelajaran = INITIAL_TP;
       } else {
@@ -192,7 +276,44 @@ export function getDatabase(): SchemaDatabase {
         });
       }
       if (!db.nilaiSiswa) db.nilaiSiswa = [];
+      
+      // Ensure Abdurrahman Ad Daffa has his official 16 grades
+      SAMPLE_DAFFA_GRADES.forEach(g => {
+        const gradeKey = `p1_s_daffa_${g.mapelId}`;
+        if (!db.nilaiSiswa.some(n => n.siswaId === 's_daffa' && n.mapelId === g.mapelId)) {
+          db.nilaiSiswa.push({
+            id: gradeKey,
+            periodeId: 'p1',
+            siswaId: 's_daffa',
+            mapelId: g.mapelId,
+            guruId: 'g_hadi',
+            nilaiAkhir: g.nilaiAkhir,
+            capaianKompetensi: g.capaian
+          });
+        }
+      });
+
       if (!db.absensiDanCatatan) db.absensiDanCatatan = [];
+      if (!db.absensiDanCatatan.some(a => a.siswaId === 's_daffa')) {
+        db.absensiDanCatatan.push({
+          id: 'p1_s_daffa',
+          periodeId: 'p1',
+          siswaId: 's_daffa',
+          kelasId: 'k5',
+          sakit: 1,
+          izin: 1,
+          alfa: 0,
+          catatanWaliKelas: 'Menunjukkan perkembangan akademik dan akhlak yang sangat baik.',
+          kelakuan: 'Sangat Baik',
+          kerajinan: 'Sangat Baik',
+          kerapihan: 'Sangat Baik',
+          ekstrakurikuler: [
+            { nama: 'Pramuka Penggalang', nilai: 'A' },
+            { nama: "Tahfidz Al-Qur'an Juz 30", nilai: 'A' }
+          ]
+        });
+      }
+
       if (!db.adminUsername) db.adminUsername = 'admin';
       if (!db.adminPasswordKey) db.adminPasswordKey = 'alirsyadsolo';
       return db;
@@ -213,6 +334,15 @@ export function getDatabase(): SchemaDatabase {
     activePeriodId: 'p1',
     tujuanPembelajaran: INITIAL_TP,
     nilaiSiswa: [
+      ...SAMPLE_DAFFA_GRADES.map(g => ({
+        id: `p1_s_daffa_${g.mapelId}`,
+        periodeId: 'p1',
+        siswaId: 's_daffa',
+        mapelId: g.mapelId,
+        guruId: 'g_hadi',
+        nilaiAkhir: g.nilaiAkhir,
+        capaianKompetensi: g.capaian
+      })),
       {
         id: 'p1_s1_m1',
         periodeId: 'p1',
@@ -237,6 +367,23 @@ export function getDatabase(): SchemaDatabase {
       }
     ],
     absensiDanCatatan: [
+      {
+        id: 'p1_s_daffa',
+        periodeId: 'p1',
+        siswaId: 's_daffa',
+        kelasId: 'k5',
+        sakit: 1,
+        izin: 1,
+        alfa: 0,
+        catatanWaliKelas: 'Menunjukkan perkembangan akademik dan akhlak yang sangat baik.',
+        kelakuan: 'Sangat Baik',
+        kerajinan: 'Sangat Baik',
+        kerapihan: 'Sangat Baik',
+        ekstrakurikuler: [
+          { nama: 'Pramuka Penggalang', nilai: 'A' },
+          { nama: "Tahfidz Al-Qur'an Juz 30", nilai: 'A' }
+        ]
+      },
       {
         id: 'p1_s1',
         periodeId: 'p1',
