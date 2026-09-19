@@ -538,13 +538,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           .raport-page.raport-cover,
                           .raport-page.raport-cover * {
                             font-family: 'Times New Roman', Times, serif !important;
-                            font-size: 16px !important;
+                            font-size: 16pt !important;
                           }
                           .raport-page.raport-cover h1,
                           .raport-page.raport-cover p,
                           .raport-page.raport-cover div {
                             font-family: 'Times New Roman', Times, serif !important;
-                            font-size: 16px !important;
+                            font-size: 16pt !important;
                           }
                           .raport-page.raport-cover {
                             justify-content: flex-start !important;
@@ -740,13 +740,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page.raport-cover,
                     .raport-page.raport-cover * {
                       font-family: 'Times New Roman', Times, serif !important;
-                      font-size: 16px !important;
+                      font-size: 16pt !important;
                     }
                     .raport-page.raport-cover h1,
                     .raport-page.raport-cover p,
                     .raport-page.raport-cover div {
                       font-family: 'Times New Roman', Times, serif !important;
-                      font-size: 16px !important;
+                      font-size: 16pt !important;
                     }
                     .raport-page.raport-cover {
                       justify-content: flex-start !important;
@@ -861,13 +861,13 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page.raport-cover,
                     .raport-page.raport-cover * {
                       font-family: 'Times New Roman', Times, serif !important;
-                      font-size: 16px !important;
+                      font-size: 16pt !important;
                     }
                     .raport-page.raport-cover h1,
                     .raport-page.raport-cover p,
                     .raport-page.raport-cover div {
                       font-family: 'Times New Roman', Times, serif !important;
-                      font-size: 16px !important;
+                      font-size: 16pt !important;
                     }
                     .raport-page.raport-cover {
                       justify-content: flex-start !important;
@@ -1113,29 +1113,29 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     return (
                       <>
                         {/* ================= COVER PAGE ================= */}
-                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '275mm', fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                        <div className="raport-page raport-cover text-black flex flex-col justify-start" style={{ minHeight: '275mm', fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                           <div className="text-center mt-12 print:mt-10">
-                            <h1 className="text-[16px] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                            <h1 className="text-[16pt] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                               LAPORAN HASIL BELAJAR SISWA
                             </h1>
-                            <h1 className="text-[16px] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                            <h1 className="text-[16pt] font-bold tracking-widest uppercase text-black leading-relaxed" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                               SMP AL IRSYAD SURAKARTA
                             </h1>
                           </div>
 
                           <div className="h-[166mm] print:h-[158mm]" />
 
-                          <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                          <div className="flex flex-col items-center gap-4 w-full max-w-[480px] mx-auto text-black" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                             <div className="w-full text-center">
-                              <p className="text-[16px] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>NAMA PESERTA DIDIK</p>
-                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16px] tracking-wide uppercase bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                              <p className="text-[16pt] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>NAMA PESERTA DIDIK</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16pt] tracking-wide uppercase bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                                 {previewSiswa.nama}
                               </div>
                             </div>
 
                             <div className="w-full text-center mt-2">
-                              <p className="text-[16px] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>NISN</p>
-                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16px] tracking-widest bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16px' }}>
+                              <p className="text-[16pt] font-bold tracking-widest text-[#000000] uppercase mb-2" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>NISN</p>
+                              <div className="border border-black w-full py-3.5 px-4 text-center font-normal text-[16pt] tracking-widest bg-white" style={{ fontFamily: '"Times New Roman", Times, serif', fontSize: '16pt' }}>
                                 {previewSiswa.nisn || previewSiswa.nis || '-'}
                               </div>
                             </div>
