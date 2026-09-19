@@ -5,7 +5,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { SchemaDatabase, Siswa, Kelas } from '../types';
-import { generateSiswaPDF, applyBookAntiquaFont } from '../utils/pdfGenerator';
+import { generateSiswaPDF } from '../utils/pdfGenerator';
 import JSZip from 'jszip';
 import { 
   FolderArchive, ShieldCheck, ArrowRightLeft, Users, 
@@ -177,23 +177,15 @@ export function AdminBackup({ db }: AdminBackupProps) {
           // Generate student's PDF
           const doc = generateSiswaPDF(student, db, activePeriod);
           
-          // Export output PDF to binary string and apply Book Antiqua font mapping for pages 2-4
-          const rawPdf = doc.output();
-          const processedPdf = applyBookAntiquaFont(rawPdf);
-
-          // Convert processed PDF string to Uint8Array for ZIP packaging
-          const len = processedPdf.length;
-          const bytes = new Uint8Array(len);
-          for (let b = 0; b < len; b++) {
-            bytes[b] = processedPdf.charCodeAt(b) & 0xff;
-          }
+          // Export output PDF to binary array buffer
+          const arrayBuffer = doc.output('arraybuffer');
           
           // Sanitize student name for standard file system compatibility
           const sanitizedSiswaName = student.nama.replace(/[/\\?%*:|"<>]/g, '_');
           const fileName = `${sanitizedSiswaName}_Raport_${activePeriod.tipeUjian}.pdf`;
           
           // Add file directly into the ZIP instance
-          zip.file(fileName, bytes.buffer);
+          zip.file(fileName, arrayBuffer);
         }
       }
 
