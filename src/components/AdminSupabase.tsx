@@ -11,11 +11,13 @@ import {
   getActiveDbProvider, 
   setActiveDbProvider, 
   testSupabaseConnection, 
-  migrateDataToSupabase 
+  migrateDataToSupabase,
+  fetchEntireDatabaseFromSupabase,
+  refreshDatabaseFromSupabase
 } from '../lib/supabase';
 import { 
   Database, Server, CheckCircle2, AlertTriangle, RefreshCw, Copy, 
-  ExternalLink, ArrowRight, ShieldCheck, Zap, DownloadCloud, Sparkles, Check, Key
+  ExternalLink, ArrowRight, ShieldCheck, Zap, DownloadCloud, Sparkles, Check, Key, CloudDownload
 } from 'lucide-react';
 
 interface AdminSupabaseProps {
@@ -23,7 +25,7 @@ interface AdminSupabaseProps {
   onUpdateDb?: (newDb: SchemaDatabase) => void;
 }
 
-export function AdminSupabase({ db }: AdminSupabaseProps) {
+export function AdminSupabase({ db, onUpdateDb }: AdminSupabaseProps) {
   const [config, setConfig] = useState(getSupabaseConfig());
   
   const [isTesting, setIsTesting] = useState(false);
@@ -31,6 +33,9 @@ export function AdminSupabase({ db }: AdminSupabaseProps) {
 
   const [isMigrating, setIsMigrating] = useState(false);
   const [migrationResult, setMigrationResult] = useState<{ success: boolean; message: string; counts?: any } | null>(null);
+
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullResult, setPullResult] = useState<{ success: boolean; message: string; counts?: any } | null>(null);
 
   const [copiedSql, setCopiedSql] = useState(false);
   const [saveMessage, setSaveMessage] = useState('');
@@ -218,6 +223,41 @@ CREATE POLICY "Public access on absensi_dan_catatan" ON public.absensi_dan_catat
       });
     } finally {
       setIsMigrating(false);
+    }
+  };
+
+  const handlePullFromCloud = async () => {
+    setIsPulling(true);
+    setPullResult(null);
+    try {
+      const freshDb = await fetchEntireDatabaseFromSupabase();
+      if (!freshDb) {
+        throw new Error('Gagal mengambil data dari Supabase. Pastikan tabel telah dibuat dan kredensial valid.');
+      }
+      if (onUpdateDb) {
+        onUpdateDb(freshDb);
+      }
+      setPullResult({
+        success: true,
+        message: 'Data terbaru dari Supabase Cloud berhasil ditarik dan diperbarui ke frontend!',
+        counts: {
+          kelas: freshDb.kelas?.length || 0,
+          mapel: freshDb.mapel?.length || 0,
+          siswa: freshDb.siswa?.length || 0,
+          guru: freshDb.guru?.length || 0,
+          periodList: freshDb.periodList?.length || 0,
+          tujuanPembelajaran: freshDb.tujuanPembelajaran?.length || 0,
+          nilaiSiswa: freshDb.nilaiSiswa?.length || 0,
+          absensiDanCatatan: freshDb.absensiDanCatatan?.length || 0
+        }
+      });
+    } catch (e: any) {
+      setPullResult({
+        success: false,
+        message: e.message || 'Gagal menarik data dari cloud.'
+      });
+    } finally {
+      setIsPulling(false);
     }
   };
 
@@ -439,23 +479,73 @@ CREATE POLICY "Public access on absensi_dan_catatan" ON public.absensi_dan_catat
               </div>
             </div>
 
-            <button
-              onClick={handleMigrate}
-              disabled={isMigrating || !config.url || !config.anonKey}
-              className="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
-            >
-              {isMigrating ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Sedang Mengunggah Seluruh Koleksi ke Supabase...</span>
-                </>
-              ) : (
-                <>
-                  <Sparkles className="w-4 h-4" />
-                  <span>Migrasikan Seluruh Data ke Supabase Sekarang</span>
-                </>
-              )}
-            </button>
+            <div className="flex flex-col sm:flex-row gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={handleMigrate}
+                disabled={isMigrating || isPulling || !config.url || !config.anonKey}
+                className="flex-1 py-3 px-4 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+              >
+                {isMigrating ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Sedang Mengunggah Data ke Supabase...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Migrasikan Data ke Cloud</span>
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                onClick={handlePullFromCloud}
+                disabled={isPulling || isMigrating || !config.url || !config.anonKey}
+                className="py-3 px-4 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-800 font-bold text-xs rounded-xl border border-slate-200 shadow-2xs flex items-center justify-center gap-2 transition active:scale-95 cursor-pointer"
+              >
+                {isPulling ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin text-emerald-600" />
+                    <span>Menarik Data...</span>
+                  </>
+                ) : (
+                  <>
+                    <CloudDownload className="w-4 h-4 text-emerald-600" />
+                    <span>Tarik Data Terbaru</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {pullResult && (
+              <div className={`p-4 rounded-xl border text-xs font-medium space-y-2 ${
+                pullResult.success 
+                  ? 'bg-emerald-50 border-emerald-200 text-emerald-900' 
+                  : 'bg-rose-50 border-rose-200 text-rose-900'
+              }`}>
+                <div className="flex items-center gap-2 font-bold">
+                  {pullResult.success ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                  ) : (
+                    <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  )}
+                  <span>{pullResult.message}</span>
+                </div>
+                {pullResult.counts && (
+                  <div className="text-[11px] text-slate-600 grid grid-cols-2 gap-1 pt-1 font-mono">
+                    <span>• Kelas: {pullResult.counts.kelas} data</span>
+                    <span>• Mapel: {pullResult.counts.mapel} data</span>
+                    <span>• Siswa: {pullResult.counts.siswa} data</span>
+                    <span>• Guru: {pullResult.counts.guru} data</span>
+                    <span>• TP: {pullResult.counts.tujuanPembelajaran} data</span>
+                    <span>• Nilai: {pullResult.counts.nilaiSiswa} data</span>
+                    <span>• Absensi: {pullResult.counts.absensiDanCatatan} data</span>
+                  </div>
+                )}
+              </div>
+            )}
 
             {migrationResult && (
               <div className={`p-4 rounded-xl border text-xs font-medium space-y-2 ${

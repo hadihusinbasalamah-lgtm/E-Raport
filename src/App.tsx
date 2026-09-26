@@ -26,19 +26,23 @@ import {
   fetchEntireDatabaseFromSupabase, 
   syncDatabaseChangeToSupabase,
   isSupabaseConfigured,
-  subscribeToSupabaseDatabase
+  subscribeToSupabaseDatabase,
+  refreshDatabaseFromSupabase,
+  SyncStatusType
 } from './lib/supabase';
 
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database, Settings, Server
+  Database, Settings, Server, RefreshCw, AlertTriangle, CloudCheck
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [db, setDb] = useState<SchemaDatabase>(getDatabase());
-  const [isDbLoading, setIsDbLoading] = useState(true);
+  const [syncStatus, setSyncStatus] = useState<SyncStatusType>(() => isSupabaseConfigured() ? 'syncing' : 'offline');
+  const [syncMessage, setSyncMessage] = useState<string>('');
+  const [isManualSyncing, setIsManualSyncing] = useState<boolean>(false);
 
   // Keep a ref to the absolute latest db state to prevent stale state closure issues during async updates
   const dbRef = React.useRef(db);
@@ -55,23 +59,48 @@ export default function App() {
     return { role: null, userId: '', name: '' };
   });
 
-  // Subscribe/Fetch changes from Supabase (or fallback to local persistent storage if not yet configured)
+  // Client-Side Fetching: Stale-While-Revalidate & Realtime Subscription
+  // Data lokal langsung siap dipakai (zero-wait), lalu revalidasi dengan Supabase di background
   useEffect(() => {
     if (isSupabaseConfigured()) {
-      const unsubscribe = subscribeToSupabaseDatabase((supabaseDb) => {
-        if (supabaseDb) {
-          setDb(supabaseDb);
-          saveDatabase(supabaseDb);
+      const unsubscribe = subscribeToSupabaseDatabase(
+        (supabaseDb) => {
+          if (supabaseDb) {
+            setDb(supabaseDb);
+            saveDatabase(supabaseDb);
+          }
+        },
+        (status, message) => {
+          setSyncStatus(status);
+          if (message) setSyncMessage(message);
         }
-        setIsDbLoading(false);
-      });
+      );
       return () => unsubscribe();
     } else {
-      const localData = getDatabase();
-      setDb(localData);
-      setIsDbLoading(false);
+      setSyncStatus('offline');
+      setSyncMessage('Mode penyimpanan lokal');
     }
   }, [session.role, session.userId]);
+
+  // Handler sinkronisasi manual ke Supabase (On-Demand Client-Side Revalidation)
+  const handleManualSync = async () => {
+    if (isManualSyncing) return;
+    setIsManualSyncing(true);
+    setSyncStatus('syncing');
+    setSyncMessage('Menyinkronkan data dari cloud...');
+
+    await refreshDatabaseFromSupabase(
+      (freshDb) => {
+        setDb(freshDb);
+        saveDatabase(freshDb);
+      },
+      (status, message) => {
+        setSyncStatus(status);
+        if (message) setSyncMessage(message);
+      }
+    );
+    setIsManualSyncing(false);
+  };
 
   // Sidebar toggle for mobile layouts
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -221,20 +250,6 @@ export default function App() {
     }] : []),
     { id: 'profile-guru', label: 'Pengaturan Profil', icon: User },
   ];
-
-  if (isDbLoading) {
-    return (
-      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white font-sans p-6">
-        <div className="flex flex-col items-center space-y-4 max-w-md text-center">
-          <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
-          <h3 className="text-lg font-black text-slate-100 tracking-tight">Menghubungkan Database...</h3>
-          <p className="text-xs text-slate-400 leading-relaxed md:px-6">
-            Mohon tunggu sejenak, sistem sedang sinkronisasi data e-Raport SMP Al Irsyad Surakarta dengan database Supabase Cloud.
-          </p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-800 flex flex-col">
@@ -393,7 +408,45 @@ export default function App() {
                   }
                 </p>
               </div>
-              <div className="flex items-center space-x-3 sm:space-x-4">
+              <div className="flex items-center space-x-2 sm:space-x-3">
+                {/* Cloud Sync Status Pill (Client-Side Fetching & Revalidation) */}
+                {isSupabaseConfigured() ? (
+                  <button
+                    type="button"
+                    onClick={handleManualSync}
+                    disabled={isManualSyncing}
+                    title={syncMessage || 'Klik untuk sinkronisasi ulang data cloud'}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] sm:text-xs font-semibold flex items-center gap-1.5 transition border shadow-2xs cursor-pointer ${
+                      syncStatus === 'syncing' || isManualSyncing
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : syncStatus === 'synced'
+                        ? 'bg-emerald-50/80 hover:bg-emerald-100 text-emerald-900 border-emerald-250'
+                        : 'bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300'
+                    }`}
+                  >
+                    {syncStatus === 'syncing' || isManualSyncing ? (
+                      <RefreshCw className="w-3 h-3 text-emerald-600 animate-spin shrink-0" />
+                    ) : syncStatus === 'synced' ? (
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-3 h-3 text-amber-600 shrink-0" />
+                    )}
+                    <span className="hidden sm:inline">
+                      {syncStatus === 'syncing' || isManualSyncing
+                        ? 'Sinkronisasi...'
+                        : syncStatus === 'synced'
+                        ? 'Cloud Sync'
+                        : 'Lokal/Offline'}
+                    </span>
+                    <RefreshCw className={`w-2.5 h-2.5 opacity-60 hover:opacity-100 shrink-0 ${isManualSyncing ? 'animate-spin' : ''}`} />
+                  </button>
+                ) : (
+                  <div className="px-2 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-500 text-[9px] sm:text-[10px] font-medium hidden sm:flex items-center gap-1">
+                    <Server className="w-2.5 h-2.5 opacity-50" />
+                    <span>Lokal</span>
+                  </div>
+                )}
+
                 {activePeriod ? (
                   <div className="px-2.5 py-1 bg-amber-50 border border-amber-200 rounded text-amber-700 text-[10px] sm:text-xs font-medium uppercase tracking-tight">
                     Rilis: {formatTipeUjian(activePeriod.tipeUjian)} Ready

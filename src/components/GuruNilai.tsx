@@ -157,6 +157,10 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   const [message, setMessage] = useState('');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
+  // Concurrency safeguards: prevent background sync from wiping unsaved teacher input
+  const isDirtyRef = React.useRef(false);
+  const lastLoadedAssignmentRef = React.useRef<string>('');
+
   const getJenjang = (kelasNama: string): string => {
     return parseKelasInfo(kelasNama).jenjangStr;
   };
@@ -225,6 +229,17 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   // Fetch TujuanPembelajaran setting & Populate students currently enrolled
   useEffect(() => {
     if (!activeAssignment || !activePeriod) return;
+
+    const currentAssignmentKey = `${activePeriod.id}_${activeAssignment.key}`;
+    const isNewAssignment = lastLoadedAssignmentRef.current !== currentAssignmentKey;
+
+    if (!isNewAssignment && isDirtyRef.current) {
+      // User is actively editing this assignment, prevent background realtime sync from overwriting unsaved form data
+      return;
+    }
+
+    lastLoadedAssignmentRef.current = currentAssignmentKey;
+    isDirtyRef.current = false;
 
     const targetJenjang = getJenjang(activeAssignment.kelasNama);
 
@@ -323,6 +338,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
 
   // Handle individual numeric inputs for original values and trigger reciprocal updates
   const handleNumChange = (studentId: string, field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli' | 'nilaiPsts', value: string) => {
+    isDirtyRef.current = true;
     const rawVal = value === '' ? '' : Math.min(100, Math.max(0, parseInt(value) || 0));
     setGrades(prev => {
       // 1. Update the original value in the row
@@ -361,6 +377,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
 
   // Handle description change
   const handleDescChange = (studentId: string, value: string) => {
+    isDirtyRef.current = true;
     setGrades(prev => prev.map(g => {
       if (g.siswaId === studentId) {
         return { ...g, capaianKompetensi: value };
@@ -493,6 +510,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       return;
     }
 
+    isDirtyRef.current = true;
     setGrades(prev => prev.map(g => {
       if (g.siswaId === studentId) {
         return { ...g, capaianKompetensi: desc };
@@ -505,6 +523,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   const handleAutoGenerateAllDesc = () => {
     if (!activeTPs) return;
     let count = 0;
+    isDirtyRef.current = true;
     setGrades(prev => prev.map(g => {
       const desc = generateDescFromKonversi(g);
       if (desc) count++;
@@ -612,6 +631,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       nilaiSiswa: mergedNilaiList
     });
 
+    isDirtyRef.current = false;
     setMessage("Semua nilai siswa (termasuk kelengkapan Rerata PSTS) BERHASIL disimpan ke database master!");
   };
 
@@ -786,7 +806,10 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
           </select>
         </div>
         <button
-          onClick={() => setSelectedIdx(tempIdx)}
+          onClick={() => {
+            isDirtyRef.current = false;
+            setSelectedIdx(tempIdx);
+          }}
           className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md active:scale-95 transition-all w-full sm:w-auto shrink-0"
         >
           <RefreshCw className="w-3.5 h-3.5" />

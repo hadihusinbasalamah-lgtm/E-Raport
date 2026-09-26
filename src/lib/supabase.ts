@@ -371,15 +371,29 @@ export function mapAbsensiFromSupabase(row: any): AbsensiDanCatatan {
   };
 }
 
+// Track the timestamp of the last local write to ignore self-triggered realtime echo events
+let lastLocalWriteTime = 0;
+
+export function recordLocalDatabaseWrite(): void {
+  lastLocalWriteTime = Date.now();
+}
+
 // ========================================================================
 // FETCH ALL DATA FROM SUPABASE
 // ========================================================================
 
-export async function fetchEntireDatabaseFromSupabase(): Promise<SchemaDatabase | null> {
+/**
+ * Mengambil seluruh database dari Supabase dengan proteksi batas waktu (timeout).
+ * Menjamin pengurutan terstruktur pada sisi client:
+ * - Kelas diurutkan secara hierarkis (VII A ... IX C)
+ * - Siswa diurutkan berdasarkan No. Absen & Nama
+ * - Mapel diurutkan berdasarkan urutan & kategori
+ */
+export async function fetchEntireDatabaseFromSupabase(timeoutMs = 12000): Promise<SchemaDatabase | null> {
   const client = getSupabaseClient();
   if (!client) return null;
 
-  try {
+  const fetchPromise = async (): Promise<SchemaDatabase | null> => {
     const [
       configRes,
       kelasRes,
@@ -402,7 +416,21 @@ export async function fetchEntireDatabaseFromSupabase(): Promise<SchemaDatabase 
       client.from('absensi_dan_catatan').select('*')
     ]);
 
+    // Check if table missing error (e.g. 42P01 - schema not run yet)
+    if (configRes.error?.code === '42P01' || kelasRes.error?.code === '42P01') {
+      console.warn('Supabase tables have not been created yet. Please execute supabase_schema.sql');
+      return null;
+    }
+
     const configData = configRes.data || {};
+
+    // Sort students consistently client-side by no_absen then nama
+    const mappedSiswa = (siswaRes.data || []).map(mapSiswaFromSupabase).sort((a, b) => {
+      const noA = a.noAbsen !== undefined && a.noAbsen !== null ? a.noAbsen : 999999;
+      const noB = b.noAbsen !== undefined && b.noAbsen !== null ? b.noAbsen : 999999;
+      if (noA !== noB) return noA - noB;
+      return a.nama.localeCompare(b.nama);
+    });
 
     return {
       adminUsername: configData.admin_username || 'admin',
@@ -410,13 +438,21 @@ export async function fetchEntireDatabaseFromSupabase(): Promise<SchemaDatabase 
       activePeriodId: configData.active_period_id || 'p1',
       kelas: sortKelasList((kelasRes.data || []).map(mapKelasFromSupabase)),
       mapel: (mapelRes.data || []).map(mapMapelFromSupabase),
-      siswa: (siswaRes.data || []).map(mapSiswaFromSupabase),
+      siswa: mappedSiswa,
       guru: (guruRes.data || []).map(mapGuruFromSupabase),
       periodList: (periodRes.data || []).map(mapPeriodFromSupabase),
       tujuanPembelajaran: (tpRes.data || []).map(mapTPFromSupabase),
       nilaiSiswa: (nilaiRes.data || []).map(mapNilaiFromSupabase),
       absensiDanCatatan: (absensiRes.data || []).map(mapAbsensiFromSupabase)
     };
+  };
+
+  const timeoutPromise = new Promise<null>((_, reject) => {
+    setTimeout(() => reject(new Error('Batas waktu koneksi Supabase terlampaui (timeout)')), timeoutMs);
+  });
+
+  try {
+    return await Promise.race([fetchPromise(), timeoutPromise]);
   } catch (err) {
     console.error('Error fetching entire database from Supabase:', err);
     return null;
@@ -435,6 +471,9 @@ export async function syncDatabaseChangeToSupabase(
 ): Promise<void> {
   const client = getSupabaseClient();
   if (!client) return;
+
+  // Mark that a local save is underway to prevent self-echoing in realtime
+  recordLocalDatabaseWrite();
 
   try {
     // 1. Sync config if admin modified it
@@ -591,46 +630,117 @@ export async function migrateDataToSupabase(currentDb: SchemaDatabase): Promise<
 }
 
 // ========================================================================
-// REALTIME SUBSCRIPTION FOR SUPABASE
+// REALTIME SUBSCRIPTION & REVALIDATION FOR SUPABASE (CLIENT-SIDE FETCHING)
 // ========================================================================
 
+export type SyncStatusType = 'idle' | 'syncing' | 'synced' | 'error' | 'offline';
+
+let realtimeDebounceTimer: any = null;
+
 export function subscribeToSupabaseDatabase(
-  onData: (db: SchemaDatabase) => void
+  onData: (db: SchemaDatabase) => void,
+  onSyncStatus?: (status: SyncStatusType, message?: string) => void
 ): () => void {
   const client = getSupabaseClient();
   if (!client) {
+    onSyncStatus?.('offline', 'Kredensial Supabase belum diisi');
     return () => {};
   }
 
-  // Fetch immediately
+  let isSubscribed = true;
+  onSyncStatus?.('syncing', 'Mengambil data dari Supabase Cloud...');
+
+  // Fetch immediately on subscription
   fetchEntireDatabaseFromSupabase().then((data) => {
-    if (data) onData(data);
+    if (!isSubscribed) return;
+    if (data) {
+      onData(data);
+      onSyncStatus?.('synced', 'Terkoneksi ke Supabase');
+    } else {
+      onSyncStatus?.('offline', 'Menggunakan data lokal');
+    }
   }).catch((err) => {
+    if (!isSubscribed) return;
     console.error('Error fetching Supabase data on subscription start:', err);
+    onSyncStatus?.('error', err?.message || 'Gagal terhubung ke Supabase');
   });
 
-  // Realtime subscription via Supabase Channel
+  // Realtime subscription via Supabase Channel with Debounce & Self-Update echo suppression
   const channel = client
     .channel('e-raport-db-changes')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public' },
-      async () => {
-        const fresh = await fetchEntireDatabaseFromSupabase();
-        if (fresh) {
-          onData(fresh);
+      () => {
+        // Abaikan sinyal perubahan jika berasal dari operasi penyimpanan lokal kita sendiri dalam 2 detik terakhir
+        if (Date.now() - lastLocalWriteTime < 2000) {
+          return;
         }
+
+        // Debounce incoming events (800ms) agar update batch nilai/data tidak membombardir database
+        if (realtimeDebounceTimer) {
+          clearTimeout(realtimeDebounceTimer);
+        }
+
+        realtimeDebounceTimer = setTimeout(async () => {
+          if (!isSubscribed) return;
+          try {
+            onSyncStatus?.('syncing', 'Memperbarui data dari cloud...');
+            const fresh = await fetchEntireDatabaseFromSupabase();
+            if (fresh && isSubscribed) {
+              onData(fresh);
+              onSyncStatus?.('synced', 'Pembaruan realtime diterapkan');
+            }
+          } catch (e: any) {
+            console.warn('Realtime fetch failed:', e);
+            onSyncStatus?.('error', e?.message || 'Gagal memuat realtime data');
+          }
+        }, 800);
       }
     )
     .subscribe();
 
   return () => {
+    isSubscribed = false;
+    if (realtimeDebounceTimer) {
+      clearTimeout(realtimeDebounceTimer);
+    }
     try {
       client.removeChannel(channel);
     } catch (e) {
       console.warn('Error removing Supabase channel:', e);
     }
   };
+}
+
+/**
+ * Pemicu manual untuk menarik data paling baru dari Supabase Cloud ke frontend
+ */
+export async function refreshDatabaseFromSupabase(
+  onData: (db: SchemaDatabase) => void,
+  onSyncStatus?: (status: SyncStatusType, message?: string) => void
+): Promise<boolean> {
+  const client = getSupabaseClient();
+  if (!client) {
+    onSyncStatus?.('offline', 'Kredensial Supabase belum diatur');
+    return false;
+  }
+
+  try {
+    onSyncStatus?.('syncing', 'Menyinkronkan data dari cloud...');
+    const fresh = await fetchEntireDatabaseFromSupabase();
+    if (fresh) {
+      onData(fresh);
+      onSyncStatus?.('synced', 'Data cloud berhasil diperbarui');
+      return true;
+    } else {
+      onSyncStatus?.('error', 'Gagal mengambil data dari Supabase');
+      return false;
+    }
+  } catch (err: any) {
+    onSyncStatus?.('error', err?.message || 'Kendala koneksi ke server');
+    return false;
+  }
 }
 
 // ========================================================================
