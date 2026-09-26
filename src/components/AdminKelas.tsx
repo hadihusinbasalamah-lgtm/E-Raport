@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { SchemaDatabase, Kelas, Guru } from '../types';
 import { Users, Plus, Edit2, Check, X, ShieldAlert, Trash2 } from 'lucide-react';
+import { sortKelasList } from '../utils/kelasOrder';
 
 interface AdminKelasProps {
   db: SchemaDatabase;
@@ -59,7 +60,7 @@ export function AdminKelas({ db, onUpdate }: AdminKelasProps) {
       });
     }
 
-    const updatedKelas = [...db.kelas, newKelas];
+    const updatedKelas = sortKelasList([...db.kelas, newKelas]);
 
     onUpdate({
       ...db,
@@ -99,12 +100,12 @@ export function AdminKelas({ db, onUpdate }: AdminKelasProps) {
       });
     }
 
-    const updatedKelas = db.kelas.map(k => {
+    const updatedKelas = sortKelasList(db.kelas.map(k => {
       if (k.id === editingId) {
         return { ...k, nama: inputNama.trim(), waliKelasId: inputWaliKelasId };
       }
       return k;
-    });
+    }));
 
     // Sync waliKelasId reference inside Kelas snapshotted for other teachers who might no longer be homeroom
     updatedGuru = updatedGuru.map(g => {
@@ -338,7 +339,7 @@ export function AdminKelas({ db, onUpdate }: AdminKelasProps) {
                 </td>
               </tr>
             ) : (
-              db.kelas.map((k) => {
+              sortKelasList(db.kelas).map((k) => {
                 const wali = db.guru.find(g => g.id === k.waliKelasId);
                 return (
                   <tr key={k.id} className="hover:bg-slate-50/50 transition-colors">

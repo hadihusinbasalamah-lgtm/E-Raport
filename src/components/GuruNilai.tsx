@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa, formatTipeUjian } from '../types';
 import { Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle, Copy, Users } from 'lucide-react';
+import { compareKelasNama, parseKelasInfo } from '../utils/kelasOrder';
 
 // Helper function for custom conditional mapping & interpolation
 const getInterpolatedValueForColumn = (
@@ -121,6 +122,13 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     });
   }
 
+  // Sort assignments strictly from VII A, VII B, VII C ... to IX C
+  assignments.sort((a, b) => {
+    const classComp = compareKelasNama(a.kelasNama, b.kelasNama);
+    if (classComp !== 0) return classComp;
+    return a.mapelNama.localeCompare(b.mapelNama);
+  });
+
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [tempIdx, setTempIdx] = useState(0);
   const activeAssignment = assignments[selectedIdx] || assignments[0];
@@ -150,14 +158,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
   const getJenjang = (kelasNama: string): string => {
-    const upper = (kelasNama || '').trim().toUpperCase();
-    if (upper.startsWith("VIII")) return "VIII";
-    if (upper.startsWith("VII")) return "VII";
-    if (upper.startsWith("IX")) return "IX";
-    if (upper.startsWith("8")) return "VIII";
-    if (upper.startsWith("7")) return "VII";
-    if (upper.startsWith("9")) return "IX";
-    return upper.split(' ')[0] || "Lainnya";
+    return parseKelasInfo(kelasNama).jenjangStr;
   };
 
   const activeAssignmentJenjang = activeAssignment ? getJenjang(activeAssignment.kelasNama) : '';

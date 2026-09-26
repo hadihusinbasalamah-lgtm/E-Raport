@@ -5,6 +5,7 @@
 
 import React, { useState } from 'react';
 import { SchemaDatabase, NilaiSiswa, TujuanPembelajaran, AbsensiDanCatatan, Guru, Mapel, Siswa } from '../types';
+import { sortKelasList } from '../utils/kelasOrder';
 import { 
   Sparkles, CheckCircle2, AlertCircle, RefreshCw, Trash2, 
   ArrowRight, Database, FileSpreadsheet, Check, HelpCircle
@@ -41,8 +42,8 @@ export function AdminDemoNilai({ db, onUpdate, onNavigateToTab }: AdminDemoNilai
     );
   }
 
-  // Active or fallback master lists
-  const currentKelas = activePeriod.snapshotKelas?.length ? activePeriod.snapshotKelas : db.kelas;
+  // Active or fallback master lists (sorted strictly VII A ... IX C)
+  const currentKelas = sortKelasList(activePeriod.snapshotKelas?.length ? activePeriod.snapshotKelas : db.kelas);
   const currentSiswa = activePeriod.snapshotSiswa?.length ? activePeriod.snapshotSiswa : db.siswa;
   const currentMapel = activePeriod.snapshotMapel?.length ? activePeriod.snapshotMapel : db.mapel;
   const currentGuru = activePeriod.snapshotGuru?.length ? activePeriod.snapshotGuru : db.guru;

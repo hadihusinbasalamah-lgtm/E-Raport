@@ -21,6 +21,7 @@ import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
 import { GuruProfile } from './components/GuruProfile';
 import { GuruLeger } from './components/GuruLeger';
+import { sortKelasList } from './utils/kelasOrder';
 import { 
   fetchEntireDatabaseFromSupabase, 
   syncDatabaseChangeToSupabase,
@@ -111,7 +112,7 @@ export default function App() {
               newSnapshotKelas.push({ ...liveK });
             }
           });
-          newSnapshotKelas = newSnapshotKelas.filter(sk => updatedDb.kelas.some(k => k.id === sk.id));
+          newSnapshotKelas = sortKelasList(newSnapshotKelas.filter(sk => updatedDb.kelas.some(k => k.id === sk.id)));
 
           // Sync Mapel Snapshot
           let newSnapshotMapel = p.snapshotMapel.map(sm => {

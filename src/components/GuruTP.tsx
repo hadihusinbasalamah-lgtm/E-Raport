@@ -6,6 +6,7 @@
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, Guru } from '../types';
 import { BookOpen, Check, Copy, ListChecks, Save, Users, HelpCircle } from 'lucide-react';
+import { compareKelasNama, parseKelasInfo } from '../utils/kelasOrder';
 
 interface GuruTPProps {
   db: SchemaDatabase;
@@ -87,16 +88,16 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
     });
   }
 
+  // Sort raw assignments strictly VII A -> IX C
+  rawAssignments.sort((a, b) => {
+    const comp = compareKelasNama(a.kelasNama, b.kelasNama);
+    if (comp !== 0) return comp;
+    return a.mapelNama.localeCompare(b.mapelNama);
+  });
+
   // Parse Jenjang/level of classes (e.g., VII A -> VII, VIII B -> VIII, etc.)
   const getJenjang = (kelasNama: string): string => {
-    const upper = (kelasNama || '').trim().toUpperCase();
-    if (upper.startsWith("VIII")) return "VIII";
-    if (upper.startsWith("VII")) return "VII";
-    if (upper.startsWith("IX")) return "IX";
-    if (upper.startsWith("8")) return "VIII";
-    if (upper.startsWith("7")) return "VII";
-    if (upper.startsWith("9")) return "IX";
-    return upper.split(' ')[0] || "Lainnya";
+    return parseKelasInfo(kelasNama).jenjangStr;
   };
 
   // Group by Mapel + Jenjang
@@ -130,6 +131,21 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
         kelasNames: [raw.kelasNama]
       });
     }
+  });
+
+  // Sort each jenjang's classroom names strictly: VII A, VII B, VII C...
+  groupedAssignments.forEach(g => {
+    g.kelasNames.sort(compareKelasNama);
+  });
+
+  // Sort grouped assignments strictly by Jenjang: VII -> VIII -> IX
+  groupedAssignments.sort((a, b) => {
+    const infoA = parseKelasInfo(a.jenjang);
+    const infoB = parseKelasInfo(b.jenjang);
+    if (infoA.jenjangNum !== infoB.jenjangNum) {
+      return infoA.jenjangNum - infoB.jenjangNum;
+    }
+    return a.mapelNama.localeCompare(b.mapelNama);
   });
 
   const [selectedIdx, setSelectedIdx] = useState(0);

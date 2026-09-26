@@ -5,6 +5,7 @@
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { SchemaDatabase, Kelas, Mapel, Siswa, Guru, PeriodeAkademik, TujuanPembelajaran, NilaiSiswa, AbsensiDanCatatan } from '../types';
+import { sortKelasList } from '../utils/kelasOrder';
 
 const STORAGE_URL_KEY = 'e_raport_supabase_url';
 const STORAGE_ANON_KEY = 'e_raport_supabase_anon_key';
@@ -257,7 +258,7 @@ export function mapPeriodFromSupabase(row: any): PeriodeAkademik {
     isPublished: Boolean(row.is_published),
     publishedAt: row.published_at || undefined,
     tanggalRaport: row.tanggal_raport || undefined,
-    snapshotKelas: Array.isArray(row.snapshot_kelas) ? row.snapshot_kelas : [],
+    snapshotKelas: sortKelasList(Array.isArray(row.snapshot_kelas) ? row.snapshot_kelas : []),
     snapshotSiswa: Array.isArray(row.snapshot_siswa) ? row.snapshot_siswa : [],
     snapshotGuru: Array.isArray(row.snapshot_guru) ? row.snapshot_guru : [],
     snapshotMapel: Array.isArray(row.snapshot_mapel) ? row.snapshot_mapel : []
@@ -407,7 +408,7 @@ export async function fetchEntireDatabaseFromSupabase(): Promise<SchemaDatabase 
       adminUsername: configData.admin_username || 'admin',
       adminPasswordKey: configData.admin_password_key || 'alirsyadsolo',
       activePeriodId: configData.active_period_id || 'p1',
-      kelas: (kelasRes.data || []).map(mapKelasFromSupabase),
+      kelas: sortKelasList((kelasRes.data || []).map(mapKelasFromSupabase)),
       mapel: (mapelRes.data || []).map(mapMapelFromSupabase),
       siswa: (siswaRes.data || []).map(mapSiswaFromSupabase),
       guru: (guruRes.data || []).map(mapGuruFromSupabase),

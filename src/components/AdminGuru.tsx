@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { SchemaDatabase, Guru, Mapel, Kelas } from '../types';
 import { ShieldCheck, Plus, Edit2, Trash2, Check, Lock, GraduationCap, Search, X, BookOpen, User } from 'lucide-react';
+import { compareKelasNama, sortKelasList } from '../utils/kelasOrder';
 
 interface AdminGuruProps {
   db: SchemaDatabase;
@@ -36,6 +37,17 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
   const [inputMapel3KelasId, setInputMapel3KelasId] = useState('');
   const [inputMapel3KelasIds, setInputMapel3KelasIds] = useState<string[]>([]);
 
+  // Class list strictly sorted VII A, VII B, VII C ... to IX C
+  const sortedKelasList = sortKelasList(db.kelas);
+
+  const sortClassIds = (ids: string[]) => {
+    return [...ids].sort((idA, idB) => {
+      const kA = db.kelas.find(k => k.id === idA)?.nama || '';
+      const kB = db.kelas.find(k => k.id === idB)?.nama || '';
+      return compareKelasNama(kA, kB);
+    });
+  };
+
   const handleCloseModal = () => {
     setIsAdding(false);
     setEditingId(null);
@@ -48,8 +60,8 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
     setInputIsWali(false);
     setInputWaliKelasId('');
     setInputMapel1Id(db.mapel[0]?.id || '');
-    setInputMapel1KelasId(db.kelas[0]?.id || '');
-    setInputMapel1KelasIds(db.kelas[0] ? [db.kelas[0].id] : []);
+    setInputMapel1KelasId(sortedKelasList[0]?.id || '');
+    setInputMapel1KelasIds(sortedKelasList[0] ? [sortedKelasList[0].id] : []);
     setInputMapel2Id('');
     setInputMapel2KelasId('');
     setInputMapel2KelasIds([]);
@@ -101,14 +113,14 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
       isWaliKelas: inputIsWali,
       waliKelasKelasId: inputIsWali ? inputWaliKelasId : '',
       mapel1Id: inputMapel1Id,
-      mapel1KelasId: inputMapel1KelasIds[0] || '',
-      mapel1KelasIds: inputMapel1KelasIds,
+      mapel1KelasId: sortClassIds(inputMapel1KelasIds)[0] || '',
+      mapel1KelasIds: sortClassIds(inputMapel1KelasIds),
       mapel2Id: inputMapel2Id,
-      mapel2KelasId: inputMapel2Id && inputMapel2KelasIds.length > 0 ? inputMapel2KelasIds[0] : '',
-      mapel2KelasIds: inputMapel2Id ? inputMapel2KelasIds : [],
+      mapel2KelasId: inputMapel2Id && inputMapel2KelasIds.length > 0 ? sortClassIds(inputMapel2KelasIds)[0] : '',
+      mapel2KelasIds: inputMapel2Id ? sortClassIds(inputMapel2KelasIds) : [],
       mapel3Id: inputMapel3Id,
-      mapel3KelasId: inputMapel3Id && inputMapel3KelasIds.length > 0 ? inputMapel3KelasIds[0] : '',
-      mapel3KelasIds: inputMapel3Id ? inputMapel3KelasIds : []
+      mapel3KelasId: inputMapel3Id && inputMapel3KelasIds.length > 0 ? sortClassIds(inputMapel3KelasIds)[0] : '',
+      mapel3KelasIds: inputMapel3Id ? sortClassIds(inputMapel3KelasIds) : []
     };
 
     // Update master kelas list to reference this teacher as Wali Kelas
@@ -173,14 +185,14 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
           isWaliKelas: inputIsWali,
           waliKelasKelasId: inputIsWali ? inputWaliKelasId : '',
           mapel1Id: inputMapel1Id,
-          mapel1KelasId: inputMapel1KelasIds[0] || '',
-          mapel1KelasIds: inputMapel1KelasIds,
+          mapel1KelasId: sortClassIds(inputMapel1KelasIds)[0] || '',
+          mapel1KelasIds: sortClassIds(inputMapel1KelasIds),
           mapel2Id: inputMapel2Id,
-          mapel2KelasId: inputMapel2Id && inputMapel2KelasIds.length > 0 ? inputMapel2KelasIds[0] : '',
-          mapel2KelasIds: inputMapel2Id ? inputMapel2KelasIds : [],
+          mapel2KelasId: inputMapel2Id && inputMapel2KelasIds.length > 0 ? sortClassIds(inputMapel2KelasIds)[0] : '',
+          mapel2KelasIds: inputMapel2Id ? sortClassIds(inputMapel2KelasIds) : [],
           mapel3Id: inputMapel3Id,
-          mapel3KelasId: inputMapel3Id && inputMapel3KelasIds.length > 0 ? inputMapel3KelasIds[0] : '',
-          mapel3KelasIds: inputMapel3Id ? inputMapel3KelasIds : []
+          mapel3KelasId: inputMapel3Id && inputMapel3KelasIds.length > 0 ? sortClassIds(inputMapel3KelasIds)[0] : '',
+          mapel3KelasIds: inputMapel3Id ? sortClassIds(inputMapel3KelasIds) : []
         };
       }
       return g;
@@ -425,7 +437,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                         onChange={e => setInputWaliKelasId(e.target.value)}
                         className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 font-sans"
                       >
-                        {db.kelas.map(k => (
+                        {sortedKelasList.map(k => (
                           <option key={k.id} value={k.id}>{k.nama}</option>
                         ))}
                       </select>
@@ -459,7 +471,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                         Target Kelas ({inputMapel1KelasIds.length} dipilih)
                       </label>
                       <div className="flex flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-dashed border-emerald-200 max-h-36 overflow-y-auto">
-                        {db.kelas.map(k => {
+                        {sortedKelasList.map(k => {
                           const isChecked = inputMapel1KelasIds.includes(k.id);
                           return (
                             <button
@@ -469,7 +481,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                                 if (isChecked) {
                                   setInputMapel1KelasIds(prev => prev.filter(id => id !== k.id));
                                 } else {
-                                  setInputMapel1KelasIds(prev => [...prev, k.id]);
+                                  setInputMapel1KelasIds(prev => sortClassIds([...prev, k.id]));
                                 }
                               }}
                               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
@@ -511,7 +523,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                           Target Kelas ({inputMapel2KelasIds.length} dipilih)
                         </label>
                         <div className="flex flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-dashed border-amber-200 max-h-36 overflow-y-auto">
-                          {db.kelas.map(k => {
+                          {sortedKelasList.map(k => {
                             const isChecked = inputMapel2KelasIds.includes(k.id);
                             return (
                               <button
@@ -521,7 +533,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                                   if (isChecked) {
                                     setInputMapel2KelasIds(prev => prev.filter(id => id !== k.id));
                                   } else {
-                                    setInputMapel2KelasIds(prev => [...prev, k.id]);
+                                    setInputMapel2KelasIds(prev => sortClassIds([...prev, k.id]));
                                   }
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
@@ -564,7 +576,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                           Target Kelas ({inputMapel3KelasIds.length} dipilih)
                         </label>
                         <div className="flex flex-wrap gap-1.5 p-2 bg-white rounded-xl border border-dashed border-sky-200 max-h-36 overflow-y-auto">
-                          {db.kelas.map(k => {
+                          {sortedKelasList.map(k => {
                             const isChecked = inputMapel3KelasIds.includes(k.id);
                             return (
                               <button
@@ -574,7 +586,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                                   if (isChecked) {
                                     setInputMapel3KelasIds(prev => prev.filter(id => id !== k.id));
                                   } else {
-                                    setInputMapel3KelasIds(prev => [...prev, k.id]);
+                                    setInputMapel3KelasIds(prev => sortClassIds([...prev, k.id]));
                                   }
                                 }}
                                 className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all border ${
@@ -665,7 +677,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                   const map1KelasIds = g.mapel1KelasIds && g.mapel1KelasIds.length > 0 
                     ? g.mapel1KelasIds 
                     : (g.mapel1KelasId ? [g.mapel1KelasId] : []);
-                  const map1KelasNames = map1KelasIds
+                  const map1KelasNames = sortClassIds(map1KelasIds)
                     .map(cid => db.kelas.find(c => c.id === cid)?.nama)
                     .filter(Boolean)
                     .join(', ');
@@ -674,7 +686,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                   const map2KelasIds = g.mapel2KelasIds && g.mapel2KelasIds.length > 0 
                     ? g.mapel2KelasIds 
                     : (g.mapel2KelasId ? [g.mapel2KelasId] : []);
-                  const map2KelasNames = map2KelasIds
+                  const map2KelasNames = sortClassIds(map2KelasIds)
                     .map(cid => db.kelas.find(c => c.id === cid)?.nama)
                     .filter(Boolean)
                     .join(', ');
@@ -683,7 +695,7 @@ export function AdminGuru({ db, onUpdate }: AdminGuruProps) {
                   const map3KelasIds = g.mapel3KelasIds && g.mapel3KelasIds.length > 0 
                     ? g.mapel3KelasIds 
                     : (g.mapel3KelasId ? [g.mapel3KelasId] : []);
-                  const map3KelasNames = map3KelasIds
+                  const map3KelasNames = sortClassIds(map3KelasIds)
                     .map(cid => db.kelas.find(c => c.id === cid)?.nama)
                     .filter(Boolean)
                     .join(', ');

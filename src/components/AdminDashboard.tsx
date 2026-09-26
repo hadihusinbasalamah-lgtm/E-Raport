@@ -15,6 +15,7 @@ import {
   LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles, ArrowUpDown
 } from 'lucide-react';
 import { ModalUrutanMapel } from './ModalUrutanMapel';
+import { compareKelasNama } from '../utils/kelasOrder';
 
 interface AdminDashboardProps {
   db: SchemaDatabase;
@@ -177,8 +178,8 @@ export function AdminDashboard({ db, onNavigateToTab, onUpdate }: AdminDashboard
         });
       });
 
-      // Urutkan detail kelas berdasarkan nama kelas (mis. VII A, VII B, VIII A, VIII B, dll.)
-      classDetails.sort((a, b) => a.kelasNama.localeCompare(b.kelasNama, undefined, { numeric: true }));
+      // Urutkan detail kelas berdasarkan nama kelas (mis. VII A, VII B ... hingga IX C)
+      classDetails.sort((a, b) => compareKelasNama(a.kelasNama, b.kelasNama));
 
       // Filter expected students by selected level
       let filteredExpected = studentsExpected;

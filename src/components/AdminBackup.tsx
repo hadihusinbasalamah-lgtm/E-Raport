@@ -6,6 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import { SchemaDatabase, Siswa, Kelas } from '../types';
 import { generateSiswaPDF } from '../utils/pdfGenerator';
+import { sortKelasList } from '../utils/kelasOrder';
 import JSZip from 'jszip';
 import { 
   FolderArchive, ShieldCheck, ArrowRightLeft, Users, 
@@ -27,8 +28,8 @@ export function AdminBackup({ db }: AdminBackupProps) {
   const [currentExportName, setCurrentExportName] = useState('');
   const [exportSuccess, setExportSuccess] = useState(false);
 
-  // Active snapshot data from class, students, subjects
-  const classesList = activePeriod?.snapshotKelas || [];
+  // Active snapshot data from class, students, subjects (sorted strictly VII A ... IX C)
+  const classesList = sortKelasList(activePeriod?.snapshotKelas || []);
   const studentsList = activePeriod?.snapshotSiswa || [];
   const subjectsList = activePeriod?.snapshotMapel || [];
 

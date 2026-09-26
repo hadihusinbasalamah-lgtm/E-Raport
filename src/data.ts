@@ -4,6 +4,7 @@
  */
 
 import { SchemaDatabase, Kelas, Mapel, Siswa, Guru, PeriodeAkademik, TujuanPembelajaran } from './types';
+import { compareKelasNama, sortKelasList } from './utils/kelasOrder';
 
 export const INITIAL_GURU: Guru[] = [
   {
@@ -78,11 +79,11 @@ export const INITIAL_GURU: Guru[] = [
 ];
 
 export const INITIAL_KELAS: Kelas[] = [
-  { id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' },
   { id: 'k1', nama: 'VII A', waliKelasId: 'g1' },
   { id: 'k2', nama: 'VII B', waliKelasId: 'g2' },
   { id: 'k3', nama: 'VIII A', waliKelasId: 'g4' },
   { id: 'k4', nama: 'VIII B', waliKelasId: '' },
+  { id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' },
 ];
 
 export const INITIAL_MAPEL: Mapel[] = [
@@ -230,7 +231,7 @@ export function getDatabase(): SchemaDatabase {
 
       // Ensure IX C - Putra and Abdurrahman Ad Daffa exist in existing db
       if (!db.kelas.some(k => k.id === 'k5' || k.nama.toLowerCase().includes('ix c'))) {
-        db.kelas.unshift({ id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' });
+        db.kelas.push({ id: 'k5', nama: 'IX C - Putra', waliKelasId: 'g_hadi' });
       }
       if (!db.guru.some(g => g.id === 'g_hadi' || g.nama.toLowerCase().includes('hadi husin'))) {
         db.guru.unshift(INITIAL_GURU[0]);
@@ -262,6 +263,14 @@ export function getDatabase(): SchemaDatabase {
           if (!activeP.snapshotMapel?.some(m => m.id === im.id || m.nama.toLowerCase().trim() === im.nama.toLowerCase().trim())) {
             activeP.snapshotMapel = [...(activeP.snapshotMapel || []), im];
           }
+        });
+      }
+
+      // Ensure all classes in master data and snapshot periods are strictly sorted: VII A -> IX C
+      if (db.kelas) db.kelas = sortKelasList(db.kelas);
+      if (db.periodList) {
+        db.periodList.forEach(p => {
+          if (p.snapshotKelas) p.snapshotKelas = sortKelasList(p.snapshotKelas);
         });
       }
 
@@ -417,5 +426,13 @@ export function getDatabase(): SchemaDatabase {
 }
 
 export function saveDatabase(db: SchemaDatabase): void {
+  if (db) {
+    if (db.kelas) db.kelas = sortKelasList(db.kelas);
+    if (db.periodList) {
+      db.periodList.forEach(p => {
+        if (p.snapshotKelas) p.snapshotKelas = sortKelasList(p.snapshotKelas);
+      });
+    }
+  }
   localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
 }

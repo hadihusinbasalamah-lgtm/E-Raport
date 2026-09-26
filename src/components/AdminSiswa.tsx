@@ -6,6 +6,7 @@
 import React, { useState } from 'react';
 import { SchemaDatabase, Siswa } from '../types';
 import { UserCheck, Plus, Edit2, Trash2, Check, Search, Filter, Save, Upload, Download, CheckCircle, HelpCircle, ArrowUp, ArrowDown, ListChecks, RefreshCw, X } from 'lucide-react';
+import { compareKelasNama, sortKelasList } from '../utils/kelasOrder';
 
 interface AdminSiswaProps {
   db: SchemaDatabase;
@@ -209,13 +210,13 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
     return matchesSearch && matchesKelas;
   });
 
-  // Sort helper: sorts by Class name, then noAbsen, then name alphabetically
+  // Sort helper: sorts by Class name strictly (VII A ... IX C), then noAbsen, then name alphabetically
   const getSortedSiswa = (siswaList: Siswa[]) => {
     return [...siswaList].sort((a, b) => {
       if (a.kelasId !== b.kelasId) {
         const kelasA = db.kelas.find(k => k.id === a.kelasId)?.nama || '';
         const kelasB = db.kelas.find(k => k.id === b.kelasId)?.nama || '';
-        return kelasA.localeCompare(kelasB);
+        return compareKelasNama(kelasA, kelasB);
       }
       const noA = a.noAbsen !== undefined && a.noAbsen !== null ? a.noAbsen : 999999;
       const noB = b.noAbsen !== undefined && b.noAbsen !== null ? b.noAbsen : 999999;
@@ -641,7 +642,7 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
                 Supaya sistem dapat mengenali kelas dengan benar, pastikan kolom <strong>Nama Kelas</strong> di Excel / CSV Anda sama persis dengan nama kelas terdaftar berikut (besar kecil huruf dan spasi akan disinkronasikan otomatis):
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
-                {db.kelas.map(k => (
+                {sortKelasList(db.kelas).map(k => (
                   <div key={k.id} className="bg-white border border-indigo-100/60 p-2 rounded-lg text-center shadow-2xs">
                     <div className="text-xs font-bold text-slate-800">{k.nama}</div>
                     <div className="text-[9px] text-slate-400 font-mono">ID: {k.id}</div>
@@ -947,7 +948,7 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
                 className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
               >
                 <option value="" disabled>-- Pilih Kelas --</option>
-                {db.kelas.map(k => (
+                {sortKelasList(db.kelas).map(k => (
                   <option key={k.id} value={k.id}>{k.nama}</option>
                 ))}
               </select>
@@ -1042,7 +1043,7 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
                 onChange={e => setInputKelasId(e.target.value)}
                 className="w-full px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-amber-500"
               >
-                {db.kelas.map(k => (
+                {sortKelasList(db.kelas).map(k => (
                   <option key={k.id} value={k.id}>{k.nama}</option>
                 ))}
               </select>
@@ -1102,7 +1103,7 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
             className="px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs focus:outline-none focus:ring-1 focus:ring-emerald-500"
           >
             <option value="all">Semua Kelas</option>
-            {db.kelas.map(k => (
+            {sortKelasList(db.kelas).map(k => (
               <option key={k.id} value={k.id}>{k.nama}</option>
             ))}
           </select>
