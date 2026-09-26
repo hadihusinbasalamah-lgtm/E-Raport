@@ -67,6 +67,16 @@ export function AdminDemoNilai({ db, onUpdate, onNavigateToTab }: AdminDemoNilai
     ? Math.min(100, Math.round((currentFilledCount / targetTotalCombinations) * 100))
     : 0;
 
+  // Check if there is data to clear in active period for selected class or all classes
+  const targetStudentIdSet = new Set(targetStudents.map(s => s.id));
+  const hasDataToClear = (db.nilaiSiswa || []).some(n => 
+    n.periodeId === activePeriod.id && (selectedKelasId === 'all' || targetStudentIdSet.has(n.siswaId))
+  ) || (db.tujuanPembelajaran || []).some(t => 
+    t.periodeId === activePeriod.id && (selectedKelasId === 'all' || t.kelasId === selectedKelasId)
+  ) || (db.absensiDanCatatan || []).some(a => 
+    a.periodeId === activePeriod.id && (selectedKelasId === 'all' || targetStudentIdSet.has(a.siswaId) || a.kelasId === selectedKelasId)
+  );
+
   // Helper: Find teacher for a subject and class
   const findTeacherForSubject = (mapelId: string, kelasId: string): string => {
     const assigned = currentGuru.find(g => {
@@ -361,7 +371,7 @@ export function AdminDemoNilai({ db, onUpdate, onNavigateToTab }: AdminDemoNilai
     }
   };
 
-  // Action: Clear Demo Grades (without touching master classes, teachers, students)
+  // Action: Clear Demo Grades, TP, Absensi, and Ekstrakurikuler (without touching master classes, teachers, students)
   const handleClearDemoGrades = () => {
     setIsProcessing(true);
     setErrorMessage(null);
@@ -370,28 +380,46 @@ export function AdminDemoNilai({ db, onUpdate, onNavigateToTab }: AdminDemoNilai
     try {
       let filteredNilai: NilaiSiswa[];
       let filteredAbsensi: AbsensiDanCatatan[];
+      let filteredTP: TujuanPembelajaran[];
+
+      const targetPeriodIds = new Set<string>([activePeriod.id]);
+      if (activePeriod.tipeUjian === 'PSAS1') {
+        const pairedPsts = db.periodList.find(p => p.tahunAjaran === activePeriod.tahunAjaran && p.semester === activePeriod.semester && p.tipeUjian === 'PSTS1');
+        if (pairedPsts) targetPeriodIds.add(pairedPsts.id);
+      } else if (activePeriod.tipeUjian === 'PSAT') {
+        const pairedPsts = db.periodList.find(p => p.tahunAjaran === activePeriod.tahunAjaran && p.semester === activePeriod.semester && p.tipeUjian === 'PSTS2');
+        if (pairedPsts) targetPeriodIds.add(pairedPsts.id);
+      }
 
       if (selectedKelasId === 'all') {
-        // Clear all grades for active period
-        filteredNilai = (db.nilaiSiswa || []).filter(n => n.periodeId !== activePeriod.id);
-        filteredAbsensi = (db.absensiDanCatatan || []).filter(a => a.periodeId !== activePeriod.id);
+        // Clear all grades, attendance, and TP for active period
+        filteredNilai = (db.nilaiSiswa || []).filter(n => !targetPeriodIds.has(n.periodeId));
+        filteredAbsensi = (db.absensiDanCatatan || []).filter(a => !targetPeriodIds.has(a.periodeId));
+        filteredTP = (db.tujuanPembelajaran || []).filter(t => !targetPeriodIds.has(t.periodeId));
       } else {
         // Clear only selected class
         const targetStudentIds = new Set(targetStudents.map(s => s.id));
-        filteredNilai = (db.nilaiSiswa || []).filter(n => !(n.periodeId === activePeriod.id && targetStudentIds.has(n.siswaId)));
-        filteredAbsensi = (db.absensiDanCatatan || []).filter(a => !(a.periodeId === activePeriod.id && targetStudentIds.has(a.siswaId)));
+        filteredNilai = (db.nilaiSiswa || []).filter(n => !(targetPeriodIds.has(n.periodeId) && targetStudentIds.has(n.siswaId)));
+        filteredAbsensi = (db.absensiDanCatatan || []).filter(a => !(targetPeriodIds.has(a.periodeId) && (targetStudentIds.has(a.siswaId) || a.kelasId === selectedKelasId)));
+        filteredTP = (db.tujuanPembelajaran || []).filter(t => !(targetPeriodIds.has(t.periodeId) && t.kelasId === selectedKelasId));
       }
 
       onUpdate({
         ...db,
         nilaiSiswa: filteredNilai,
-        absensiDanCatatan: filteredAbsensi
+        absensiDanCatatan: filteredAbsensi,
+        tujuanPembelajaran: filteredTP
       });
 
       setShowClearConfirm(false);
-      setSuccessMessage('Data nilai demo berhasil dikosongkan. Master data guru, kelas, dan siswa tetap aman terjaga.');
+      setSuccessMessage(
+        selectedKelasId === 'all'
+          ? 'Data nilai siswa, TP (Tujuan Pembelajaran), absensi, serta ekstrakurikuler berhasil dikosongkan. Master data guru, kelas, dan siswa tetap aman terjaga.'
+          : `Data nilai siswa, TP (Tujuan Pembelajaran), absensi, serta ekstrakurikuler untuk kelas terpilih berhasil dikosongkan. Master data guru, kelas, dan siswa tetap aman terjaga.`
+      );
     } catch (err: any) {
-      setErrorMessage('Gagal mengosongkan nilai demo.');
+      console.error('Gagal mengosongkan data nilai demo:', err);
+      setErrorMessage('Gagal mengosongkan data nilai siswa, TP, absensi, dan ekstrakurikuler.');
     } finally {
       setIsProcessing(false);
     }
@@ -647,29 +675,34 @@ export function AdminDemoNilai({ db, onUpdate, onNavigateToTab }: AdminDemoNilai
                 <button
                   type="button"
                   onClick={() => setShowClearConfirm(true)}
-                  disabled={isProcessing || allCurrentNilai.length === 0}
+                  disabled={isProcessing || !hasDataToClear}
                   className="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 border border-slate-200 hover:border-rose-200 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                  title="Kosongkan seluruh nilai siswa, tujuan pembelajaran (TP), absensi, dan data ekstrakurikuler"
                 >
-                  <Trash2 className="w-4 h-4" />
-                  <span>Kosongkan Nilai Siswa</span>
+                  <Trash2 className="w-4 h-4 shrink-0" />
+                  <span>Kosongkan Nilai Siswa, TP dan Absensi juga Ekstra</span>
                 </button>
               ) : (
-                <div className="flex items-center gap-2 p-1.5 bg-rose-50 rounded-xl border border-rose-200 animate-fadeIn">
-                  <span className="text-[11px] text-rose-800 font-bold px-2">Hapus nilai periode ini?</span>
-                  <button
-                    type="button"
-                    onClick={handleClearDemoGrades}
-                    className="px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition"
-                  >
-                    Ya, Kosongkan
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowClearConfirm(false)}
-                    className="px-2 py-1.5 bg-white text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition"
-                  >
-                    Batal
-                  </button>
+                <div className="flex flex-wrap items-center gap-2 p-2 bg-rose-50 rounded-xl border border-rose-200 animate-fadeIn">
+                  <span className="text-[11px] text-rose-800 font-bold px-1">
+                    Kosongkan nilai, TP, absensi & ekstra {selectedKelasId === 'all' ? 'semua kelas' : 'kelas terpilih'}?
+                  </span>
+                  <div className="flex items-center gap-1.5 ml-auto">
+                    <button
+                      type="button"
+                      onClick={handleClearDemoGrades}
+                      className="px-2.5 py-1.5 bg-rose-600 text-white rounded-lg text-xs font-bold hover:bg-rose-700 transition cursor-pointer"
+                    >
+                      Ya, Kosongkan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowClearConfirm(false)}
+                      className="px-2 py-1.5 bg-white text-slate-700 rounded-lg text-xs font-semibold border border-slate-200 hover:bg-slate-50 transition cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
