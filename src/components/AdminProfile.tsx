@@ -5,8 +5,8 @@
 
 import React, { useState } from 'react';
 import { SchemaDatabase } from '../types';
-import { User, Key, Save, AlertCircle, Trash2, Loader2, CheckCircle2, Sparkles, Shield } from 'lucide-react';
-import { resetFirestoreToZero } from '../lib/firebase';
+import { User, Key, Save, AlertCircle, Trash2, Loader2, CheckCircle2, Sparkles, Shield, Server } from 'lucide-react';
+import { resetSupabaseToZero } from '../lib/supabase';
 import { AdminDemoNilai } from './AdminDemoNilai';
 
 interface AdminProfileProps {
@@ -61,7 +61,19 @@ export function AdminProfile({ db, onUpdate, onNavigateToTab }: AdminProfileProp
     setResetSuccess(false);
 
     try {
-      await resetFirestoreToZero();
+      await resetSupabaseToZero();
+      onUpdate({
+        ...db,
+        activePeriodId: '',
+        kelas: [],
+        mapel: [],
+        siswa: [],
+        guru: [],
+        periodList: [],
+        tujuanPembelajaran: [],
+        nilaiSiswa: [],
+        absensiDanCatatan: []
+      });
       setResetSuccess(true);
       setShowConfirmReset(false);
       setConfirmationWord('');
@@ -125,6 +137,18 @@ export function AdminProfile({ db, onUpdate, onNavigateToTab }: AdminProfileProp
             <Trash2 className="w-3.5 h-3.5 text-rose-600" />
             <span>Reset Data</span>
           </button>
+
+          {onNavigateToTab && (
+            <button
+              type="button"
+              onClick={() => onNavigateToTab('supabase')}
+              className="px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 cursor-pointer"
+              title="Kelola & Migrasi Database Supabase"
+            >
+              <Server className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Database Supabase</span>
+            </button>
+          )}
         </div>
       </div>
 

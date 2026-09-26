@@ -15,17 +15,23 @@ import { AdminTahunAjaran } from './components/AdminTahunAjaran';
 import { AdminProfile } from './components/AdminProfile';
 import { AdminDashboard } from './components/AdminDashboard';
 import { AdminBackup } from './components/AdminBackup';
+import { AdminSupabase } from './components/AdminSupabase';
 import { GuruTP } from './components/GuruTP';
 import { GuruNilai } from './components/GuruNilai';
 import { GuruCetak } from './components/GuruCetak';
 import { GuruProfile } from './components/GuruProfile';
 import { GuruLeger } from './components/GuruLeger';
-import { subscribeToDatabase, syncDatabaseChange } from './lib/firebase';
+import { 
+  fetchEntireDatabaseFromSupabase, 
+  syncDatabaseChangeToSupabase,
+  isSupabaseConfigured,
+  subscribeToSupabaseDatabase
+} from './lib/supabase';
 
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database, Settings
+  Database, Settings, Server
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -48,17 +54,22 @@ export default function App() {
     return { role: null, userId: '', name: '' };
   });
 
-  // Subscribe to real-time changes in Firebase, factoring in current role/user ID for query optimization
+  // Subscribe/Fetch changes from Supabase (or fallback to local persistent storage if not yet configured)
   useEffect(() => {
-    const unsubscribe = subscribeToDatabase(
-      (syncedDb) => {
-        setDb(syncedDb);
+    if (isSupabaseConfigured()) {
+      const unsubscribe = subscribeToSupabaseDatabase((supabaseDb) => {
+        if (supabaseDb) {
+          setDb(supabaseDb);
+          saveDatabase(supabaseDb);
+        }
         setIsDbLoading(false);
-      },
-      session.role,
-      session.userId
-    );
-    return () => unsubscribe();
+      });
+      return () => unsubscribe();
+    } else {
+      const localData = getDatabase();
+      setDb(localData);
+      setIsDbLoading(false);
+    }
   }, [session.role, session.userId]);
 
   // Sidebar toggle for mobile layouts
@@ -138,8 +149,10 @@ export default function App() {
       });
     }
 
-    // Call asynchronous Firebase storage write in background, passing roles for surgical, highly-efficient syncing
-    syncDatabaseChange(dbRef.current, updatedDb, session.role, session.userId);
+    // Call asynchronous database storage write in background to Supabase
+    if (isSupabaseConfigured()) {
+      syncDatabaseChangeToSupabase(dbRef.current, updatedDb, session.role, session.userId);
+    }
 
     setDb(updatedDb);
     saveDatabase(updatedDb);
@@ -182,6 +195,7 @@ export default function App() {
     { id: 'siswa', label: 'Data Siswa', icon: UserCheck },
     { id: 'tahun-ajaran', label: 'Tahun Ajaran (Release)', icon: Calendar },
     { id: 'backup', label: 'Backup Data', icon: Database },
+    { id: 'supabase', label: 'Database Supabase', icon: Server },
     { id: 'profile', label: 'Pengaturan', icon: Settings },
   ];
 
@@ -214,7 +228,7 @@ export default function App() {
           <Loader2 className="w-12 h-12 text-emerald-500 animate-spin" />
           <h3 className="text-lg font-black text-slate-100 tracking-tight">Menghubungkan Database...</h3>
           <p className="text-xs text-slate-400 leading-relaxed md:px-6">
-            Mohon tunggu sejenak, sistem sedang sinkronisasi data e-Raport SMP Al Irsyad Surakarta dengan layanan Firebase Cloud Database.
+            Mohon tunggu sejenak, sistem sedang sinkronisasi data e-Raport SMP Al Irsyad Surakarta dengan database Supabase Cloud.
           </p>
         </div>
       </div>
@@ -501,6 +515,10 @@ export default function App() {
 
                       {activeTab === 'backup' && (
                         <AdminBackup db={db} />
+                      )}
+
+                      {activeTab === 'supabase' && (
+                        <AdminSupabase db={db} onUpdateDb={handleUpdateDb} />
                       )}
 
                       {activeTab === 'profile' && (

@@ -225,7 +225,7 @@ export function LoginScreen({ db, onLoginSuccess }: LoginScreenProps) {
                       </ul>
                       <div className="h-[1px] bg-slate-200/50 my-2" />
                       <p className="text-[10px] text-slate-500">
-                        * Jika kredensial ini telah diubah sebelumnya, Anda dapat melihat atau mengeditnya langsung di Firebase Console Firestore Anda pada koleksi <strong className="text-slate-700">config</strong> &gt; dokumen <strong className="text-slate-700">main</strong> (field <code className="font-mono">adminUsername</code> dan <code className="font-mono">adminPasswordKey</code>).
+                        * Jika kredensial ini telah diubah sebelumnya, Anda dapat melihat atau mengeditnya langsung di Supabase Table Editor Anda pada tabel <strong className="text-slate-700">config</strong> &gt; baris <strong className="text-slate-700">main</strong> (kolom <code className="font-mono">admin_username</code> dan <code className="font-mono">admin_password_key</code>).
                       </p>
                     </>
                   ) : (
