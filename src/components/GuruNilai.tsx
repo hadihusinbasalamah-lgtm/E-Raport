@@ -5,7 +5,10 @@
 
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa, formatTipeUjian } from '../types';
-import { Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle, Copy, Users } from 'lucide-react';
+import { 
+  Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle, 
+  Copy, Users, FileSpreadsheet, Download, Upload, Check, FileText, ArrowRight, Info
+} from 'lucide-react';
 import { compareKelasNama, parseKelasInfo } from '../utils/kelasOrder';
 
 // Helper function for custom conditional mapping & interpolation
@@ -152,10 +155,33 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     capaianKompetensi: string;
   }
 
+  interface ParsedBulkRow {
+    no?: number;
+    nis?: string;
+    nama: string;
+    tp1NilaiAsli: number | '';
+    tp2NilaiAsli: number | '';
+    tp3NilaiAsli?: number | '';
+    tp4NilaiAsli?: number | '';
+    nilaiPsts?: number | '';
+    nilaiUjianAsli: number | '';
+    capaianKompetensi?: string;
+    matchedStudent?: LocalNilaiSiswa;
+    status: 'matched' | 'unmatched';
+  }
+
   const [grades, setGrades] = useState<LocalNilaiSiswa[]>([]);
   const [activeTPs, setActiveTPs] = useState<TujuanPembelajaran | null>(null);
   const [message, setMessage] = useState('');
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
+
+  // Bulk input modal state
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+  const [bulkInputTab, setBulkInputTab] = useState<'upload' | 'paste'>('upload');
+  const [bulkPasteText, setBulkPasteText] = useState('');
+  const [parsedBulkRows, setParsedBulkRows] = useState<ParsedBulkRow[]>([]);
+  const [bulkError, setBulkError] = useState('');
+  const [bulkFileName, setBulkFileName] = useState('');
 
   // Concurrency safeguards: prevent background sync from wiping unsaved teacher input
   const isDirtyRef = React.useRef(false);
@@ -336,43 +362,344 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     setMessage('');
   }, [selectedIdx, activePeriod?.id, guruId, db.nilaiSiswa, db.tujuanPembelajaran]);
 
+  // Helper to recalculate column conversions (interpolations)
+  const recalculateGradesWithInterpolation = (baseGrades: LocalNilaiSiswa[]): LocalNilaiSiswa[] => {
+    const tp1AsliVals = baseGrades.map(g => g.tp1NilaiAsli);
+    const tp2AsliVals = baseGrades.map(g => g.tp2NilaiAsli);
+    const tp3AsliVals = baseGrades.map(g => g.tp3NilaiAsli !== undefined ? g.tp3NilaiAsli : '');
+    const tp4AsliVals = baseGrades.map(g => g.tp4NilaiAsli !== undefined ? g.tp4NilaiAsli : '');
+    const ujianAsliVals = baseGrades.map(g => g.nilaiUjianAsli);
+
+    return baseGrades.map(g => ({
+      ...g,
+      tp1Nilai: getInterpolatedValueForColumn(g.tp1NilaiAsli, tp1AsliVals),
+      tp2Nilai: getInterpolatedValueForColumn(g.tp2NilaiAsli, tp2AsliVals),
+      tp3Nilai: g.tp3NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp3NilaiAsli, tp3AsliVals) : undefined,
+      tp4Nilai: g.tp4NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp4NilaiAsli, tp4AsliVals) : undefined,
+      nilaiUjian: getInterpolatedValueForColumn(g.nilaiUjianAsli, ujianAsliVals)
+    }));
+  };
+
   // Handle individual numeric inputs for original values and trigger reciprocal updates
   const handleNumChange = (studentId: string, field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli' | 'nilaiPsts', value: string) => {
     isDirtyRef.current = true;
     const rawVal = value === '' ? '' : Math.min(100, Math.max(0, parseInt(value) || 0));
     setGrades(prev => {
-      // 1. Update the original value in the row
       const nextGrades = prev.map(g => {
         if (g.siswaId === studentId) {
           return { ...g, [field]: rawVal };
         }
         return g;
       });
+      return recalculateGradesWithInterpolation(nextGrades);
+    });
+  };
 
-      // 2. Recalculate all interpolated values for all students because the column min/max changed!
-      const tp1AsliVals = nextGrades.map(g => g.tp1NilaiAsli);
-      const tp2AsliVals = nextGrades.map(g => g.tp2NilaiAsli);
-      const tp3AsliVals = nextGrades.map(g => g.tp3NilaiAsli !== undefined ? g.tp3NilaiAsli : '');
-      const tp4AsliVals = nextGrades.map(g => g.tp4NilaiAsli !== undefined ? g.tp4NilaiAsli : '');
-      const ujianAsliVals = nextGrades.map(g => g.nilaiUjianAsli);
+  // ========================================================================
+  // BULK IMPORT & TEMPLATE EXCEL / CSV GENERATION
+  // ========================================================================
 
-      return nextGrades.map(g => {
-        const tp1Nilai = getInterpolatedValueForColumn(g.tp1NilaiAsli, tp1AsliVals);
-        const tp2Nilai = getInterpolatedValueForColumn(g.tp2NilaiAsli, tp2AsliVals);
-        const tp3Nilai = g.tp3NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp3NilaiAsli, tp3AsliVals) : undefined;
-        const tp4Nilai = g.tp4NilaiAsli !== undefined ? getInterpolatedValueForColumn(g.tp4NilaiAsli, tp4AsliVals) : undefined;
-        const nilaiUjian = getInterpolatedValueForColumn(g.nilaiUjianAsli, ujianAsliVals);
+  // Download template CSV tailored specifically to the active class & assignment
+  const handleDownloadTemplate = () => {
+    if (!activeAssignment || !activePeriod || grades.length === 0) {
+      alert("Tidak ada siswa terdaftar dalam kelas ini.");
+      return;
+    }
+
+    const headers = [
+      "No",
+      "NIS",
+      "Nama Siswa",
+      "Nilai Asli TP1",
+      "Nilai Asli TP2"
+    ];
+
+    if (activeTPs?.tp3) {
+      headers.push("Nilai Asli TP3");
+    }
+    if (activeTPs?.tp4) {
+      headers.push("Nilai Asli TP4");
+    }
+    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+      headers.push(activePeriod.tipeUjian === 'PSAS1' ? "Nilai PSTS 1" : "Nilai PSTS 2");
+    }
+    headers.push("Nilai Asli Ujian");
+    headers.push("Capaian Kompetensi (Opsional)");
+
+    const rows = grades.map((g, idx) => {
+      const studentObj = activePeriod.snapshotSiswa.find(s => s.id === g.siswaId);
+      const nis = studentObj?.nis || "";
+      const row = [
+        String(idx + 1),
+        `"${nis.replace(/"/g, '""')}"`,
+        `"${g.siswaNama.replace(/"/g, '""')}"`,
+        g.tp1NilaiAsli !== "" ? String(g.tp1NilaiAsli) : "",
+        g.tp2NilaiAsli !== "" ? String(g.tp2NilaiAsli) : ""
+      ];
+
+      if (activeTPs?.tp3) {
+        row.push(g.tp3NilaiAsli !== "" && g.tp3NilaiAsli !== undefined ? String(g.tp3NilaiAsli) : "");
+      }
+      if (activeTPs?.tp4) {
+        row.push(g.tp4NilaiAsli !== "" && g.tp4NilaiAsli !== undefined ? String(g.tp4NilaiAsli) : "");
+      }
+      if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+        row.push(g.nilaiPsts !== "" && g.nilaiPsts !== undefined ? String(g.nilaiPsts) : "");
+      }
+      row.push(g.nilaiUjianAsli !== "" ? String(g.nilaiUjianAsli) : "");
+      row.push(`"${(g.capaianKompetensi || "").replace(/"/g, '""')}"`);
+
+      return row.join(",");
+    });
+
+    const csvData = [headers.join(","), ...rows].join("\r\n");
+    // UTF-8 BOM so Microsoft Excel correctly displays Indonesian characters and UTF-8 formatting
+    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvData], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    const cleanKelas = activeAssignment.kelasNama.replace(/[^a-zA-Z0-9]/g, "_");
+    const cleanMapel = activeAssignment.mapelNama.replace(/[^a-zA-Z0-9]/g, "_");
+    link.download = `template_nilai_${cleanKelas}_${cleanMapel}_${activePeriod.tipeUjian}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  // Helper parser for CSV/TSV lines supporting quotes
+  const parseCSVLine = (line: string): string[] => {
+    if (line.includes('\t')) {
+      return line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
+    }
+    const delimiter = line.includes(';') && !line.includes(',') ? ';' : ',';
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      if (char === '"') {
+        if (inQuotes && line[i + 1] === '"') {
+          current += '"';
+          i++;
+        } else {
+          inQuotes = !inQuotes;
+        }
+      } else if (char === delimiter && !inQuotes) {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    result.push(current.trim());
+    return result.map(c => c.replace(/^"|"$/g, ''));
+  };
+
+  // Parse raw text (from file upload or textarea paste) into structured preview rows
+  const handleParseBulkData = (rawText: string) => {
+    setBulkError('');
+    if (!rawText.trim()) {
+      setParsedBulkRows([]);
+      return;
+    }
+
+    const rawLines = rawText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (rawLines.length === 0) {
+      setParsedBulkRows([]);
+      return;
+    }
+
+    const firstCols = parseCSVLine(rawLines[0]);
+    const lowerFirst = firstCols.map(c => c.toLowerCase());
+    const hasHeader = lowerFirst.some(c => 
+      c.includes('nis') || c.includes('nama') || c.includes('siswa') || c.includes('tp1') || c.includes('nilai') || c.includes('ujian')
+    );
+
+    let startIdx = 0;
+    const colIdxMap = {
+      nis: -1,
+      nama: -1,
+      tp1: -1,
+      tp2: -1,
+      tp3: -1,
+      tp4: -1,
+      psts: -1,
+      ujian: -1,
+      capaian: -1
+    };
+
+    if (hasHeader) {
+      startIdx = 1;
+      lowerFirst.forEach((col, idx) => {
+        if (col.includes('nis') && !col.includes('nisn')) colIdxMap.nis = idx;
+        else if (col.includes('nama') || col.includes('siswa')) colIdxMap.nama = idx;
+        else if (col.includes('tp1') || col.includes('tp 1')) colIdxMap.tp1 = idx;
+        else if (col.includes('tp2') || col.includes('tp 2')) colIdxMap.tp2 = idx;
+        else if (col.includes('tp3') || col.includes('tp 3')) colIdxMap.tp3 = idx;
+        else if (col.includes('tp4') || col.includes('tp 4')) colIdxMap.tp4 = idx;
+        else if (col.includes('psts') || col.includes('pts')) colIdxMap.psts = idx;
+        else if (col.includes('ujian') || col.includes('pas') || col.includes('pat') || col.includes('sas') || col.includes('sat')) colIdxMap.ujian = idx;
+        else if (col.includes('capaian') || col.includes('deskripsi')) colIdxMap.capaian = idx;
+      });
+    }
+
+    // Fallback defaults based on standard template order:
+    // [No, NIS, Nama, TP1, TP2, (TP3), (TP4), (PSTS), Ujian, Capaian]
+    let currentPos = 3;
+    if (colIdxMap.tp1 === -1) colIdxMap.tp1 = currentPos;
+    currentPos++;
+    if (colIdxMap.tp2 === -1) colIdxMap.tp2 = currentPos;
+    currentPos++;
+    if (activeTPs?.tp3) {
+      if (colIdxMap.tp3 === -1) colIdxMap.tp3 = currentPos;
+      currentPos++;
+    }
+    if (activeTPs?.tp4) {
+      if (colIdxMap.tp4 === -1) colIdxMap.tp4 = currentPos;
+      currentPos++;
+    }
+    if (activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') {
+      if (colIdxMap.psts === -1) colIdxMap.psts = currentPos;
+      currentPos++;
+    }
+    if (colIdxMap.ujian === -1) colIdxMap.ujian = currentPos;
+    currentPos++;
+    if (colIdxMap.capaian === -1) colIdxMap.capaian = currentPos;
+
+    if (colIdxMap.nis === -1) colIdxMap.nis = 1;
+    if (colIdxMap.nama === -1) colIdxMap.nama = 2;
+
+    const parsed: ParsedBulkRow[] = [];
+
+    for (let i = startIdx; i < rawLines.length; i++) {
+      const cols = parseCSVLine(rawLines[i]);
+      if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
+
+      const rowNis = colIdxMap.nis >= 0 && colIdxMap.nis < cols.length ? cols[colIdxMap.nis].trim() : '';
+      const rowNama = colIdxMap.nama >= 0 && colIdxMap.nama < cols.length ? cols[colIdxMap.nama].trim() : '';
+
+      const parseNum = (idx: number): number | '' => {
+        if (idx < 0 || idx >= cols.length) return '';
+        const raw = cols[idx].trim().replace(',', '.');
+        if (raw === '' || isNaN(Number(raw))) return '';
+        const val = parseInt(raw, 10);
+        return Math.min(100, Math.max(0, val));
+      };
+
+      const tp1 = parseNum(colIdxMap.tp1);
+      const tp2 = parseNum(colIdxMap.tp2);
+      const tp3 = activeTPs?.tp3 ? parseNum(colIdxMap.tp3) : undefined;
+      const tp4 = activeTPs?.tp4 ? parseNum(colIdxMap.tp4) : undefined;
+      const psts = (activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') ? parseNum(colIdxMap.psts) : undefined;
+      const ujian = parseNum(colIdxMap.ujian);
+      const capaian = colIdxMap.capaian >= 0 && colIdxMap.capaian < cols.length ? cols[colIdxMap.capaian].trim() : '';
+
+      let matchedStudent: LocalNilaiSiswa | undefined;
+
+      // 1. Match by NIS
+      if (rowNis) {
+        const sObj = activePeriod?.snapshotSiswa.find(s => s.kelasId === activeAssignment?.kelasId && s.nis && s.nis.trim() === rowNis);
+        if (sObj) {
+          matchedStudent = grades.find(g => g.siswaId === sObj.id);
+        }
+      }
+
+      // 2. Match by Nama Siswa
+      if (!matchedStudent && rowNama) {
+        const cleanRowNama = rowNama.toLowerCase().trim();
+        matchedStudent = grades.find(g => g.siswaNama.toLowerCase().trim() === cleanRowNama);
+        if (!matchedStudent) {
+          matchedStudent = grades.find(g => g.siswaNama.toLowerCase().includes(cleanRowNama) || cleanRowNama.includes(g.siswaNama.toLowerCase()));
+        }
+      }
+
+      // 3. Fallback matching by row index if count lines align
+      const dataIndex = i - startIdx;
+      if (!matchedStudent && dataIndex >= 0 && dataIndex < grades.length && !rowNis && !rowNama) {
+        matchedStudent = grades[dataIndex];
+      }
+
+      parsed.push({
+        no: dataIndex + 1,
+        nis: rowNis || (matchedStudent ? activePeriod?.snapshotSiswa.find(s => s.id === matchedStudent?.siswaId)?.nis : ''),
+        nama: rowNama || matchedStudent?.siswaNama || `Baris ${i + 1}`,
+        tp1NilaiAsli: tp1,
+        tp2NilaiAsli: tp2,
+        tp3NilaiAsli: tp3,
+        tp4NilaiAsli: tp4,
+        nilaiPsts: psts,
+        nilaiUjianAsli: ujian,
+        capaianKompetensi: capaian,
+        matchedStudent,
+        status: matchedStudent ? 'matched' : 'unmatched'
+      });
+    }
+
+    if (parsed.length === 0) {
+      setBulkError("Tidak ada baris data yang dapat dibaca. Pastikan format kolom sesuai.");
+    } else {
+      const matchCount = parsed.filter(p => p.status === 'matched').length;
+      if (matchCount === 0) {
+        setBulkError("Data terbaca, namun tidak ada siswa yang cocok dengan kelas aktif. Pastikan NIS atau Nama Siswa sesuai dengan data kelas ini.");
+      }
+    }
+
+    setParsedBulkRows(parsed);
+  };
+
+  // Handle file input upload
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setBulkFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (text) {
+        handleParseBulkData(text);
+      }
+    };
+    reader.onerror = () => {
+      setBulkError("Gagal membaca file. Pastikan file berformat .csv atau teks spreadsheet yang valid.");
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  // Apply parsed bulk rows to current active grades table
+  const handleApplyBulkGrades = () => {
+    const matched = parsedBulkRows.filter(r => r.status === 'matched' && r.matchedStudent);
+    if (matched.length === 0) {
+      alert("Tidak ada data siswa yang cocok untuk diterapkan.");
+      return;
+    }
+
+    isDirtyRef.current = true;
+    setGrades(prev => {
+      const updated = prev.map(currentStudent => {
+        const found = matched.find(r => r.matchedStudent?.siswaId === currentStudent.siswaId);
+        if (!found) return currentStudent;
 
         return {
-          ...g,
-          tp1Nilai,
-          tp2Nilai,
-          tp3Nilai,
-          tp4Nilai,
-          nilaiUjian
+          ...currentStudent,
+          tp1NilaiAsli: found.tp1NilaiAsli !== '' ? found.tp1NilaiAsli : currentStudent.tp1NilaiAsli,
+          tp2NilaiAsli: found.tp2NilaiAsli !== '' ? found.tp2NilaiAsli : currentStudent.tp2NilaiAsli,
+          tp3NilaiAsli: (activeTPs?.tp3 && found.tp3NilaiAsli !== '' && found.tp3NilaiAsli !== undefined) ? found.tp3NilaiAsli : currentStudent.tp3NilaiAsli,
+          tp4NilaiAsli: (activeTPs?.tp4 && found.tp4NilaiAsli !== '' && found.tp4NilaiAsli !== undefined) ? found.tp4NilaiAsli : currentStudent.tp4NilaiAsli,
+          nilaiPsts: (found.nilaiPsts !== '' && found.nilaiPsts !== undefined) ? found.nilaiPsts : currentStudent.nilaiPsts,
+          nilaiUjianAsli: found.nilaiUjianAsli !== '' ? found.nilaiUjianAsli : currentStudent.nilaiUjianAsli,
+          capaianKompetensi: found.capaianKompetensi?.trim() ? found.capaianKompetensi : currentStudent.capaianKompetensi
         };
       });
+
+      return recalculateGradesWithInterpolation(updated);
     });
+
+    setIsBulkModalOpen(false);
+    setMessage(`Berhasil memuat nilai massal untuk ${matched.length} siswa ke formulir! Silakan periksa kembali nilai dan klik tombol "Simpan Semua Nilai" di pojok kanan atas untuk menyimpan ke database.`);
   };
 
   // Handle description change
@@ -768,17 +1095,27 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
           </p>
         </div>
         {activeTPs && grades.length > 0 && (
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-center">
+          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-center flex-wrap">
+            <button
+              onClick={() => {
+                setIsBulkModalOpen(true);
+                setBulkError('');
+              }}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              Input Nilai Massal
+            </button>
             <button
               onClick={() => setIsPrintModalOpen(true)}
-              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center"
+              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
             >
               <Printer className="w-4 h-4" />
               Print Rekap Kelas
             </button>
             <button
               onClick={handleSaveAll}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
             >
               <Save className="w-4 h-4" />
               Simpan Semua Nilai
@@ -816,6 +1153,55 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
           Tampilkan
         </button>
       </div>
+
+      {/* Menu Input Nilai Massal & Download Template Sesuai Kelas Aktif */}
+      {activeTPs && grades.length > 0 && (
+        <div className="bg-gradient-to-r from-emerald-50/80 via-teal-50/50 to-sky-50/60 p-4 sm:p-5 rounded-2xl border border-emerald-200/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-4 shadow-3xs">
+          <div className="flex items-start sm:items-center gap-3.5">
+            <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-sm shrink-0">
+              <FileSpreadsheet className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-xs sm:text-sm font-bold text-slate-800">
+                  Input Nilai Massal — Kelas {activeAssignment.kelasNama}
+                </h4>
+                <span className="text-[10px] bg-emerald-100/90 text-emerald-800 border border-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                  {grades.length} Siswa Terdaftar
+                </span>
+                <span className="text-[10px] bg-sky-100 text-sky-800 border border-sky-300 px-2 py-0.5 rounded-full font-bold">
+                  Mapel: {activeAssignment.mapelNama}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-1 max-w-2xl leading-relaxed">
+                Unduh template Excel/CSV yang otomatis memuat nama & NIS siswa <strong>Kelas {activeAssignment.kelasNama}</strong>, atau tempel (*copy-paste*) nilai dari spreadsheet untuk input sekaligus tanpa repot mengetik satu per satu.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2.5 self-stretch md:self-auto shrink-0 flex-wrap sm:flex-nowrap">
+            <button
+              type="button"
+              onClick={handleDownloadTemplate}
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer"
+              title={`Download template Excel/CSV sesuai data Kelas ${activeAssignment.kelasNama}`}
+            >
+              <Download className="w-4 h-4 text-emerald-600" />
+              Download Template Kelas
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsBulkModalOpen(true);
+                setBulkError('');
+              }}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
+            >
+              <Upload className="w-4 h-4" />
+              Input Nilai Massal
+            </button>
+          </div>
+        </div>
+      )}
 
       {!activeTPs ? (
         <div className="p-6 text-center bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 space-y-3">
@@ -1549,6 +1935,302 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                 </div>
 
               </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* Bulk Input Modal for GuruNilai */}
+      {isBulkModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs animate-fadeIn overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl relative my-6 flex flex-col max-h-[92vh] overflow-hidden border border-slate-100">
+            
+            {/* Modal Header */}
+            <div className="p-4 sm:p-5 border-b border-slate-100 flex justify-between items-center bg-gradient-to-r from-emerald-50/70 to-teal-50/40 shrink-0">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 bg-emerald-600 text-white rounded-xl shadow-xs">
+                  <FileSpreadsheet className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-sm sm:text-base text-slate-800 flex items-center gap-2">
+                    Input Nilai Siswa Massal (Excel / CSV)
+                  </h3>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    Kelas: <strong className="text-slate-700">{activeAssignment?.kelasNama}</strong> • Mapel: <strong className="text-slate-700">{activeAssignment?.mapelNama}</strong> • Periode: <strong className="text-slate-700">{activePeriod?.tahunAjaran} ({activePeriod?.tipeUjian})</strong>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBulkModalOpen(false);
+                  setParsedBulkRows([]);
+                  setBulkPasteText('');
+                  setBulkFileName('');
+                  setBulkError('');
+                }}
+                className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                title="Tutup"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-4 sm:p-6 overflow-y-auto space-y-5 flex-1">
+              
+              {/* Step 1: Download Template Banner */}
+              <div className="bg-emerald-50/60 border border-emerald-200/90 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-3xs">
+                <div className="flex items-start gap-3">
+                  <div className="p-2 bg-emerald-100 text-emerald-800 rounded-xl mt-0.5 shrink-0">
+                    <Download className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-emerald-950">
+                      Langkah 1: Unduh Format Template Excel / CSV
+                    </h4>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
+                      Template ini otomatis memuat <strong>{grades.length} siswa</strong> kelas {activeAssignment?.kelasNama} beserta NIS dan nama lengkap sesuai urutan raport.
+                    </p>
+                    <div className="flex items-center gap-2 mt-2 flex-wrap text-[10px] text-emerald-800 font-medium">
+                      <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP1 & TP2 (Wajib)</span>
+                      {activeTPs?.tp3 && <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP3</span>}
+                      {activeTPs?.tp4 && <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP4</span>}
+                      {(activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') && (
+                        <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom Nilai PSTS</span>
+                      )}
+                      <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom Ujian Sumatif</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleDownloadTemplate}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all self-stretch sm:self-auto justify-center shrink-0 cursor-pointer"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Unduh Template (.CSV)
+                </button>
+              </div>
+
+              {/* Step 2: Choose Method */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Langkah 2: Masukkan Nilai Siswa
+                  </h4>
+                  <div className="flex bg-slate-100 p-0.5 rounded-xl border border-slate-200 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setBulkInputTab('upload')}
+                      className={`px-3 py-1.5 font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                        bulkInputTab === 'upload' 
+                          ? 'bg-white text-emerald-700 shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      Upload File CSV
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setBulkInputTab('paste')}
+                      className={`px-3 py-1.5 font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
+                        bulkInputTab === 'paste' 
+                          ? 'bg-white text-emerald-700 shadow-xs' 
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      Copy-Paste dari Spreadsheet
+                    </button>
+                  </div>
+                </div>
+
+                {bulkInputTab === 'upload' ? (
+                  <div className="border-2 border-dashed border-slate-250 hover:border-emerald-500 rounded-2xl p-6 text-center bg-slate-50/50 hover:bg-emerald-50/20 transition-all">
+                    <input
+                      type="file"
+                      id="bulk-file-input"
+                      accept=".csv, text/csv, text/plain, .tsv"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <label htmlFor="bulk-file-input" className="cursor-pointer flex flex-col items-center gap-2">
+                      <div className="p-3 bg-emerald-100 text-emerald-700 rounded-full">
+                        <Upload className="w-6 h-6" />
+                      </div>
+                      <div className="text-xs font-bold text-slate-700">
+                        Klik untuk memilih file CSV template atau drag & drop ke sini
+                      </div>
+                      <p className="text-[11px] text-slate-400">
+                        Mendukung file hasil unduhan template (.csv) yang telah diisi nilai di Microsoft Excel / Google Sheets
+                      </p>
+                      {bulkFileName && (
+                        <div className="mt-2 inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-xl">
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          File terpilih: {bulkFileName}
+                        </div>
+                      )}
+                    </label>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <p className="text-[11px] text-slate-500">
+                      Buka file Excel atau Google Sheets Anda, blok tabel nilai (No, NIS, Nama, TP1, TP2, Ujian...), tekan <strong>Ctrl + C</strong>, lalu tempel (<strong>Ctrl + V</strong>) di kotak bawah ini:
+                    </p>
+                    <textarea
+                      value={bulkPasteText}
+                      onChange={(e) => {
+                        setBulkPasteText(e.target.value);
+                        handleParseBulkData(e.target.value);
+                      }}
+                      placeholder={`Contoh tempelan dari Excel:\n1\t2425001\tAhmad Rifqi\t85\t88\t90\t86\n2\t2425002\tAisyah Humaira\t90\t92\t88\t90`}
+                      rows={6}
+                      className="w-full text-xs font-mono p-3 bg-slate-50 border border-slate-200 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded-xl leading-relaxed"
+                    />
+                  </div>
+                )}
+              </div>
+
+              {/* Error Box */}
+              {bulkError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 text-rose-800 text-xs font-semibold rounded-xl flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                  <span>{bulkError}</span>
+                </div>
+              )}
+
+              {/* Preview Table if rows parsed */}
+              {parsedBulkRows.length > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-bold text-slate-800">
+                        Pratinjau Hasil Pembacaan Data
+                      </h4>
+                      <span className="text-[10px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded-full font-bold">
+                        {parsedBulkRows.length} Baris Terbaca
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                      <span className="inline-flex items-center gap-1 bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-md text-[10px]">
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        {parsedBulkRows.filter(r => r.status === 'matched').length} Cocok
+                      </span>
+                      {parsedBulkRows.some(r => r.status === 'unmatched') && (
+                        <span className="inline-flex items-center gap-1 bg-rose-100 text-rose-800 font-bold px-2 py-0.5 rounded-md text-[10px]">
+                          <AlertTriangle className="w-3 h-3 text-rose-600" />
+                          {parsedBulkRows.filter(r => r.status === 'unmatched').length} Tidak Cocok
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-3xs">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead className="bg-slate-50 sticky top-0 border-b border-slate-200 text-[10px] font-bold text-slate-600 uppercase">
+                        <tr>
+                          <th className="py-2 px-3 w-8 text-center">Status</th>
+                          <th className="py-2 px-2 w-20">NIS</th>
+                          <th className="py-2 px-3">Nama Siswa</th>
+                          <th className="py-2 px-2 text-center w-12 bg-amber-50/50">TP 1</th>
+                          <th className="py-2 px-2 text-center w-12 bg-amber-50/50">TP 2</th>
+                          {activeTPs?.tp3 && <th className="py-2 px-2 text-center w-12 bg-amber-50/50">TP 3</th>}
+                          {activeTPs?.tp4 && <th className="py-2 px-2 text-center w-12 bg-amber-50/50">TP 4</th>}
+                          {(activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') && (
+                            <th className="py-2 px-2 text-center w-14 bg-emerald-50/40">PSTS</th>
+                          )}
+                          <th className="py-2 px-2 text-center w-14 bg-amber-50/50">Ujian</th>
+                          <th className="py-2 px-3">Capaian</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-[11px]">
+                        {parsedBulkRows.map((r, i) => (
+                          <tr key={i} className={r.status === 'matched' ? 'hover:bg-slate-50/80' : 'bg-rose-50/40 text-rose-800'}>
+                            <td className="py-1.5 px-3 text-center">
+                              {r.status === 'matched' ? (
+                                <span className="inline-flex p-0.5 bg-emerald-100 text-emerald-700 rounded" title="Siswa Teridentifikasi">
+                                  <Check className="w-3 h-3" />
+                                </span>
+                              ) : (
+                                <span className="inline-flex p-0.5 bg-rose-100 text-rose-700 rounded" title="Siswa tidak cocok dengan data kelas">
+                                  <AlertTriangle className="w-3 h-3" />
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-1.5 px-2 font-mono text-slate-500">{r.nis || '-'}</td>
+                            <td className="py-1.5 px-3 font-medium text-slate-800">
+                              {r.nama}
+                              {r.matchedStudent && r.matchedStudent.siswaNama !== r.nama && (
+                                <span className="text-[10px] text-slate-400 block font-normal">
+                                  (Cocok ke: {r.matchedStudent.siswaNama})
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-1.5 px-2 text-center font-mono font-bold text-amber-900 bg-amber-50/30">
+                              {r.tp1NilaiAsli !== '' ? r.tp1NilaiAsli : '-'}
+                            </td>
+                            <td className="py-1.5 px-2 text-center font-mono font-bold text-amber-900 bg-amber-50/30">
+                              {r.tp2NilaiAsli !== '' ? r.tp2NilaiAsli : '-'}
+                            </td>
+                            {activeTPs?.tp3 && (
+                              <td className="py-1.5 px-2 text-center font-mono font-bold text-amber-900 bg-amber-50/30">
+                                {r.tp3NilaiAsli !== '' && r.tp3NilaiAsli !== undefined ? r.tp3NilaiAsli : '-'}
+                              </td>
+                            )}
+                            {activeTPs?.tp4 && (
+                              <td className="py-1.5 px-2 text-center font-mono font-bold text-amber-900 bg-amber-50/30">
+                                {r.tp4NilaiAsli !== '' && r.tp4NilaiAsli !== undefined ? r.tp4NilaiAsli : '-'}
+                              </td>
+                            )}
+                            {(activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') && (
+                              <td className="py-1.5 px-2 text-center font-mono font-bold text-emerald-950 bg-emerald-50/30">
+                                {r.nilaiPsts !== '' && r.nilaiPsts !== undefined ? r.nilaiPsts : '-'}
+                              </td>
+                            )}
+                            <td className="py-1.5 px-2 text-center font-mono font-bold text-amber-900 bg-amber-50/30">
+                              {r.nilaiUjianAsli !== '' ? r.nilaiUjianAsli : '-'}
+                            </td>
+                            <td className="py-1.5 px-3 truncate max-w-xs text-slate-500 font-sans">
+                              {r.capaianKompetensi || <span className="italic text-slate-400">Auto-generate</span>}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 sm:p-5 border-t border-slate-100 flex items-center justify-between bg-slate-50 shrink-0 flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBulkModalOpen(false);
+                  setParsedBulkRows([]);
+                  setBulkPasteText('');
+                  setBulkFileName('');
+                  setBulkError('');
+                }}
+                className="px-4 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              >
+                Tutup / Batal
+              </button>
+
+              <button
+                type="button"
+                onClick={handleApplyBulkGrades}
+                disabled={parsedBulkRows.filter(r => r.status === 'matched').length === 0}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-300 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
+              >
+                <Check className="w-4 h-4" />
+                Terapkan Nilai ({parsedBulkRows.filter(r => r.status === 'matched').length} Siswa) ke Formulir
+              </button>
             </div>
 
           </div>
