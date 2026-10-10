@@ -17,7 +17,7 @@ const getInterpolatedValueForColumn = (
   allAsliValues: (number | '')[]
 ): number | '' => {
   if (valAsli === '') return '';
-  if (valAsli >= 96) return valAsli;
+  if (valAsli >= 95) return valAsli;
 
   const valid = allAsliValues.filter((v): v is number => typeof v === 'number');
   if (valid.length === 0) return valAsli;
