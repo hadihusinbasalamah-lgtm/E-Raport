@@ -11,7 +11,7 @@ import { isYayasanSubject, getSubjectPriority } from '../utils/mapelOrder';
 interface GuruCetakProps {
   db: SchemaDatabase;
   guruId: string;
-  onUpdate: (updatedDb: SchemaDatabase) => void;
+  onUpdate: (updatedDb: SchemaDatabase) => void | Promise<any>;
 }
 
 export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {

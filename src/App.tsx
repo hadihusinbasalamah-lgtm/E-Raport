@@ -28,6 +28,8 @@ import {
   isSupabaseConfigured,
   subscribeToSupabaseDatabase,
   refreshDatabaseFromSupabase,
+  processPendingSyncQueue,
+  SyncResult,
   SyncStatusType
 } from './lib/supabase';
 
@@ -73,9 +75,33 @@ export default function App() {
         (status, message) => {
           setSyncStatus(status);
           if (message) setSyncMessage(message);
-        }
+        },
+        () => dbRef.current
       );
-      return () => unsubscribe();
+
+      // Listener koneksi online untuk mengosongkan antrean sinkronisasi
+      const handleOnline = () => {
+        setSyncStatus('syncing');
+        setSyncMessage('Koneksi internet pulih. Memproses antrean sinkronisasi...');
+        processPendingSyncQueue().then(({ processed }) => {
+          if (processed > 0) {
+            setSyncStatus('synced');
+            setSyncMessage(`${processed} perubahan tertunda berhasil dikirim ke Cloud!`);
+          }
+        });
+      };
+      window.addEventListener('online', handleOnline);
+
+      // Interval periodik tiap 45 detik untuk memastikan antrean outbox bersih
+      const queueInterval = setInterval(() => {
+        processPendingSyncQueue();
+      }, 45000);
+
+      return () => {
+        unsubscribe();
+        window.removeEventListener('online', handleOnline);
+        clearInterval(queueInterval);
+      };
     } else {
       setSyncStatus('offline');
       setSyncMessage('Mode penyimpanan lokal');
@@ -179,13 +205,14 @@ export default function App() {
       });
     }
 
-    // Call asynchronous database storage write in background to Supabase
-    if (isSupabaseConfigured()) {
-      syncDatabaseChangeToSupabase(dbRef.current, updatedDb, session.role, session.userId);
-    }
-
     setDb(updatedDb);
     saveDatabase(updatedDb);
+
+    // Call asynchronous database storage write with resilient retry & outbox queue to Supabase
+    if (isSupabaseConfigured()) {
+      return syncDatabaseChangeToSupabase(dbRef.current, updatedDb, session.role, session.userId);
+    }
+    return Promise.resolve({ success: true, syncedToCloud: false, queuedForSync: false });
   };
 
   const handleLoginSuccess = (userSession: SessionState) => {

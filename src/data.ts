@@ -434,5 +434,9 @@ export function saveDatabase(db: SchemaDatabase): void {
       });
     }
   }
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(db));
+  } catch (err) {
+    console.warn('Peringatan: Gagal menyimpan snapshot database ke localStorage browser (kuota penyimpanan penuh atau dibatasi):', err);
+  }
 }

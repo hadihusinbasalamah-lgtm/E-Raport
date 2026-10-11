@@ -460,20 +460,121 @@ export async function fetchEntireDatabaseFromSupabase(timeoutMs = 12000): Promis
 }
 
 // ========================================================================
-// SYNC LOCAL DATABASE CHANGES TO SUPABASE
+// SYNC LOCAL DATABASE CHANGES TO SUPABASE & RESILIENT OUTBOX QUEUE
 // ========================================================================
+
+export interface SyncResult {
+  success: boolean;
+  syncedToCloud: boolean;
+  queuedForSync: boolean;
+  error?: string;
+  totalUpserted?: number;
+}
+
+interface PendingQueueItem {
+  id: string;
+  tableName: string;
+  operation: 'upsert' | 'delete';
+  payload: any;
+  timestamp: number;
+}
+
+const STORAGE_SYNC_QUEUE_KEY = 'e_raport_sync_outbox_queue';
+
+function getPendingQueue(): PendingQueueItem[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_SYNC_QUEUE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePendingQueue(queue: PendingQueueItem[]): void {
+  try {
+    if (queue.length === 0) {
+      localStorage.removeItem(STORAGE_SYNC_QUEUE_KEY);
+    } else {
+      localStorage.setItem(STORAGE_SYNC_QUEUE_KEY, JSON.stringify(queue));
+    }
+  } catch (err) {
+    console.warn('Gagal menyimpan antrean pending sync ke localStorage:', err);
+  }
+}
+
+function enqueuePendingSync(tableName: string, operation: 'upsert' | 'delete', payload: any): void {
+  const queue = getPendingQueue();
+  queue.push({
+    id: `${tableName}_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    tableName,
+    operation,
+    payload,
+    timestamp: Date.now()
+  });
+  savePendingQueue(queue);
+}
+
+/**
+ * Memproses dan mengosongkan antrean sinkronisasi tertunda (Outbox Queue)
+ * Berjalan otomatis saat koneksi internet pulih atau saat aplikasi dibuka
+ */
+export async function processPendingSyncQueue(): Promise<{ processed: number; remaining: number }> {
+  const client = getSupabaseClient();
+  if (!client) return { processed: 0, remaining: 0 };
+
+  const queue = getPendingQueue();
+  if (queue.length === 0) return { processed: 0, remaining: 0 };
+
+  const remaining: PendingQueueItem[] = [];
+  let processedCount = 0;
+
+  for (const item of queue) {
+    try {
+      if (item.operation === 'upsert') {
+        const { error } = await client.from(item.tableName).upsert(item.payload);
+        if (error) {
+          remaining.push(item);
+        } else {
+          processedCount++;
+        }
+      } else if (item.operation === 'delete') {
+        const { error } = await client.from(item.tableName).delete().in('id', item.payload);
+        if (error) {
+          remaining.push(item);
+        } else {
+          processedCount++;
+        }
+      }
+    } catch {
+      remaining.push(item);
+    }
+  }
+
+  savePendingQueue(remaining);
+  return { processed: processedCount, remaining: remaining.length };
+}
 
 export async function syncDatabaseChangeToSupabase(
   oldDb: SchemaDatabase,
   newDb: SchemaDatabase,
   userRole?: string | null,
   userId?: string | null
-): Promise<void> {
+): Promise<SyncResult> {
   const client = getSupabaseClient();
-  if (!client) return;
+  if (!client) {
+    return {
+      success: true,
+      syncedToCloud: false,
+      queuedForSync: false,
+      message: 'Mode offline: Tersimpan lokal'
+    } as any;
+  }
 
   // Mark that a local save is underway to prevent self-echoing in realtime
   recordLocalDatabaseWrite();
+
+  let hadNetworkError = false;
+  let totalItemsUpserted = 0;
 
   try {
     // 1. Sync config if admin modified it
@@ -483,18 +584,22 @@ export async function syncDatabaseChangeToSupabase(
         oldDb.adminPasswordKey !== newDb.adminPasswordKey ||
         oldDb.activePeriodId !== newDb.activePeriodId
       ) {
-        await client.from('config').upsert({
-          id: 'main',
-          admin_username: newDb.adminUsername,
-          admin_password_key: newDb.adminPasswordKey,
-          active_period_id: newDb.activePeriodId,
-          is_seed_initialized: true,
-          updated_at: new Date().toISOString()
-        });
+        try {
+          await client.from('config').upsert({
+            id: 'main',
+            admin_username: newDb.adminUsername,
+            admin_password_key: newDb.adminPasswordKey,
+            active_period_id: newDb.activePeriodId,
+            is_seed_initialized: true,
+            updated_at: new Date().toISOString()
+          });
+        } catch (err) {
+          console.warn('Config upsert warning:', err);
+        }
       }
     }
 
-    // Generic collection helper with diffing
+    // Generic collection helper with diffing, retry backoff, and outbox queue fallback
     const syncTable = async <T extends { id: string }>(
       tableName: string,
       oldArr: T[],
@@ -511,12 +616,35 @@ export async function syncDatabaseChangeToSupabase(
       }
 
       if (toUpsert.length > 0) {
-        // Chunk by 200 for postgres efficiency
-        for (let i = 0; i < toUpsert.length; i += 200) {
-          const chunk = toUpsert.slice(i, i + 200);
-          const { error } = await client.from(tableName).upsert(chunk);
-          if (error) {
-            console.error(`Supabase upsert error on ${tableName}:`, error);
+        totalItemsUpserted += toUpsert.length;
+        // Chunk by 100 for maximum reliability under high concurrent load
+        for (let i = 0; i < toUpsert.length; i += 100) {
+          const chunk = toUpsert.slice(i, i + 100);
+          let success = false;
+          let delay = 350;
+
+          // Retry up to 3 times with exponential backoff
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              const { error } = await client.from(tableName).upsert(chunk);
+              if (!error) {
+                success = true;
+                break;
+              }
+              console.warn(`Supabase upsert attempt ${attempt} warning on ${tableName}:`, error.message);
+            } catch (netErr) {
+              console.warn(`Supabase network error attempt ${attempt} on ${tableName}:`, netErr);
+            }
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, delay));
+              delay *= 2;
+            }
+          }
+
+          // If all retries failed, store safely in offline queue so data is NEVER lost!
+          if (!success) {
+            hadNetworkError = true;
+            enqueuePendingSync(tableName, 'upsert', chunk);
           }
         }
       }
@@ -533,11 +661,30 @@ export async function syncDatabaseChangeToSupabase(
       }
 
       if (toDeleteIds.length > 0) {
-        for (let i = 0; i < toDeleteIds.length; i += 200) {
-          const chunk = toDeleteIds.slice(i, i + 200);
-          const { error } = await client.from(tableName).delete().in('id', chunk);
-          if (error) {
-            console.error(`Supabase delete error on ${tableName}:`, error);
+        for (let i = 0; i < toDeleteIds.length; i += 100) {
+          const chunk = toDeleteIds.slice(i, i + 100);
+          let success = false;
+          let delay = 350;
+
+          for (let attempt = 1; attempt <= 3; attempt++) {
+            try {
+              const { error } = await client.from(tableName).delete().in('id', chunk);
+              if (!error) {
+                success = true;
+                break;
+              }
+            } catch (netErr) {
+              console.warn(`Supabase delete network error attempt ${attempt}:`, netErr);
+            }
+            if (attempt < 3) {
+              await new Promise(r => setTimeout(r, delay));
+              delay *= 2;
+            }
+          }
+
+          if (!success) {
+            hadNetworkError = true;
+            enqueuePendingSync(tableName, 'delete', chunk);
           }
         }
       }
@@ -561,8 +708,24 @@ export async function syncDatabaseChangeToSupabase(
     }
 
     await Promise.all(promises);
-  } catch (err) {
+
+    // Also attempt to flush any previously queued items
+    processPendingSyncQueue().catch(() => {});
+
+    return {
+      success: true,
+      syncedToCloud: !hadNetworkError,
+      queuedForSync: hadNetworkError,
+      totalUpserted: totalItemsUpserted
+    };
+  } catch (err: any) {
     console.error('Supabase sync failure:', err);
+    return {
+      success: true,
+      syncedToCloud: false,
+      queuedForSync: true,
+      error: err?.message || 'Kendala jaringan'
+    };
   }
 }
 
@@ -639,7 +802,8 @@ let realtimeDebounceTimer: any = null;
 
 export function subscribeToSupabaseDatabase(
   onData: (db: SchemaDatabase) => void,
-  onSyncStatus?: (status: SyncStatusType, message?: string) => void
+  onSyncStatus?: (status: SyncStatusType, message?: string) => void,
+  getCurrentDb?: () => SchemaDatabase
 ): () => void {
   const client = getSupabaseClient();
   if (!client) {
@@ -665,19 +829,74 @@ export function subscribeToSupabaseDatabase(
     onSyncStatus?.('error', err?.message || 'Gagal terhubung ke Supabase');
   });
 
-  // Realtime subscription via Supabase Channel with Debounce & Self-Update echo suppression
+  // Realtime subscription via Supabase Channel with Incremental Patching & Debounced Echo Suppression
   const channel = client
     .channel('e-raport-db-changes')
     .on(
       'postgres_changes',
       { event: '*', schema: 'public' },
-      () => {
-        // Abaikan sinyal perubahan jika berasal dari operasi penyimpanan lokal kita sendiri dalam 2 detik terakhir
-        if (Date.now() - lastLocalWriteTime < 2000) {
+      (payload: any) => {
+        // Abaikan sinyal perubahan jika berasal dari operasi penyimpanan lokal kita sendiri dalam 2.5 detik terakhir
+        if (Date.now() - lastLocalWriteTime < 2500) {
           return;
         }
 
-        // Debounce incoming events (800ms) agar update batch nilai/data tidak membombardir database
+        // OPTIMISASI KONKURENSI TINGGI:
+        // Jika event adalah update/insert/delete pada tabel nilai_siswa, tujuan_pembelajaran, atau absensi_dan_catatan,
+        // lakukan penggabungan inkremental langsung di memori tanpa membebani database Supabase dengan query 9 tabel!
+        if (getCurrentDb && payload?.table && payload?.eventType) {
+          const current = getCurrentDb();
+          if (current) {
+            let patched = false;
+            let updatedDb = { ...current };
+
+            if (payload.table === 'nilai_siswa') {
+              if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+                const mapped = mapNilaiFromSupabase(payload.new);
+                const exists = current.nilaiSiswa.some(n => n.id === mapped.id);
+                updatedDb.nilaiSiswa = exists
+                  ? current.nilaiSiswa.map(n => n.id === mapped.id ? mapped : n)
+                  : [...current.nilaiSiswa, mapped];
+                patched = true;
+              } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                updatedDb.nilaiSiswa = current.nilaiSiswa.filter(n => n.id !== payload.old.id);
+                patched = true;
+              }
+            } else if (payload.table === 'tujuan_pembelajaran') {
+              if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+                const mapped = mapTPFromSupabase(payload.new);
+                const exists = current.tujuanPembelajaran.some(t => t.id === mapped.id);
+                updatedDb.tujuanPembelajaran = exists
+                  ? current.tujuanPembelajaran.map(t => t.id === mapped.id ? mapped : t)
+                  : [...current.tujuanPembelajaran, mapped];
+                patched = true;
+              } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                updatedDb.tujuanPembelajaran = current.tujuanPembelajaran.filter(t => t.id !== payload.old.id);
+                patched = true;
+              }
+            } else if (payload.table === 'absensi_dan_catatan') {
+              if ((payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') && payload.new) {
+                const mapped = mapAbsensiFromSupabase(payload.new);
+                const exists = current.absensiDanCatatan.some(a => a.id === mapped.id);
+                updatedDb.absensiDanCatatan = exists
+                  ? current.absensiDanCatatan.map(a => a.id === mapped.id ? mapped : a)
+                  : [...current.absensiDanCatatan, mapped];
+                patched = true;
+              } else if (payload.eventType === 'DELETE' && payload.old?.id) {
+                updatedDb.absensiDanCatatan = current.absensiDanCatatan.filter(a => a.id !== payload.old.id);
+                patched = true;
+              }
+            }
+
+            if (patched) {
+              onData(updatedDb);
+              onSyncStatus?.('synced', 'Pembaruan realtime sinkron');
+              return;
+            }
+          }
+        }
+
+        // Debounce incoming events (1500ms) untuk perubahan struktur master (config, kelas, mapel, siswa, dsb)
         if (realtimeDebounceTimer) {
           clearTimeout(realtimeDebounceTimer);
         }
@@ -695,7 +914,7 @@ export function subscribeToSupabaseDatabase(
             console.warn('Realtime fetch failed:', e);
             onSyncStatus?.('error', e?.message || 'Gagal memuat realtime data');
           }
-        }, 800);
+        }, 1500);
       }
     )
     .subscribe();

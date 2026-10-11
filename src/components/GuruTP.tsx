@@ -5,16 +5,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, Guru } from '../types';
-import { BookOpen, Check, Copy, ListChecks, Save, Users, HelpCircle } from 'lucide-react';
+import { BookOpen, Check, Copy, ListChecks, Save, Users, HelpCircle, Loader2 } from 'lucide-react';
 import { compareKelasNama, parseKelasInfo } from '../utils/kelasOrder';
 
 interface GuruTPProps {
   db: SchemaDatabase;
   guruId: string;
-  onUpdate: (updatedDb: SchemaDatabase) => void;
+  onUpdate: (updatedDb: SchemaDatabase) => void | Promise<any>;
 }
 
 export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
+  const [isSaving, setIsSaving] = useState(false);
   const activePeriod = db.periodList.find(p => p.id === db.activePeriodId);
   const teacher = db.guru.find(g => g.id === guruId);
 
@@ -260,7 +261,7 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
     setMessage('');
   }, [selectedIdx, activePeriod?.id, guruId, activeAssignment?.mapelId, activeAssignment?.jenjang]);
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeAssignment || !activePeriod) return;
 
@@ -294,12 +295,26 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
     );
     const updatedTpList = [...filteredTp, newTpEntry];
 
-    onUpdate({
-      ...db,
-      tujuanPembelajaran: updatedTpList
-    });
+    setIsSaving(true);
+    setMessage("Sedang menyimpan Tujuan Pembelajaran ke database...");
 
-    setMessage("Tujuan Pembelajaran berhasil disimpan!");
+    try {
+      const res: any = await onUpdate({
+        ...db,
+        tujuanPembelajaran: updatedTpList
+      });
+
+      if (res?.queuedForSync) {
+        setMessage("Tujuan Pembelajaran berhasil disimpan lokal & antrean cloud aktif!");
+      } else {
+        setMessage("Tujuan Pembelajaran berhasil disimpan & disinkronkan ke Cloud!");
+      }
+    } catch (err: any) {
+      console.error("Gagal simpan TP:", err);
+      setMessage("Terjadi kendala saat menyimpan. Sila coba kembali.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!activePeriod) {
@@ -521,15 +536,29 @@ export function GuruTP({ db, guruId, onUpdate }: GuruTPProps) {
 
             <button
               type="submit"
-              disabled={!hasChanges}
+              disabled={!hasChanges || isSaving}
               className={`px-5 py-2.5 text-xs font-bold rounded-xl flex items-center gap-2 transition-all mt-4 shadow-sm active:scale-95 ${
-                hasChanges
+                hasChanges && !isSaving
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-100 cursor-pointer hover:-translate-y-0.5'
                   : 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed'
               }`}
             >
-              {hasChanges ? <Save className="w-4 h-4" /> : <Check className="w-4 h-4 text-emerald-500" />}
-              {hasChanges ? 'Simpan Pembaharuan TP' : 'Tujuan Pembelajaran Tersimpan'}
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-emerald-600" />
+                  <span>Menyimpan ke Cloud...</span>
+                </>
+              ) : hasChanges ? (
+                <>
+                  <Save className="w-4 h-4" />
+                  <span>Simpan Pembaharuan TP</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4 text-emerald-500" />
+                  <span>Tujuan Pembelajaran Tersimpan</span>
+                </>
+              )}
             </button>
           </form>
         </div>

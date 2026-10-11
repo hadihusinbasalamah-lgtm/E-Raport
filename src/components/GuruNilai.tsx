@@ -7,7 +7,7 @@ import React, { useState, useEffect } from 'react';
 import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa, formatTipeUjian } from '../types';
 import { 
   Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle, 
-  Copy, Users, FileSpreadsheet, Download, Upload, Check, FileText, ArrowRight, Info
+  Copy, Users, FileSpreadsheet, Download, Upload, Check, FileText, ArrowRight, Info, Loader2, RotateCcw
 } from 'lucide-react';
 import { compareKelasNama, parseKelasInfo } from '../utils/kelasOrder';
 
@@ -43,7 +43,7 @@ const getInterpolatedValueForColumn = (
 interface GuruNilaiProps {
   db: SchemaDatabase;
   guruId: string;
-  onUpdate: (updatedDb: SchemaDatabase) => void;
+  onUpdate: (updatedDb: SchemaDatabase) => void | Promise<any>;
 }
 
 export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
@@ -185,7 +185,9 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   const [bulkError, setBulkError] = useState('');
   const [bulkFileName, setBulkFileName] = useState('');
 
-  // Concurrency safeguards: prevent background sync from wiping unsaved teacher input
+  // Concurrency safeguards & crash prevention
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDraftRestored, setIsDraftRestored] = useState(false);
   const isDirtyRef = React.useRef(false);
   const lastLoadedAssignmentRef = React.useRef<string>('');
 
@@ -360,9 +362,75 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       };
     });
 
-    setGrades(withInterpolated);
-    setMessage('');
+    // Cek apakah ada draf otomatis dari sesi sebelumnya di perangkat ini
+    const draftStorageKey = `e_raport_draft_${guruId}_${activePeriod.id}_${activeAssignment.key}`;
+    let finalGradesToSet = withInterpolated;
+    let draftRestored = false;
+
+    try {
+      const savedDraftRaw = localStorage.getItem(draftStorageKey);
+      if (savedDraftRaw) {
+        const parsedDraft = JSON.parse(savedDraftRaw);
+        if (Array.isArray(parsedDraft.grades) && parsedDraft.grades.length > 0) {
+          finalGradesToSet = parsedDraft.grades;
+          draftRestored = true;
+          isDirtyRef.current = true;
+        }
+      }
+    } catch (e) {
+      console.warn('Gagal memuat draf:', e);
+    }
+
+    setGrades(finalGradesToSet);
+    setIsDraftRestored(draftRestored);
+    if (draftRestored) {
+      setMessage('Draf nilai dari sesi sebelumnya berhasil dipulihkan otomatis (terlindungi dari kendala crash/refresh). Sila periksa dan simpan.');
+    } else {
+      setMessage('');
+    }
   }, [selectedIdx, activePeriod?.id, guruId, db.nilaiSiswa, db.tujuanPembelajaran]);
+
+  // Simpan draf otomatis ke localStorage setiap kali guru mengedit nilai (debounced 1000ms)
+  useEffect(() => {
+    if (!activeAssignment || !activePeriod || !isDirtyRef.current || grades.length === 0) return;
+    const draftStorageKey = `e_raport_draft_${guruId}_${activePeriod.id}_${activeAssignment.key}`;
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(draftStorageKey, JSON.stringify({
+          timestamp: Date.now(),
+          grades
+        }));
+      } catch (err) {
+        console.warn('Penyimpanan draf peringatan:', err);
+      }
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [grades, activeAssignment, activePeriod, guruId]);
+
+  // Peringatan konfirmasi sebelum menutup halaman jika ada perubahan nilai yang belum disimpan
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, []);
+
+  const handleDiscardDraft = () => {
+    if (!activeAssignment || !activePeriod) return;
+    const draftStorageKey = `e_raport_draft_${guruId}_${activePeriod.id}_${activeAssignment.key}`;
+    try {
+      localStorage.removeItem(draftStorageKey);
+    } catch {}
+    isDirtyRef.current = false;
+    setIsDraftRestored(false);
+    lastLoadedAssignmentRef.current = '';
+    setSelectedIdx(prev => prev);
+    setMessage("Draf lokal dibatalkan. Nilai dikembalikan sesuai database master.");
+  };
 
   // Helper to recalculate column conversions (interpolations)
   const recalculateGradesWithInterpolation = (baseGrades: LocalNilaiSiswa[]): LocalNilaiSiswa[] => {
@@ -867,8 +935,8 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     setMessage(`Berhasil men-generate ${count} deskripsi capaian kompetensi siswa berdasarkan Nilai Asli TP!`);
   };
 
-  const handleSaveAll = () => {
-    if (!activeAssignment) return;
+  const handleSaveAll = async () => {
+    if (!activeAssignment || isSaving) return;
 
     // Check if any student has duplicate Nilai Asli TP values
     const duplicateList: string[] = [];
@@ -884,87 +952,107 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       return;
     }
 
-    // Convert local grades to the schema's NilaiSiswa structures
-    const updatedEntries: NilaiSiswa[] = grades.map(g => {
-      const dbKey = `${activePeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
-      const finalVal = calculateNilaiAkhirLocal(g);
-      const descVal = g.capaianKompetensi.trim() || generateDescFromAsli(g);
-      
-      return {
-        id: dbKey,
-        periodeId: activePeriod.id,
-        siswaId: g.siswaId,
-        mapelId: activeAssignment.mapelId,
-        guruId: guruId,
-        tp1NilaiAsli: g.tp1NilaiAsli === '' ? 0 : g.tp1NilaiAsli,
-        tp1Nilai: g.tp1Nilai === '' ? 0 : g.tp1Nilai,
-        tp2NilaiAsli: g.tp2NilaiAsli === '' ? 0 : g.tp2NilaiAsli,
-        tp2Nilai: g.tp2Nilai === '' ? 0 : g.tp2Nilai,
-        tp3NilaiAsli: g.tp3NilaiAsli === '' || g.tp3NilaiAsli === undefined ? undefined : g.tp3NilaiAsli,
-        tp3Nilai: g.tp3Nilai === '' || g.tp3Nilai === undefined ? undefined : g.tp3Nilai,
-        tp4NilaiAsli: g.tp4NilaiAsli === '' || g.tp4NilaiAsli === undefined ? undefined : g.tp4NilaiAsli,
-        tp4Nilai: g.tp4Nilai === '' || g.tp4Nilai === undefined ? undefined : g.tp4Nilai,
-        nilaiUjianAsli: g.nilaiUjianAsli === '' ? 0 : g.nilaiUjianAsli,
-        nilaiUjian: g.nilaiUjian === '' ? 0 : g.nilaiUjian,
-        nilaiAkhir: finalVal,
-        capaianKompetensi: descVal
-      };
-    });
+    setIsSaving(true);
+    setMessage("Sedang menyimpan nilai siswa ke database...");
 
-    // Also prepare database records for PSTS periods if user modified them
-    let mergedPstsList: NilaiSiswa[] = [];
-    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
-      const targetTipe = activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2';
-      const targetPeriod = db.periodList.find(p => 
-        p.tahunAjaran === activePeriod.tahunAjaran && 
-        p.semester === activePeriod.semester && 
-        p.tipeUjian === targetTipe
-      );
-      if (targetPeriod) {
-        grades.forEach(g => {
-          if (typeof g.nilaiPsts === 'number') {
-            const pstsKey = `${targetPeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
-            const existingPsts = db.nilaiSiswa.find(n => n.id === pstsKey);
-            
-            const basePsts: NilaiSiswa = existingPsts ? {
-              ...existingPsts,
-              nilaiAkhir: g.nilaiPsts,
-              nilaiUjian: existingPsts.nilaiUjian === 0 ? g.nilaiPsts : existingPsts.nilaiUjian
-            } : {
-              id: pstsKey,
-              periodeId: targetPeriod.id,
-              siswaId: g.siswaId,
-              mapelId: activeAssignment.mapelId,
-              guruId: guruId,
-              tp1Nilai: 0,
-              tp2Nilai: 0,
-              nilaiUjian: g.nilaiPsts,
-              nilaiAkhir: g.nilaiPsts,
-              capaianKompetensi: 'Telah mengikuti penilaian tengah semester dengan baik.'
-            };
-            
-            mergedPstsList.push(basePsts);
-          }
-        });
+    try {
+      // Convert local grades to the schema's NilaiSiswa structures
+      const updatedEntries: NilaiSiswa[] = grades.map(g => {
+        const dbKey = `${activePeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
+        const finalVal = calculateNilaiAkhirLocal(g);
+        const descVal = g.capaianKompetensi.trim() || generateDescFromAsli(g);
+        
+        return {
+          id: dbKey,
+          periodeId: activePeriod.id,
+          siswaId: g.siswaId,
+          mapelId: activeAssignment.mapelId,
+          guruId: guruId,
+          tp1NilaiAsli: g.tp1NilaiAsli === '' ? 0 : g.tp1NilaiAsli,
+          tp1Nilai: g.tp1Nilai === '' ? 0 : g.tp1Nilai,
+          tp2NilaiAsli: g.tp2NilaiAsli === '' ? 0 : g.tp2NilaiAsli,
+          tp2Nilai: g.tp2Nilai === '' ? 0 : g.tp2Nilai,
+          tp3NilaiAsli: g.tp3NilaiAsli === '' || g.tp3NilaiAsli === undefined ? undefined : g.tp3NilaiAsli,
+          tp3Nilai: g.tp3Nilai === '' || g.tp3Nilai === undefined ? undefined : g.tp3Nilai,
+          tp4NilaiAsli: g.tp4NilaiAsli === '' || g.tp4NilaiAsli === undefined ? undefined : g.tp4NilaiAsli,
+          tp4Nilai: g.tp4Nilai === '' || g.tp4Nilai === undefined ? undefined : g.tp4Nilai,
+          nilaiUjianAsli: g.nilaiUjianAsli === '' ? 0 : g.nilaiUjianAsli,
+          nilaiUjian: g.nilaiUjian === '' ? 0 : g.nilaiUjian,
+          nilaiAkhir: finalVal,
+          capaianKompetensi: descVal
+        };
+      });
+
+      // Also prepare database records for PSTS periods if user modified them
+      let mergedPstsList: NilaiSiswa[] = [];
+      if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
+        const targetTipe = activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2';
+        const targetPeriod = db.periodList.find(p => 
+          p.tahunAjaran === activePeriod.tahunAjaran && 
+          p.semester === activePeriod.semester && 
+          p.tipeUjian === targetTipe
+        );
+        if (targetPeriod) {
+          grades.forEach(g => {
+            if (typeof g.nilaiPsts === 'number') {
+              const pstsKey = `${targetPeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
+              const existingPsts = db.nilaiSiswa.find(n => n.id === pstsKey);
+              
+              const basePsts: NilaiSiswa = existingPsts ? {
+                ...existingPsts,
+                nilaiAkhir: g.nilaiPsts,
+                nilaiUjian: existingPsts.nilaiUjian === 0 ? g.nilaiPsts : existingPsts.nilaiUjian
+              } : {
+                id: pstsKey,
+                periodeId: targetPeriod.id,
+                siswaId: g.siswaId,
+                mapelId: activeAssignment.mapelId,
+                guruId: guruId,
+                tp1Nilai: 0,
+                tp2Nilai: 0,
+                nilaiUjian: g.nilaiPsts,
+                nilaiAkhir: g.nilaiPsts,
+                capaianKompetensi: 'Telah mengikuti penilaian tengah semester dengan baik.'
+              };
+              
+              mergedPstsList.push(basePsts);
+            }
+          });
+        }
       }
+
+      // Merge into db
+      const updatedKeys = updatedEntries.map(e => e.id);
+      const pstsKeys = mergedPstsList.map(e => e.id);
+      
+      const filteredMasterNilai = db.nilaiSiswa.filter(master => 
+        !updatedKeys.includes(master.id) && !pstsKeys.includes(master.id)
+      );
+      const mergedNilaiList = [...filteredMasterNilai, ...updatedEntries, ...mergedPstsList];
+
+      const res: any = await onUpdate({
+        ...db,
+        nilaiSiswa: mergedNilaiList
+      });
+
+      isDirtyRef.current = false;
+      const draftStorageKey = `e_raport_draft_${guruId}_${activePeriod.id}_${activeAssignment.key}`;
+      try {
+        localStorage.removeItem(draftStorageKey);
+      } catch {}
+      setIsDraftRestored(false);
+
+      if (res?.queuedForSync) {
+        setMessage("Nilai siswa tersimpan aman di perangkat lokal & antrean sinkronisasi cloud. Data Anda aman dan otomatis terkirim saat koneksi stabil.");
+      } else {
+        setMessage("Semua nilai siswa (termasuk kelengkapan Rerata PSTS) BERHASIL disimpan & disinkronkan ke Cloud Supabase!");
+      }
+    } catch (err: any) {
+      console.error("Save error:", err);
+      setMessage("Terjadi kendala saat menyimpan. Data Anda tetap berada di formulir dan aman di draf, sila coba simpan kembali.");
+    } finally {
+      setIsSaving(false);
     }
-
-    // Merge into db
-    const updatedKeys = updatedEntries.map(e => e.id);
-    const pstsKeys = mergedPstsList.map(e => e.id);
-    
-    const filteredMasterNilai = db.nilaiSiswa.filter(master => 
-      !updatedKeys.includes(master.id) && !pstsKeys.includes(master.id)
-    );
-    const mergedNilaiList = [...filteredMasterNilai, ...updatedEntries, ...mergedPstsList];
-
-    onUpdate({
-      ...db,
-      nilaiSiswa: mergedNilaiList
-    });
-
-    isDirtyRef.current = false;
-    setMessage("Semua nilai siswa (termasuk kelengkapan Rerata PSTS) BERHASIL disimpan ke database master!");
   };
 
   // Calculation of summary statistics
@@ -1199,12 +1287,50 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                 setIsBulkModalOpen(true);
                 setBulkError('');
               }}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
+              className="flex-1 sm:flex-none px-4 py-2.5 bg-white hover:bg-emerald-50 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer"
             >
-              <Upload className="w-4 h-4" />
+              <Upload className="w-4 h-4 text-emerald-600" />
               Input Nilai Massal
             </button>
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
+              title="Simpan nilai ke database master & cloud"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Menyimpan ke Cloud...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Simpan Semua Nilai
+                </>
+              )}
+            </button>
           </div>
+        </div>
+      )}
+
+      {isDraftRestored && (
+        <div className="p-3.5 bg-blue-50/90 text-blue-900 border border-blue-200 text-xs font-semibold rounded-2xl flex items-center justify-between gap-3 flex-wrap shadow-2xs">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-blue-600 shrink-0" />
+            <span>
+              <strong>Draf Otomatis Aktif:</strong> Nilai dari sesi pengerjaan sebelumnya telah dipulihkan otomatis (terlindungi jika laptop mati/browser ditutup).
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleDiscardDraft}
+            className="px-3 py-1.5 bg-white hover:bg-rose-50 text-rose-700 border border-rose-200 rounded-xl text-[11px] font-bold flex items-center gap-1.5 shadow-3xs cursor-pointer transition-all"
+          >
+            <RotateCcw className="w-3.5 h-3.5 text-rose-600" />
+            Batalkan Draf & Muat Ulang Database
+          </button>
         </div>
       )}
 
@@ -1526,10 +1652,20 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
               </button>
               <button
                 onClick={handleSaveAll}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/10 active:scale-95 transition-all inline-flex items-center gap-1.5"
+                disabled={isSaving}
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-600/10 active:scale-95 transition-all inline-flex items-center gap-1.5 cursor-pointer"
               >
-                <Save className="w-4 h-4" />
-                Simpan Desk Kerja & Nilai Raport
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Menyimpan ke Cloud...
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-4 h-4" />
+                    Simpan Desk Kerja & Nilai Raport
+                  </>
+                )}
               </button>
             </div>
           </div>
