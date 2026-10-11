@@ -19,18 +19,20 @@ const getInterpolatedValueForColumn = (
   if (valAsli === '') return '';
   if (valAsli >= 95) return valAsli;
 
-  const valid = allAsliValues.filter((v): v is number => typeof v === 'number');
+  // Nilai asli yang diinput (hanya angka valid > 0)
+  const valid = allAsliValues.filter((v): v is number => typeof v === 'number' && v > 0);
   if (valid.length === 0) return valAsli;
+
+  // Apabila nilai asli yang diinput tidak ada yang dibawah 80 dalam satu kelas maka jangan dikonversi/dikatrol
+  const hasBelow80 = valid.some(v => v < 80);
+  if (!hasBelow80) {
+    return valAsli;
+  }
 
   const minVal = Math.min(...valid);
   const maxVal = Math.max(...valid);
 
   if (maxVal === minVal) {
-    return valAsli;
-  }
-
-  // If the minimum score entered in the class (per column) is 80 or greater, do not convert/interpolate.
-  if (minVal >= 80) {
     return valAsli;
   }
 
