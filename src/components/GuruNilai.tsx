@@ -1264,44 +1264,6 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
             Input Nilai Kertas Kerja TP & Ujian Sumatif Raport Akhis Semester SMP Al Irsyad Surakarta.
           </p>
         </div>
-        {activeTPs && grades.length > 0 && (
-          <div className="flex items-center gap-2 self-stretch sm:self-auto justify-center flex-wrap">
-            <button
-              onClick={() => {
-                setIsBulkModalOpen(true);
-                setBulkError('');
-              }}
-              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              Input Nilai Massal
-            </button>
-            <button
-              onClick={() => setIsPrintModalOpen(true)}
-              className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
-            >
-              <Printer className="w-4 h-4" />
-              Print Rekap Kelas
-            </button>
-            <button
-              onClick={handleSaveAll}
-              disabled={isSaving}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Menyimpan...
-                </>
-              ) : (
-                <>
-                  <Save className="w-4 h-4" />
-                  Simpan Semua Nilai
-                </>
-              )}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Selector Assignment Dropdown with Tampilkan button */}
