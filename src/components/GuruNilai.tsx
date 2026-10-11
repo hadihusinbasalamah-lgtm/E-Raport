@@ -4,6 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import * as XLSX from 'xlsx';
 import { SchemaDatabase, TujuanPembelajaran, NilaiSiswa, Siswa, formatTipeUjian } from '../types';
 import { 
   Edit3, CheckCircle, Save, Award, RefreshCw, Zap, Printer, X, AlertTriangle, 
@@ -469,7 +470,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   // BULK IMPORT & TEMPLATE EXCEL / CSV GENERATION
   // ========================================================================
 
-  // Download template CSV tailored specifically to the active class & assignment
+  // Download template Excel (.xlsx) murni per-kolom (bukan dipisahkan koma) sesuai kelas aktif
   const handleDownloadTemplate = () => {
     if (!activeAssignment || !activePeriod || grades.length === 0) {
       alert("Tidak ada siswa terdaftar dalam kelas ini.");
@@ -496,48 +497,61 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     headers.push("Nilai Asli Ujian");
     headers.push("Capaian Kompetensi (Opsional)");
 
-    const rows = grades.map((g, idx) => {
+    const dataRows = grades.map((g, idx) => {
       const studentObj = activePeriod.snapshotSiswa.find(s => s.id === g.siswaId);
       const nis = studentObj?.nis || "";
-      const row = [
-        String(idx + 1),
-        `"${nis.replace(/"/g, '""')}"`,
-        `"${g.siswaNama.replace(/"/g, '""')}"`,
-        g.tp1NilaiAsli !== "" ? String(g.tp1NilaiAsli) : "",
-        g.tp2NilaiAsli !== "" ? String(g.tp2NilaiAsli) : ""
+      const row: (string | number)[] = [
+        idx + 1,
+        nis,
+        g.siswaNama,
+        g.tp1NilaiAsli !== "" && g.tp1NilaiAsli !== undefined ? Number(g.tp1NilaiAsli) : "",
+        g.tp2NilaiAsli !== "" && g.tp2NilaiAsli !== undefined ? Number(g.tp2NilaiAsli) : ""
       ];
 
       if (activeTPs?.tp3) {
-        row.push(g.tp3NilaiAsli !== "" && g.tp3NilaiAsli !== undefined ? String(g.tp3NilaiAsli) : "");
+        row.push(g.tp3NilaiAsli !== "" && g.tp3NilaiAsli !== undefined ? Number(g.tp3NilaiAsli) : "");
       }
       if (activeTPs?.tp4) {
-        row.push(g.tp4NilaiAsli !== "" && g.tp4NilaiAsli !== undefined ? String(g.tp4NilaiAsli) : "");
+        row.push(g.tp4NilaiAsli !== "" && g.tp4NilaiAsli !== undefined ? Number(g.tp4NilaiAsli) : "");
       }
       if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
-        row.push(g.nilaiPsts !== "" && g.nilaiPsts !== undefined ? String(g.nilaiPsts) : "");
+        row.push(g.nilaiPsts !== "" && g.nilaiPsts !== undefined ? Number(g.nilaiPsts) : "");
       }
-      row.push(g.nilaiUjianAsli !== "" ? String(g.nilaiUjianAsli) : "");
-      row.push(`"${(g.capaianKompetensi || "").replace(/"/g, '""')}"`);
+      row.push(g.nilaiUjianAsli !== "" && g.nilaiUjianAsli !== undefined ? Number(g.nilaiUjianAsli) : "");
+      row.push(g.capaianKompetensi || "");
 
-      return row.join(",");
+      return row;
     });
 
-    const csvData = [headers.join(","), ...rows].join("\r\n");
-    // UTF-8 BOM so Microsoft Excel correctly displays Indonesian characters and UTF-8 formatting
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvData], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
+    const worksheetData = [headers, ...dataRows];
+    const ws = XLSX.utils.aoa_to_sheet(worksheetData);
+
+    // Format lebar kolom agar tabel terbaca rapi dan lega per-kolom di Excel
+    const colWidths = [
+      { wch: 6 },  // Kolom A: No
+      { wch: 15 }, // Kolom B: NIS
+      { wch: 32 }, // Kolom C: Nama Siswa
+      { wch: 18 }, // Kolom D: Nilai Asli TP1
+      { wch: 18 }, // Kolom E: Nilai Asli TP2
+    ];
+    if (activeTPs?.tp3) colWidths.push({ wch: 18 });
+    if (activeTPs?.tp4) colWidths.push({ wch: 18 });
+    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') colWidths.push({ wch: 18 });
+    colWidths.push({ wch: 18 }); // Kolom Nilai Asli Ujian
+    colWidths.push({ wch: 36 }); // Kolom Capaian Kompetensi
+    ws['!cols'] = colWidths;
+
+    const wb = XLSX.utils.book_new();
+    const cleanKelasName = activeAssignment.kelasNama.replace(/[^a-zA-Z0-9]/g, "_").slice(0, 25);
+    XLSX.utils.book_append_sheet(wb, ws, `Nilai ${cleanKelasName}`);
+
     const cleanKelas = activeAssignment.kelasNama.replace(/[^a-zA-Z0-9]/g, "_");
     const cleanMapel = activeAssignment.mapelNama.replace(/[^a-zA-Z0-9]/g, "_");
-    link.download = `template_nilai_${cleanKelas}_${cleanMapel}_${activePeriod.tipeUjian}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const fileName = `template_nilai_${cleanKelas}_${cleanMapel}_${activePeriod.tipeUjian}.xlsx`;
+    XLSX.writeFile(wb, fileName);
   };
 
-  // Helper parser for CSV/TSV lines supporting quotes
+  // Helper parser untuk baris teks (jika user copas atau upload CSV/TSV)
   const parseCSVLine = (line: string): string[] => {
     if (line.includes('\t')) {
       return line.split('\t').map(c => c.trim().replace(/^"|"$/g, ''));
@@ -567,24 +581,28 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     return result.map(c => c.replace(/^"|"$/g, ''));
   };
 
-  // Parse raw text (from file upload or textarea paste) into structured preview rows
-  const handleParseBulkData = (rawText: string) => {
+  // Parser inti matriks data per-kolom (mendukung file Excel .xlsx maupun teks copas)
+  const handleParseMatrixData = (matrix: (string | number)[][]) => {
     setBulkError('');
-    if (!rawText.trim()) {
+    if (!matrix || matrix.length === 0) {
       setParsedBulkRows([]);
       return;
     }
 
-    const rawLines = rawText.split(/\r?\n/).filter(l => l.trim().length > 0);
-    if (rawLines.length === 0) {
+    // Buang baris kosong
+    const nonEmptyRows = matrix.filter(row => 
+      row && row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+    );
+
+    if (nonEmptyRows.length === 0) {
       setParsedBulkRows([]);
       return;
     }
 
-    const firstCols = parseCSVLine(rawLines[0]);
+    const firstCols = (nonEmptyRows[0] || []).map(c => String(c ?? '').trim());
     const lowerFirst = firstCols.map(c => c.toLowerCase());
     const hasHeader = lowerFirst.some(c => 
-      c.includes('nis') || c.includes('nama') || c.includes('siswa') || c.includes('tp1') || c.includes('nilai') || c.includes('ujian')
+      c.includes('nis') || c.includes('nama') || c.includes('siswa') || c.includes('tp1') || c.includes('tp 1') || c.includes('nilai') || c.includes('ujian')
     );
 
     let startIdx = 0;
@@ -615,7 +633,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       });
     }
 
-    // Fallback defaults based on standard template order:
+    // Default urutan kolom standar template:
     // [No, NIS, Nama, TP1, TP2, (TP3), (TP4), (PSTS), Ujian, Capaian]
     let currentPos = 3;
     if (colIdxMap.tp1 === -1) colIdxMap.tp1 = currentPos;
@@ -643,9 +661,9 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
 
     const parsed: ParsedBulkRow[] = [];
 
-    for (let i = startIdx; i < rawLines.length; i++) {
-      const cols = parseCSVLine(rawLines[i]);
-      if (cols.length === 0 || (cols.length === 1 && !cols[0])) continue;
+    for (let i = startIdx; i < nonEmptyRows.length; i++) {
+      const cols = nonEmptyRows[i].map(c => String(c ?? '').trim());
+      if (cols.length === 0 || cols.every(c => !c)) continue;
 
       const rowNis = colIdxMap.nis >= 0 && colIdxMap.nis < cols.length ? cols[colIdxMap.nis].trim() : '';
       const rowNama = colIdxMap.nama >= 0 && colIdxMap.nama < cols.length ? cols[colIdxMap.nama].trim() : '';
@@ -654,7 +672,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         if (idx < 0 || idx >= cols.length) return '';
         const raw = cols[idx].trim().replace(',', '.');
         if (raw === '' || isNaN(Number(raw))) return '';
-        const val = parseInt(raw, 10);
+        const val = Math.round(Number(raw));
         return Math.min(100, Math.max(0, val));
       };
 
@@ -668,7 +686,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
 
       let matchedStudent: LocalNilaiSiswa | undefined;
 
-      // 1. Match by NIS
+      // 1. Cocokkan berdasarkan NIS
       if (rowNis) {
         const sObj = activePeriod?.snapshotSiswa.find(s => s.kelasId === activeAssignment?.kelasId && s.nis && s.nis.trim() === rowNis);
         if (sObj) {
@@ -676,7 +694,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         }
       }
 
-      // 2. Match by Nama Siswa
+      // 2. Cocokkan berdasarkan Nama Siswa
       if (!matchedStudent && rowNama) {
         const cleanRowNama = rowNama.toLowerCase().trim();
         matchedStudent = grades.find(g => g.siswaNama.toLowerCase().trim() === cleanRowNama);
@@ -685,7 +703,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         }
       }
 
-      // 3. Fallback matching by row index if count lines align
+      // 3. Cadangan pencocokan urutan nomor baris jika NIS & Nama tidak terdeteksi
       const dataIndex = i - startIdx;
       if (!matchedStudent && dataIndex >= 0 && dataIndex < grades.length && !rowNis && !rowNama) {
         matchedStudent = grades[dataIndex];
@@ -708,7 +726,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     }
 
     if (parsed.length === 0) {
-      setBulkError("Tidak ada baris data yang dapat dibaca. Pastikan format kolom sesuai.");
+      setBulkError("Tidak ada baris data yang dapat dibaca. Pastikan format kolom sesuai template.");
     } else {
       const matchCount = parsed.filter(p => p.status === 'matched').length;
       if (matchCount === 0) {
@@ -719,23 +737,64 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     setParsedBulkRows(parsed);
   };
 
-  // Handle file input upload
+  // Parse teks mentah dari textarea paste
+  const handleParseBulkData = (rawText: string) => {
+    if (!rawText.trim()) {
+      setParsedBulkRows([]);
+      setBulkError('');
+      return;
+    }
+
+    const rawLines = rawText.split(/\r?\n/).filter(l => l.trim().length > 0);
+    if (rawLines.length === 0) {
+      setParsedBulkRows([]);
+      return;
+    }
+
+    const matrix = rawLines.map(line => parseCSVLine(line));
+    handleParseMatrixData(matrix);
+  };
+
+  // Handle file input upload (mendukung file Excel .xlsx / .xls dan teks .csv / .tsv)
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     setBulkFileName(file.name);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      if (text) {
-        handleParseBulkData(text);
-      }
-    };
-    reader.onerror = () => {
-      setBulkError("Gagal membaca file. Pastikan file berformat .csv atau teks spreadsheet yang valid.");
-    };
-    reader.readAsText(file);
+    const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const buffer = event.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(buffer, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, { header: 1, defval: '' });
+          handleParseMatrixData(rows);
+        } catch (err) {
+          console.error("Excel parse error:", err);
+          setBulkError("Gagal membaca file Excel (.xlsx / .xls). Pastikan file tidak terkunci atau rusak.");
+        }
+      };
+      reader.onerror = () => {
+        setBulkError("Gagal membaca file Excel dari perangkat Anda.");
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        if (text) {
+          handleParseBulkData(text);
+        }
+      };
+      reader.onerror = () => {
+        setBulkError("Gagal membaca file teks/spreadsheet. Pastikan format file valid.");
+      };
+      reader.readAsText(file);
+    }
     e.target.value = '';
   };
 
@@ -783,30 +842,48 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     }));
   };
 
-  // Helper calculation for display
+  // Helper calculation for display & storage: Rata-rata dari seluruh nilai yang diinput
   const calculateNilaiAkhirLocal = (g: LocalNilaiSiswa) => {
-    const tp1 = g.tp1Nilai === '' ? 0 : g.tp1Nilai;
-    const tp2 = g.tp2Nilai === '' ? 0 : g.tp2Nilai;
-    let sumTP = tp1 + tp2;
-    let countTP = 2;
-    if (g.tp3Nilai !== undefined && g.tp3Nilai !== '' && activeTPs?.tp3) {
-      sumTP += g.tp3Nilai;
-      countTP++;
-    }
-    if (g.tp4Nilai !== undefined && g.tp4Nilai !== '' && activeTPs?.tp4) {
-      sumTP += g.tp4Nilai;
-      countTP++;
-    }
-    const avgTP = sumTP / countTP;
-    const ujian = g.nilaiUjian === '' ? 0 : g.nilaiUjian;
+    // Kumpulkan seluruh nilai komponen hasil katrol/konversi yang valid diisi
+    const validScores: number[] = [];
 
-    if (activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') {
-      if (typeof g.nilaiPsts === 'number') {
-        return Math.round((avgTP + ujian + g.nilaiPsts) / 3);
-      }
+    if (typeof g.tp1Nilai === 'number') validScores.push(g.tp1Nilai);
+    if (typeof g.tp2Nilai === 'number') validScores.push(g.tp2Nilai);
+    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number') validScores.push(g.tp3Nilai);
+    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number') validScores.push(g.tp4Nilai);
+
+    // Pada periode semester (PSAS 1 / PSAT), nilai PSTS juga ikut masuk dalam rata-rata
+    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number') {
+      validScores.push(g.nilaiPsts);
     }
 
-    return Math.round((avgTP + ujian) / 2);
+    if (typeof g.nilaiUjian === 'number') {
+      validScores.push(g.nilaiUjian);
+    }
+
+    if (validScores.length === 0) return 0;
+    const total = validScores.reduce((acc, curr) => acc + curr, 0);
+    return Math.round(total / validScores.length);
+  };
+
+  // Helper untuk mendapatkan rincian teks perhitungan Nilai Akhir (untuk tooltip guru)
+  const getNilaiAkhirBreakdown = (g: LocalNilaiSiswa) => {
+    const parts: { label: string; score: number }[] = [];
+    if (typeof g.tp1Nilai === 'number') parts.push({ label: 'TP1', score: g.tp1Nilai });
+    if (typeof g.tp2Nilai === 'number') parts.push({ label: 'TP2', score: g.tp2Nilai });
+    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number') parts.push({ label: 'TP3', score: g.tp3Nilai });
+    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number') parts.push({ label: 'TP4', score: g.tp4Nilai });
+    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number') {
+      parts.push({ label: activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2', score: g.nilaiPsts });
+    }
+    if (typeof g.nilaiUjian === 'number') {
+      parts.push({ label: formatTipeUjian(activePeriod.tipeUjian) || 'Ujian', score: g.nilaiUjian });
+    }
+    if (parts.length === 0) return 'Belum ada nilai yang diinput';
+    const sum = parts.reduce((acc, p) => acc + p.score, 0);
+    const avg = Math.round(sum / parts.length);
+    const formulaStr = parts.map(p => `${p.label} (${p.score})`).join(' + ');
+    return `Rata-rata dari ${parts.length} nilai yang diinput: [${formulaStr}] / ${parts.length} = ${avg}`;
   };
 
   const getAvgTP = (g: LocalNilaiSiswa) => {
@@ -1208,10 +1285,20 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
             </button>
             <button
               onClick={handleSaveAll}
-              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
+              disabled={isSaving}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-md active:scale-95 transition-all justify-center cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              Simpan Semua Nilai
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Menyimpan...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4" />
+                  Simpan Semua Nilai
+                </>
+              )}
             </button>
           </div>
         )}
@@ -1276,10 +1363,10 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
               type="button"
               onClick={handleDownloadTemplate}
               className="flex-1 sm:flex-none px-4 py-2.5 bg-white hover:bg-slate-50 text-emerald-800 border border-emerald-300 text-xs font-bold rounded-xl flex items-center justify-center gap-2 shadow-2xs hover:shadow-xs active:scale-95 transition-all cursor-pointer"
-              title={`Download template Excel/CSV sesuai data Kelas ${activeAssignment.kelasNama}`}
+              title={`Download template Excel (.xlsx) per-kolom sesuai data Kelas ${activeAssignment.kelasNama}`}
             >
               <Download className="w-4 h-4 text-emerald-600" />
-              Download Template Kelas
+              Download Template Excel (.xlsx)
             </button>
             <button
               type="button"
@@ -1396,9 +1483,15 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
               {activeTPs.tp3 && <div>• <strong>TP 3:</strong> {activeTPs.tp3}</div>}
               {activeTPs.tp4 && <div>• <strong>TP 4:</strong> {activeTPs.tp4}</div>}
             </div>
-            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-emerald-100/50 text-[10px] text-slate-600 font-sans">
-              <span className="font-bold text-emerald-800 shrink-0">Ketentuan Raport:</span>
-              <span>Nilai <strong>Asli TP</strong> tiap siswa tidak boleh sama. Penentuan deskripsi capaian otomatis dihitung berdasarkan capaian <strong>Nilai Asli TP</strong> tertinggi dan terendah.</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2 pt-2 border-t border-emerald-100/50 text-[10px] text-slate-600 font-sans">
+              <div>
+                <span className="font-bold text-emerald-800 shrink-0">Ketentuan Raport: </span>
+                <span>Nilai <strong>Asli TP</strong> tiap siswa tidak boleh sama. Deskripsi capaian dihitung otomatis dari nilai TP tertinggi & terendah.</span>
+              </div>
+              <div className="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-md border border-emerald-200/60 font-medium">
+                <span className="font-bold">Formula Nilai Akhir:</span>
+                <span>Rata-rata dari seluruh nilai yang diinput {activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT' ? '(TP + PSTS + Ujian)' : '(TP + Ujian)'}</span>
+              </div>
             </div>
           </div>
 
@@ -1435,7 +1528,15 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                     )}
                     <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli Ujian</th>
                     <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai Ujian</th>
-                    <th className="py-3 px-2 text-center w-12 font-semibold text-emerald-700">Nilai Akhir</th>
+                    <th 
+                      className="py-3 px-2 text-center w-14 font-semibold text-emerald-700 cursor-help"
+                      title={`Nilai Akhir = Rata-rata dari seluruh nilai yang diinput ${activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT' ? '(TP1 + TP2 + TP3/TP4 jika aktif + PSTS + Ujian) dibagi total komponen' : '(TP1 + TP2 + TP3/TP4 jika aktif + Ujian) dibagi total komponen'}`}
+                    >
+                      <div className="flex items-center justify-center gap-0.5">
+                        <span>Nilai Akhir</span>
+                        <Info className="w-2.5 h-2.5 opacity-60" />
+                      </div>
+                    </th>
                     <th className="py-3 px-4 w-[30%]">
                       <div className="flex items-center justify-between gap-2">
                         <span>Deskripsi Capaian (Kurikulum Merdeka)</span>
@@ -1605,11 +1706,14 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
 
                         {/* Nilai Akhir */}
                         <td className="py-3 px-3 text-center">
-                          <span className={`inline-block w-10 text-center py-1 font-bold rounded ${
-                            finalGrade >= 75 
-                              ? 'bg-emerald-50 text-emerald-800' 
-                              : 'bg-rose-50 text-rose-700'
-                          }`}>
+                          <span 
+                            title={getNilaiAkhirBreakdown(g)}
+                            className={`inline-block w-10 text-center py-1 font-bold rounded cursor-help transition-transform hover:scale-110 ${
+                              finalGrade >= 75 
+                                ? 'bg-emerald-50 text-emerald-800' 
+                                : 'bg-rose-50 text-rose-700'
+                            }`}
+                          >
                             {finalGrade}
                           </span>
                         </td>
@@ -2109,12 +2213,13 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                   </div>
                   <div>
                     <h4 className="text-xs font-bold text-emerald-950">
-                      Langkah 1: Unduh Format Template Excel / CSV
+                      Langkah 1: Unduh Format Template Excel (.xlsx) Per-Kolom
                     </h4>
                     <p className="text-[11px] text-slate-600 mt-0.5 leading-relaxed">
-                      Template ini otomatis memuat <strong>{grades.length} siswa</strong> kelas {activeAssignment?.kelasNama} beserta NIS dan nama lengkap sesuai urutan raport.
+                      Template ini otomatis memuat tabel resmi per-kolom (Kolom A: No, Kolom B: NIS, Kolom C: Nama Siswa, Kolom D dst: Nilai TP & Ujian) <strong>{grades.length} siswa</strong> kelas {activeAssignment?.kelasNama}.
                     </p>
                     <div className="flex items-center gap-2 mt-2 flex-wrap text-[10px] text-emerald-800 font-medium">
+                      <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md font-semibold text-emerald-900">Murni Per-Kolom (Tanpa Koma)</span>
                       <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP1 & TP2 (Wajib)</span>
                       {activeTPs?.tp3 && <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP3</span>}
                       {activeTPs?.tp4 && <span className="bg-white/90 border border-emerald-200 px-2 py-0.5 rounded-md">Kolom TP4</span>}
@@ -2131,7 +2236,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                   className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl flex items-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all self-stretch sm:self-auto justify-center shrink-0 cursor-pointer"
                 >
                   <Download className="w-3.5 h-3.5" />
-                  Unduh Template (.CSV)
+                  Unduh Template (.XLSX)
                 </button>
               </div>
 
@@ -2152,7 +2257,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                       }`}
                     >
                       <Upload className="w-3.5 h-3.5" />
-                      Upload File CSV
+                      Upload File Excel (.xlsx / .csv)
                     </button>
                     <button
                       type="button"
@@ -2174,7 +2279,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                     <input
                       type="file"
                       id="bulk-file-input"
-                      accept=".csv, text/csv, text/plain, .tsv"
+                      accept=".xlsx, .xls, .csv, text/csv, text/plain, .tsv"
                       onChange={handleFileUpload}
                       className="hidden"
                     />
@@ -2183,10 +2288,10 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         <Upload className="w-6 h-6" />
                       </div>
                       <div className="text-xs font-bold text-slate-700">
-                        Klik untuk memilih file CSV template atau drag & drop ke sini
+                        Klik untuk memilih file Excel (.xlsx / .xls) atau CSV template
                       </div>
                       <p className="text-[11px] text-slate-400">
-                        Mendukung file hasil unduhan template (.csv) yang telah diisi nilai di Microsoft Excel / Google Sheets
+                        Mendukung file Excel (.xlsx) per-kolom atau file CSV yang telah diisi nilai siswa
                       </p>
                       {bulkFileName && (
                         <div className="mt-2 inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-xl">

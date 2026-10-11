@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import * as XLSX from 'xlsx';
 import { SchemaDatabase, Siswa } from '../types';
 import { UserCheck, Plus, Edit2, Trash2, Check, Search, Filter, Save, Upload, Download, CheckCircle, HelpCircle, ArrowUp, ArrowDown, ListChecks, RefreshCw, X } from 'lucide-react';
 import { compareKelasNama, sortKelasList } from '../utils/kelasOrder';
@@ -328,50 +329,51 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
       ["Hadi Husin", "0112233445", "2324003", "L", classEx3]
     ];
 
-    const csvContent = data.map(e => e.join(",")).join("\n");
-    const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "template_siswa_alirsyad.csv";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    ws['!cols'] = [
+      { wch: 30 }, // Kolom A: Nama Lengkap
+      { wch: 16 }, // Kolom B: NISN
+      { wch: 16 }, // Kolom C: NIS
+      { wch: 22 }, // Kolom D: Jenis Kelamin (L/P)
+      { wch: 16 }, // Kolom E: Nama Kelas
+    ];
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Data Siswa");
+    XLSX.writeFile(wb, "template_siswa_alirsyad.xlsx");
   };
 
-  const handleParseImport = (text: string) => {
+  const handleParseImportRows = (rows: (string | number)[][]) => {
     setImportFileError(null);
-    if (!text.trim()) {
+    if (!rows || rows.length === 0) {
       setParsedImportData([]);
       return;
     }
 
-    const lines = text.split(/\r?\n/);
+    const nonEmptyRows = rows.filter(row => 
+      row && row.some(cell => cell !== null && cell !== undefined && String(cell).trim() !== '')
+    );
+
+    if (nonEmptyRows.length === 0) {
+      setParsedImportData([]);
+      return;
+    }
+
     const result: any[] = [];
-    
     let startIndex = 0;
-    const firstLine = lines[0] || '';
-    
-    const lowerFirst = firstLine.toLowerCase();
-    const isHeader = lowerFirst.includes('nama') || lowerFirst.includes('nisn') || lowerFirst.includes('nis') || lowerFirst.includes('kelas') || lowerFirst.includes('kelamin');
+    const firstLineCols = nonEmptyRows[0].map(c => String(c ?? '').trim());
+    const lowerFirst = firstLineCols.map(c => c.toLowerCase());
+    const isHeader = lowerFirst.some(c => 
+      c.includes('nama') || c.includes('nisn') || c.includes('nis') || c.includes('kelas') || c.includes('kelamin')
+    );
     
     if (isHeader) {
       startIndex = 1;
     }
 
-    for (let i = startIndex; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-
-      let cols: string[] = [];
-      if (line.includes('\t')) {
-        cols = line.split('\t');
-      } else if (line.includes(';')) {
-        cols = line.split(';');
-      } else {
-        cols = line.split(',');
-      }
+    for (let i = startIndex; i < nonEmptyRows.length; i++) {
+      const cols = nonEmptyRows[i].map(c => String(c ?? '').trim());
+      if (cols.length === 0 || cols.every(c => !c)) continue;
 
       let nama = (cols[0] || '').trim();
       let nisn = (cols[1] || '').trim().replace(/\D/g, '');
@@ -446,20 +448,60 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
     setParsedImportData(result);
   };
 
+  const handleParseImport = (text: string) => {
+    if (!text.trim()) {
+      setParsedImportData([]);
+      return;
+    }
+
+    const lines = text.split(/\r?\n/).filter(l => l.trim().length > 0);
+    const rows = lines.map(line => {
+      if (line.includes('\t')) return line.split('\t');
+      if (line.includes(';')) return line.split(';');
+      return line.split(',');
+    });
+
+    handleParseImportRows(rows);
+  };
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const text = event.target?.result as string;
-      setImportText(text);
-      handleParseImport(text);
-    };
-    reader.onerror = () => {
-      setImportFileError("Gagal membaca file tersebut.");
-    };
-    reader.readAsText(file);
+    const isExcel = file.name.toLowerCase().endsWith('.xlsx') || file.name.toLowerCase().endsWith('.xls');
+
+    if (isExcel) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const buffer = event.target?.result as ArrayBuffer;
+          const workbook = XLSX.read(buffer, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const rows = XLSX.utils.sheet_to_json<(string | number)[]>(worksheet, { header: 1, defval: '' });
+          handleParseImportRows(rows);
+        } catch (err) {
+          console.error("Excel parse error:", err);
+          setImportFileError("Gagal membaca file Excel (.xlsx / .xls). Pastikan file tidak rusak.");
+        }
+      };
+      reader.onerror = () => {
+        setImportFileError("Gagal membaca file Excel dari perangkat Anda.");
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const text = event.target?.result as string;
+        setImportText(text);
+        handleParseImport(text);
+      };
+      reader.onerror = () => {
+        setImportFileError("Gagal membaca file tersebut.");
+      };
+      reader.readAsText(file);
+    }
+    e.target.value = '';
   };
 
   const handleExecuteImport = () => {
@@ -546,8 +588,8 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
               onClick={downloadTemplate}
               className="px-4 py-2 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold rounded-xl flex items-center gap-1.5 border border-slate-200 shadow-sm active:scale-95 transition-all"
             >
-              <Download className="w-4 h-4 text-slate-500" />
-              Template CSV
+              <Download className="w-4 h-4 text-emerald-600" />
+              Template Excel (.xlsx)
             </button>
           </div>
         ) : isImporting ? (
@@ -569,15 +611,15 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
                 Upload / Import Siswa Massal
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Gunakan file CSV atau copas spreadsheet untuk mengunggah daftar siswa sekaligus ke database.
+                Gunakan file Excel (.xlsx), CSV per-kolom, atau copas spreadsheet untuk mengunggah daftar siswa sekaligus ke database.
               </p>
             </div>
             <button
               onClick={downloadTemplate}
-              className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-205 border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition active:scale-95 font-sans"
+              className="px-3 py-1.5 bg-white hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg flex items-center gap-1.5 shadow-2xs cursor-pointer transition active:scale-95 font-sans"
             >
-              <Download className="w-4 h-4 text-slate-500" />
-              Download Template CSV
+              <Download className="w-4 h-4 text-emerald-600" />
+              Download Template Excel (.xlsx)
             </button>
           </div>
 
@@ -585,12 +627,12 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-2">
-                  Metode 1: Unggah File CSV
+                  Metode 1: Unggah File Excel / CSV
                 </label>
                 <div className="border-2 border-dashed border-slate-200 hover:border-indigo-400 bg-white rounded-xl p-5 text-center transition relative cursor-pointer group">
                   <input
                     type="file"
-                    accept=".csv"
+                    accept=".xlsx, .xls, .csv"
                     onChange={handleFileUpload}
                     className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                   />
@@ -598,8 +640,8 @@ export function AdminSiswa({ db, onUpdate }: AdminSiswaProps) {
                     <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-indigo-50 text-indigo-600 group-hover:scale-110 transition duration-150">
                       <Upload className="w-5 h-5" />
                     </div>
-                    <div className="text-xs font-semibold text-slate-700">Pilih file CSV dari komputer Anda</div>
-                    <div className="text-[10px] text-slate-400">Pastikan file memakai pemisah koma (,) sesuai template</div>
+                    <div className="text-xs font-semibold text-slate-700">Pilih file Excel (.xlsx / .xls) atau CSV</div>
+                    <div className="text-[10px] text-slate-400">Format tabel per-kolom (A: Nama, B: NISN, C: NIS, D: L/P, E: Kelas)</div>
                   </div>
                 </div>
                 {importFileError && (
