@@ -5,7 +5,7 @@
 
 import React, { useState } from 'react';
 import { SchemaDatabase } from '../types';
-import { User, Key, Save, AlertCircle, Trash2, Loader2, CheckCircle2, Sparkles, Shield, Server } from 'lucide-react';
+import { User, Key, Save, AlertCircle, Trash2, Loader2, CheckCircle2, Sparkles, Shield, Server, Eye, EyeOff } from 'lucide-react';
 import { resetSupabaseToZero } from '../lib/supabase';
 import { AdminDemoNilai } from './AdminDemoNilai';
 
@@ -21,6 +21,8 @@ export function AdminProfile({ db, onUpdate, onNavigateToTab }: AdminProfileProp
   const [username, setUsername] = useState(db.adminUsername);
   const [password, setPassword] = useState(db.adminPasswordKey);
   const [confirmPassword, setConfirmPassword] = useState(db.adminPasswordKey);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
@@ -203,30 +205,82 @@ export function AdminProfile({ db, onUpdate, onNavigateToTab }: AdminProfileProp
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Password Baru</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-600">Password Baru</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    {showPassword ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Sembunyikan</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Lihat Karakter</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     value={password}
                     onChange={e => setPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-mono"
                   />
-                  <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-600 mb-1">Konfirmasi Password Baru</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-600">Konfirmasi Password Baru</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold inline-flex items-center gap-1 cursor-pointer"
+                  >
+                    {showConfirmPassword ? (
+                      <>
+                        <EyeOff className="w-3.5 h-3.5" />
+                        <span>Sembunyikan</span>
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="w-3.5 h-3.5" />
+                        <span>Lihat Karakter</span>
+                      </>
+                    )}
+                  </button>
+                </div>
                 <div className="relative">
                   <input
-                    type="password"
+                    type={showConfirmPassword ? 'text' : 'password'}
                     required
                     value={confirmPassword}
                     onChange={e => setConfirmPassword(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+                    className="w-full pl-9 pr-10 py-2.5 border border-slate-200 rounded-xl text-xs focus:ring-1 focus:ring-emerald-500 focus:outline-none font-mono"
                   />
-                  <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
+                  <Key className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
                 </div>
               </div>
 

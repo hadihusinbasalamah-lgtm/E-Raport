@@ -702,6 +702,7 @@ export async function syncDatabaseChangeToSupabase(
       promises.push(syncTable('nilai_siswa', oldDb.nilaiSiswa || [], newDb.nilaiSiswa || [], mapNilaiToSupabase));
       promises.push(syncTable('absensi_dan_catatan', oldDb.absensiDanCatatan || [], newDb.absensiDanCatatan || [], mapAbsensiToSupabase));
     } else if (userRole === 'guru' && userId) {
+      promises.push(syncTable('guru', oldDb.guru || [], newDb.guru || [], mapGuruToSupabase));
       promises.push(syncTable('tujuan_pembelajaran', oldDb.tujuanPembelajaran || [], newDb.tujuanPembelajaran || [], mapTPToSupabase));
       promises.push(syncTable('nilai_siswa', oldDb.nilaiSiswa || [], newDb.nilaiSiswa || [], mapNilaiToSupabase));
       promises.push(syncTable('absensi_dan_catatan', oldDb.absensiDanCatatan || [], newDb.absensiDanCatatan || [], mapAbsensiToSupabase));
