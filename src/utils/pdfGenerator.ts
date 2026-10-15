@@ -650,23 +650,21 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
     startY: tablesStartY,
     margin: { left: 120 },
     tableWidth: 75,
-    theme: 'grid',
+    theme: 'plain',
     head: [],
     body: attendanceRows,
     styles: {
       fontSize: 10.5,
-      cellPadding: 1.5,
-      minCellHeight: 10,
+      cellPadding: 0.8,
+      minCellHeight: 5.2,
       valign: 'middle',
-      lineColor: [0, 0, 0],
-      lineWidth: 0.25,
       textColor: [0, 0, 0],
       font: 'times'
     },
     columnStyles: {
-      0: { cellWidth: 38, fontStyle: 'normal', halign: 'left', valign: 'middle' },
-      1: { cellWidth: 7, halign: 'center', valign: 'middle', fontStyle: 'normal' },
-      2: { cellWidth: 30, halign: 'center', fontStyle: 'bold', valign: 'middle' }
+      0: { cellWidth: 36, fontStyle: 'normal', halign: 'left', valign: 'middle' },
+      1: { cellWidth: 5, halign: 'center', valign: 'middle', fontStyle: 'normal' },
+      2: { cellWidth: 34, halign: 'left', fontStyle: 'bold', valign: 'middle' }
     }
   });
 

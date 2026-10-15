@@ -624,14 +624,40 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                           .raport-page-3 table.table-raport-nilai {
                             height: 75mm !important;
                           }
-                          .raport-page table.table-extra,
-                          .raport-page table.table-absensi {
+                          .raport-page table.table-extra {
                             height: 32mm !important;
                           }
-                          .raport-page table.table-extra td,
-                          .raport-page table.table-absensi td {
+                          .raport-page table.table-extra td {
                             vertical-align: middle !important;
                             padding: 4px 8px !important;
+                          }
+                          .raport-page table.table-absensi {
+                            height: auto !important;
+                            border: none !important;
+                            border-collapse: collapse !important;
+                          }
+                          .raport-page table.table-absensi tr,
+                          .raport-page table.table-absensi td {
+                            border: none !important;
+                            border-width: 0 !important;
+                            vertical-align: middle !important;
+                          }
+                          .raport-page table.table-absensi td {
+                            padding-top: 1.5px !important;
+                            padding-bottom: 1.5px !important;
+                          }
+                          .raport-page table.table-absensi td.cell-colon {
+                            padding: 1.5px 2px !important;
+                            width: 14px !important;
+                            text-align: center !important;
+                          }
+                          .raport-page table.table-absensi td.cell-label {
+                            padding: 1.5px 4px 1.5px 0 !important;
+                            text-align: left !important;
+                          }
+                          .raport-page table.table-absensi td.cell-value {
+                            padding: 1.5px 0 1.5px 8px !important;
+                            text-align: left !important;
                           }
                           .raport-page table.table-raport-nilai td.cell-no,
                           .raport-page table.table-raport-nilai td.cell-nilai {
@@ -788,13 +814,39 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page-3 table.table-raport-nilai {
                       height: 75mm;
                     }
-                    .raport-page table.table-extra,
-                    .raport-page table.table-absensi {
+                    .raport-page table.table-extra {
                       height: 32mm;
                     }
-                    .raport-page table.table-extra td,
-                    .raport-page table.table-absensi td {
+                    .raport-page table.table-extra td {
                       vertical-align: middle;
+                    }
+                    .raport-page table.table-absensi {
+                      height: auto;
+                      border: none !important;
+                      border-collapse: collapse;
+                    }
+                    .raport-page table.table-absensi tr,
+                    .raport-page table.table-absensi td {
+                      border: none !important;
+                      border-width: 0 !important;
+                      vertical-align: middle;
+                    }
+                    .raport-page table.table-absensi td {
+                      padding-top: 1.5px;
+                      padding-bottom: 1.5px;
+                    }
+                    .raport-page table.table-absensi td.cell-colon {
+                      padding: 1.5px 2px;
+                      width: 14px;
+                      text-align: center;
+                    }
+                    .raport-page table.table-absensi td.cell-label {
+                      padding: 1.5px 4px 1.5px 0;
+                      text-align: left;
+                    }
+                    .raport-page table.table-absensi td.cell-value {
+                      padding: 1.5px 0 1.5px 8px;
+                      text-align: left;
                     }
                     .raport-page .sig-space {
                       height: 16mm;
@@ -951,14 +1003,40 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                     .raport-page-3 table.table-raport-nilai {
                       height: 75mm !important;
                     }
-                    .raport-page table.table-extra,
-                    .raport-page table.table-absensi {
+                    .raport-page table.table-extra {
                       height: 32mm !important;
                     }
-                    .raport-page table.table-extra td,
-                    .raport-page table.table-absensi td {
+                    .raport-page table.table-extra td {
                       vertical-align: middle !important;
                       padding: 4px 8px !important;
+                    }
+                    .raport-page table.table-absensi {
+                      height: auto !important;
+                      border: none !important;
+                      border-collapse: collapse !important;
+                    }
+                    .raport-page table.table-absensi tr,
+                    .raport-page table.table-absensi td {
+                      border: none !important;
+                      border-width: 0 !important;
+                      vertical-align: middle !important;
+                    }
+                    .raport-page table.table-absensi td {
+                      padding-top: 1.5px !important;
+                      padding-bottom: 1.5px !important;
+                    }
+                    .raport-page table.table-absensi td.cell-colon {
+                      padding: 1.5px 2px !important;
+                      width: 14px !important;
+                      text-align: center !important;
+                    }
+                    .raport-page table.table-absensi td.cell-label {
+                      padding: 1.5px 4px 1.5px 0 !important;
+                      text-align: left !important;
+                    }
+                    .raport-page table.table-absensi td.cell-value {
+                      padding: 1.5px 0 1.5px 8px !important;
+                      text-align: left !important;
                     }
                     .raport-page table.table-raport-nilai td.cell-no,
                     .raport-page table.table-raport-nilai td.cell-nilai {
@@ -1404,22 +1482,22 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                               {/* D. Ketidakhadiran */}
                               <div className="col-span-5">
                                 <h2 className="font-bold text-[12px] uppercase mb-1.5">D. Ketidakhadiran</h2>
-                                <table className="table-absensi w-full border-collapse border border-black text-[12px]">
+                                <table className="table-absensi border-none w-full border-collapse text-[12px]">
                                   <tbody>
                                     <tr>
-                                      <td className="border border-black py-1.5 px-3 font-medium" style={{ width: '55%' }}>Sakit</td>
-                                      <td className="border border-black py-1.5 px-1.5 text-center" style={{ width: '10%' }}>:</td>
-                                      <td className="border border-black py-1.5 px-3 text-center font-bold" style={{ width: '35%' }}>{reportData.attendance?.sakit || 0} Hari</td>
+                                      <td className="cell-label py-0.5 px-0 font-medium" style={{ width: '45%' }}>Sakit</td>
+                                      <td className="cell-colon py-0.5 px-0.5 text-center" style={{ width: '14px' }}>:</td>
+                                      <td className="cell-value py-0.5 pl-2 text-left font-bold">{reportData.attendance?.sakit || 0} Hari</td>
                                     </tr>
                                     <tr>
-                                      <td className="border border-black py-1.5 px-3 font-medium">Izin</td>
-                                      <td className="border border-black py-1.5 px-1.5 text-center">:</td>
-                                      <td className="border border-black py-1.5 px-3 text-center font-bold">{reportData.attendance?.izin || 0} Hari</td>
+                                      <td className="cell-label py-0.5 px-0 font-medium">Izin</td>
+                                      <td className="cell-colon py-0.5 px-0.5 text-center">:</td>
+                                      <td className="cell-value py-0.5 pl-2 text-left font-bold">{reportData.attendance?.izin || 0} Hari</td>
                                     </tr>
                                     <tr>
-                                      <td className="border border-black py-1.5 px-3 font-medium">Tanpa Keterangan</td>
-                                      <td className="border border-black py-1.5 px-1.5 text-center">:</td>
-                                      <td className="border border-black py-1.5 px-3 text-center font-bold">{reportData.attendance?.alfa || 0} Hari</td>
+                                      <td className="cell-label py-0.5 px-0 font-medium">Tanpa Keterangan</td>
+                                      <td className="cell-colon py-0.5 px-0.5 text-center">:</td>
+                                      <td className="cell-value py-0.5 pl-2 text-left font-bold">{reportData.attendance?.alfa || 0} Hari</td>
                                     </tr>
                                   </tbody>
                                 </table>
