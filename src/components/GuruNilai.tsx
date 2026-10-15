@@ -2104,14 +2104,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                 </div>
 
                 {/* Footer Signature */}
-                <div className="mt-6 flex justify-between items-start text-[12px] px-8 print:mt-6 print:px-4">
-                  <div className="text-center flex flex-col items-center w-64 print:w-72">
-                    <p className="font-semibold text-[12px]">Mengetahui,</p>
-                    <p className="font-semibold text-[12px]">Kepala Sekolah</p>
-                    <div className="h-14 print:h-11" />
-                    <p className="font-bold underline text-[12px]">Andreas Raymonda, S.Pd, M.Hum</p>
-                    <p className="text-[10.5px] text-slate-500 font-mono mt-0.5">NIK. 103.244.0072</p>
-                  </div>
+                <div className="mt-6 flex justify-end items-start text-[12px] px-8 print:mt-6 print:px-4">
                   <div className="text-center flex flex-col items-center w-64 print:w-72">
                     <p className="text-[12px]">Surakarta, {formattedReportDate}</p>
                     <p className="font-semibold text-[12px]">Guru Pengampu</p>
