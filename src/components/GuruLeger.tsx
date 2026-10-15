@@ -137,8 +137,13 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
     rankMap[row.student.id] = currentRank;
   });
 
-  // Back to original alphabetical student list by name if desired, or let's sort by name for school ledger consistency
-  const finalRowsAlphabetical = [...studentRows].sort((a, b) => a.student.nama.localeCompare(b.student.nama));
+  // Urutkan siswa berdasarkan nomor absen (noAbsen), lalu nama untuk konsistensi leger sekolah
+  const finalRows = [...studentRows].sort((a, b) => {
+    const noA = a.student.noAbsen !== undefined && a.student.noAbsen !== null ? a.student.noAbsen : 999999;
+    const noB = b.student.noAbsen !== undefined && b.student.noAbsen !== null ? b.student.noAbsen : 999999;
+    if (noA !== noB) return noA - noB;
+    return a.student.nama.localeCompare(b.student.nama);
+  });
 
   // Key metrics for the class
   const classAverages = subjects.map(mapel => {
@@ -360,11 +365,12 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
               </tr>
             </thead>
             <tbody>
-              {finalRowsAlphabetical.map((row, idx) => {
+              {finalRows.map((row, idx) => {
                 const rank = rankMap[row.student.id] || '-';
+                const displayNo = row.student.noAbsen !== undefined && row.student.noAbsen !== null ? row.student.noAbsen : idx + 1;
                 return (
                   <tr key={row.student.id} className="border-b border-slate-100 hover:bg-slate-50/70 transition-colors">
-                    <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono text-slate-400 sticky left-0 bg-white">{idx + 1}</td>
+                    <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono text-slate-400 sticky left-0 bg-white">{displayNo}</td>
                     <td className="py-2.5 px-3 border-r border-slate-200 text-center font-mono text-slate-500 sticky left-10 bg-white">{row.student.nis || '-'}</td>
                     <td className="py-2.5 px-4 border-r border-slate-200 font-semibold text-slate-800 sticky left-[120px] bg-white">{row.student.nama}</td>
                     
@@ -473,11 +479,12 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
               </tr>
             </thead>
             <tbody>
-              {finalRowsAlphabetical.map((row, idx) => {
+              {finalRows.map((row, idx) => {
                 const rank = rankMap[row.student.id] || '-';
+                const displayNo = row.student.noAbsen !== undefined && row.student.noAbsen !== null ? row.student.noAbsen : idx + 1;
                 return (
                   <tr key={row.student.id}>
-                    <td style={{ border: '1px solid #000000', textAlign: 'center', padding: '4px' }}>{idx + 1}</td>
+                    <td style={{ border: '1px solid #000000', textAlign: 'center', padding: '4px' }}>{displayNo}</td>
                     <td style={{ border: '1px solid #000000', textAlign: 'center', padding: '4px' }}>{row.student.nis || '-'}</td>
                     <td style={{ border: '1px solid #000000', textAlign: 'left', padding: '4px', fontWeight: 'bold' }}>{row.student.nama}</td>
                     {subjects.map(mapel => {
