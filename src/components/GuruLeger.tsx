@@ -232,19 +232,35 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
           size: 330mm 215mm !important;
           margin: 10mm 12mm 10mm 12mm !important;
         }
-        table {
+        /* Remove all borders from school identity section */
+        table.table-identity-leger,
+        table.table-identity-leger tr,
+        table.table-identity-leger td,
+        .table-identity-leger,
+        .table-identity-leger tr,
+        .table-identity-leger td,
+        .no-all-borders,
+        .no-all-borders tr,
+        .no-all-borders td {
+          border: none !important;
+          border-width: 0 !important;
+          outline: none !important;
+          box-shadow: none !important;
+        }
+        /* Table border applied strictly to the data table */
+        table.table-leger-data {
           border-collapse: collapse !important;
           width: 100% !important;
-        }
-        table, th, td {
           border: 1px solid #000000 !important;
         }
-        th, td {
+        table.table-leger-data th,
+        table.table-leger-data td {
+          border: 1px solid #000000 !important;
           padding: 4px 6px !important;
           font-size: 10px !important;
           color: #000000 !important;
         }
-        th {
+        table.table-leger-data th {
           background-color: #f1f5f9 !important;
           font-weight: bold !important;
         }
@@ -344,6 +360,47 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
           <span>Pratinjau Leger Kelas (Scroll horizontal jika tabel terlalu luas):</span>
         </div>
 
+        {/* Screen Preview Identity Table */}
+        <div className="mb-5 p-4 bg-slate-50/80 rounded-xl border border-slate-200/80 font-serif">
+          <div className="text-center mb-3">
+            <h3 className="text-xs sm:text-sm font-bold tracking-wider uppercase text-slate-900">
+              REKAPITULASI NILAI HASIL BELAJAR (LEGER)
+            </h3>
+            <h4 className="text-xs font-bold tracking-wide uppercase text-slate-700 mt-0.5">
+              SMP AL IRSYAD SURAKARTA
+            </h4>
+          </div>
+
+          <table className="w-full text-xs text-slate-700 border-none border-collapse">
+            <tbody>
+              <tr className="border-none">
+                <td className="w-32 font-bold py-1 border-none whitespace-nowrap">Satuan Pendidikan</td>
+                <td className="w-4 text-center py-1 border-none">:</td>
+                <td className="py-1 border-none pr-4">SMP Al Irsyad Surakarta</td>
+                <td className="w-24 font-bold py-1 border-none whitespace-nowrap">Kelas</td>
+                <td className="w-4 text-center py-1 border-none">:</td>
+                <td className="py-1 font-bold border-none">{homeroomKelas?.nama || '-'}</td>
+              </tr>
+              <tr className="border-none">
+                <td className="font-bold py-1 border-none whitespace-nowrap">Tahun Pelajaran</td>
+                <td className="text-center py-1 border-none">:</td>
+                <td className="py-1 border-none pr-4">{activePeriod.tahunAjaran}</td>
+                <td className="font-bold py-1 border-none whitespace-nowrap">Wali Kelas</td>
+                <td className="text-center py-1 border-none">:</td>
+                <td className="py-1 border-none">{activeTeacher.nama}</td>
+              </tr>
+              <tr className="border-none">
+                <td className="font-bold py-1 border-none whitespace-nowrap">Semester / Ujian</td>
+                <td className="text-center py-1 border-none">:</td>
+                <td className="py-1 border-none pr-4">{activePeriod.semester} / {formatTipeUjian(activePeriod.tipeUjian)}</td>
+                <td className="font-bold py-1 border-none whitespace-nowrap">Fase</td>
+                <td className="text-center py-1 border-none">:</td>
+                <td className="py-1 font-bold border-none">D</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
         <div className="overflow-x-auto border border-slate-200 rounded-xl max-h-[500px]">
           <table className="w-full text-slate-700 text-xs text-left border-collapse">
             <thead className="bg-slate-50 border-b border-slate-200 sticky top-0 z-10">
@@ -430,32 +487,38 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
               SMP AL IRSYAD SURAKARTA
             </h2>
             
-            <table style={{ width: '100%', border: 'none', margin: '15px 0', fontSize: '11px' }} className="no-all-borders">
+            <table className="table-identity-leger no-all-borders" style={{ width: '100%', border: 'none', borderCollapse: 'collapse', margin: '8px 0 14px 0', fontSize: '11px', textAlign: 'left' }}>
               <tbody>
                 <tr style={{ border: 'none' }}>
-                  <td style={{ border: 'none', width: '12%', fontWeight: 'bold', padding: '2px' }}>Satuan Pendidikan</td>
-                  <td style={{ border: 'none', width: '30%', padding: '2px' }}>: SMP Al Irsyad Surakarta</td>
-                  <td style={{ border: 'none', width: '12%', fontWeight: 'bold', padding: '2px' }}>Kelas</td>
-                  <td style={{ border: 'none', padding: '2px' }}>: {homeroomKelas?.nama}</td>
+                  <td style={{ border: 'none', width: '130px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Satuan Pendidikan</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', width: '38%', padding: '2px 6px' }}>SMP Al Irsyad Surakarta</td>
+                  <td style={{ border: 'none', width: '90px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Kelas</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', padding: '2px 6px', fontWeight: 'bold' }}>{homeroomKelas?.nama || '-'}</td>
                 </tr>
                 <tr style={{ border: 'none' }}>
-                  <td style={{ border: 'none', fontWeight: 'bold', padding: '2px' }}>Tahun Pelajaran</td>
-                  <td style={{ border: 'none', padding: '2px' }}>: {activePeriod.tahunAjaran}</td>
-                  <td style={{ border: 'none', fontWeight: 'bold', padding: '2px' }}>Wali Kelas</td>
-                  <td style={{ border: 'none', padding: '2px' }}>: {activeTeacher.nama}</td>
+                  <td style={{ border: 'none', width: '130px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Tahun Pelajaran</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', padding: '2px 6px' }}>{activePeriod.tahunAjaran}</td>
+                  <td style={{ border: 'none', width: '90px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Wali Kelas</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', padding: '2px 6px' }}>{activeTeacher.nama}</td>
                 </tr>
                 <tr style={{ border: 'none' }}>
-                  <td style={{ border: 'none', fontWeight: 'bold', padding: '2px' }}>Semester / Ujian</td>
-                  <td style={{ border: 'none', padding: '2px' }}>: {activePeriod.semester} / {formatTipeUjian(activePeriod.tipeUjian)}</td>
-                  <td style={{ border: 'none', fontWeight: 'none', padding: '2px' }}></td>
-                  <td style={{ border: 'none', padding: '2px' }}></td>
+                  <td style={{ border: 'none', width: '130px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Semester / Ujian</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', padding: '2px 6px' }}>{activePeriod.semester} / {formatTipeUjian(activePeriod.tipeUjian)}</td>
+                  <td style={{ border: 'none', width: '90px', fontWeight: 'bold', padding: '2px 4px', whiteSpace: 'nowrap' }}>Fase</td>
+                  <td style={{ border: 'none', width: '15px', textAlign: 'center', padding: '2px 0' }}>:</td>
+                  <td style={{ border: 'none', padding: '2px 6px', fontWeight: 'bold' }}>D</td>
                 </tr>
               </tbody>
             </table>
           </div>
 
           {/* Leger Table */}
-          <table style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000000', fontSize: '9px' }}>
+          <table className="table-leger-data" style={{ width: '100%', borderCollapse: 'collapse', border: '1px solid #000000', fontSize: '9px' }}>
             <thead>
               <tr style={{ backgroundColor: '#f1f5f9' }}>
                 <th style={{ border: '1px solid #000000', width: '3%', textAlign: 'center', padding: '4px' }}>No</th>
