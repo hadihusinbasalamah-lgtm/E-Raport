@@ -12,7 +12,7 @@ import {
 import { 
   Users, BookOpen, Clock, CheckCircle2, AlertTriangle, Search, Filter, 
   HelpCircle, RefreshCw, BarChart2, ListOrdered, ChevronRight, GraduationCap,
-  LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles, ArrowUpDown
+  LayoutGrid, BarChart3, PieChart as PieIcon, Sparkles, ArrowUpDown, CheckSquare, FileSpreadsheet
 } from 'lucide-react';
 import { ModalUrutanMapel } from './ModalUrutanMapel';
 import { compareKelasNama } from '../utils/kelasOrder';
@@ -333,6 +333,15 @@ export function AdminDashboard({ db, onNavigateToTab, onUpdate }: AdminDashboard
               }`}
             >
               Tingkat IX
+            </button>
+
+            <button
+              onClick={() => onNavigateToTab('cek-nilai')}
+              className="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all bg-blue-600 hover:bg-blue-700 text-white shadow-xs flex items-center gap-1.5 ml-1 cursor-pointer"
+              title="Cek & Monitoring inputan data nilai semua kelas (Nilai Asli & Nilai Konversi)"
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span>Cek Nilai Kelas</span>
             </button>
 
             <button
@@ -721,7 +730,17 @@ export function AdminDashboard({ db, onNavigateToTab, onUpdate }: AdminDashboard
             {activeSubjectDetails ? (
               <div className="space-y-4 animate-fadeIn">
                 <div className="bg-emerald-50/50 p-4 rounded-xl border border-emerald-100 space-y-1">
-                  <span className="text-[10px] font-mono uppercase bg-emerald-200 text-emerald-900 font-bold px-1.5 py-0.5 rounded">Selected Subject</span>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono uppercase bg-emerald-200 text-emerald-900 font-bold px-1.5 py-0.5 rounded">Selected Subject</span>
+                    <button
+                      type="button"
+                      onClick={() => onNavigateToTab('cek-nilai')}
+                      className="text-[10px] bg-emerald-700 hover:bg-emerald-800 text-white font-bold px-2 py-0.5 rounded-md flex items-center gap-1 transition cursor-pointer"
+                    >
+                      <CheckSquare className="w-3 h-3" />
+                      <span>Cek Nilai Kelas</span>
+                    </button>
+                  </div>
                   <p className="text-xs font-bold text-slate-800 mt-1">{activeSubjectDetails.nama}</p>
                   <p className="text-[11px] text-slate-500">Progres gabungan kelas: <span className="font-bold text-emerald-700">{activeSubjectDetails.percentage}%</span></p>
                 </div>

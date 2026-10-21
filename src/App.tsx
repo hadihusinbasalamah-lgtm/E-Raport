@@ -14,6 +14,7 @@ import { AdminGuru } from './components/AdminGuru';
 import { AdminTahunAjaran } from './components/AdminTahunAjaran';
 import { AdminProfile } from './components/AdminProfile';
 import { AdminDashboard } from './components/AdminDashboard';
+import { AdminCekNilai } from './components/AdminCekNilai';
 import { AdminBackup } from './components/AdminBackup';
 import { AdminSupabase } from './components/AdminSupabase';
 import { GuruTP } from './components/GuruTP';
@@ -36,7 +37,7 @@ import {
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database, Settings, Server, RefreshCw, AlertTriangle, CloudCheck
+  Database, Settings, Server, RefreshCw, AlertTriangle, CloudCheck, CheckSquare
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -246,6 +247,7 @@ export default function App() {
   // Sidebar link details
   const adminLinks = [
     { id: 'dashboard', label: 'Dashboard Admin', icon: LayoutDashboard },
+    { id: 'cek-nilai', label: 'Cek Nilai Kelas', icon: CheckSquare },
     { id: 'kelas', label: 'Data Kelas', icon: Users },
     { id: 'mapel', label: 'Data Mapel', icon: BookOpen },
     { id: 'guru', label: 'Data Guru', icon: GraduationCap },
@@ -572,6 +574,17 @@ export default function App() {
                             </button>
                           </div>
                         </div>
+                      )}
+
+                      {activeTab === 'cek-nilai' && (
+                        <AdminCekNilai 
+                          db={db} 
+                          onUpdate={handleUpdateDb} 
+                          onNavigateToTab={(tabId) => {
+                            setActiveTab(tabId);
+                            setMobileMenuOpen(false);
+                          }} 
+                        />
                       )}
 
                       {activeTab === 'kelas' && (

@@ -205,11 +205,24 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
         )
       );
 
-      if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
+      let resolvedGrade: number | undefined;
+      if (gradeRecord) {
+        if (typeof gradeRecord.nilaiAkhir === 'number' && gradeRecord.nilaiAkhir > 0) {
+          resolvedGrade = gradeRecord.nilaiAkhir;
+        } else if (typeof gradeRecord.nilaiUjian === 'number' && gradeRecord.nilaiUjian > 0) {
+          resolvedGrade = gradeRecord.nilaiUjian;
+        } else if (typeof gradeRecord.nilaiUjianAsli === 'number' && gradeRecord.nilaiUjianAsli > 0) {
+          resolvedGrade = gradeRecord.nilaiUjianAsli;
+        } else if (typeof gradeRecord.nilaiAkhir === 'number') {
+          resolvedGrade = gradeRecord.nilaiAkhir;
+        }
+      }
+
+      if (typeof resolvedGrade === 'number') {
         results.push({
           mapelNama: mapel.nama,
-          nilaiAkhir: gradeRecord.nilaiAkhir,
-          capaian: gradeRecord.capaianKompetensi || 'Telah mengikuti pembelajaran dengan baik.'
+          nilaiAkhir: resolvedGrade,
+          capaian: gradeRecord?.capaianKompetensi || 'Menunjukkan penguasaan yang baik dalam mencapai capaian pembelajaran yang ditetapkan.'
         });
       }
     });
@@ -249,7 +262,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
               homeroomStudents.map((s, idx) => {
                 const isFormOpened = selectedSiswaId === s.id;
                 const attendanceSaved = (db.absensiDanCatatan || []).some(a => a.periodeId === activePeriod.id && a.siswaId === s.id);
-                const studentGradesCount = (db.nilaiSiswa || []).filter(n => n.siswaId === s.id && (n.periodeId === activePeriod.id || !n.periodeId) && typeof n.nilaiAkhir === 'number').length;
+                const studentGradesCount = (db.nilaiSiswa || []).filter(n => n.siswaId === s.id && (n.periodeId === activePeriod.id || !n.periodeId) && ((typeof n.nilaiAkhir === 'number' && n.nilaiAkhir > 0) || (typeof n.nilaiUjian === 'number' && n.nilaiUjian > 0) || (typeof n.nilaiUjianAsli === 'number' && n.nilaiUjianAsli > 0))).length;
                 
                 return (
                   <div 

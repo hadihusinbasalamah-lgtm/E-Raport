@@ -98,9 +98,22 @@ export function GuruLeger({ db, guruId, onUpdate }: GuruLegerProps) {
          )
         )
       );
-      if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
-        grades[mapel.id] = gradeRecord.nilaiAkhir;
-        totalScore += gradeRecord.nilaiAkhir;
+      let resolvedGrade: number | undefined;
+      if (gradeRecord) {
+        if (typeof gradeRecord.nilaiAkhir === 'number' && gradeRecord.nilaiAkhir > 0) {
+          resolvedGrade = gradeRecord.nilaiAkhir;
+        } else if (typeof gradeRecord.nilaiUjian === 'number' && gradeRecord.nilaiUjian > 0) {
+          resolvedGrade = gradeRecord.nilaiUjian;
+        } else if (typeof gradeRecord.nilaiUjianAsli === 'number' && gradeRecord.nilaiUjianAsli > 0) {
+          resolvedGrade = gradeRecord.nilaiUjianAsli;
+        } else if (typeof gradeRecord.nilaiAkhir === 'number') {
+          resolvedGrade = gradeRecord.nilaiAkhir;
+        }
+      }
+
+      if (typeof resolvedGrade === 'number') {
+        grades[mapel.id] = resolvedGrade;
+        totalScore += resolvedGrade;
         gradedCount++;
       }
     });

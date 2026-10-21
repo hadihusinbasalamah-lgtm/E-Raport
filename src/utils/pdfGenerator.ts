@@ -178,11 +178,24 @@ export function generateSiswaPDF(student: Siswa, db: SchemaDatabase, activePerio
       )
     );
     
-    if (gradeRecord && typeof gradeRecord.nilaiAkhir === 'number') {
+    let resolvedGrade: number | undefined;
+    if (gradeRecord) {
+      if (typeof gradeRecord.nilaiAkhir === 'number' && gradeRecord.nilaiAkhir > 0) {
+        resolvedGrade = gradeRecord.nilaiAkhir;
+      } else if (typeof gradeRecord.nilaiUjian === 'number' && gradeRecord.nilaiUjian > 0) {
+        resolvedGrade = gradeRecord.nilaiUjian;
+      } else if (typeof gradeRecord.nilaiUjianAsli === 'number' && gradeRecord.nilaiUjianAsli > 0) {
+        resolvedGrade = gradeRecord.nilaiUjianAsli;
+      } else if (typeof gradeRecord.nilaiAkhir === 'number') {
+        resolvedGrade = gradeRecord.nilaiAkhir;
+      }
+    }
+
+    if (typeof resolvedGrade === 'number') {
       results.push({
         mapelNama: formatMapelNamaForRaport(mapel.nama),
-        nilaiAkhir: gradeRecord.nilaiAkhir,
-        capaian: gradeRecord.capaianKompetensi || 'Telah mengikuti pembelajaran dengan baik.'
+        nilaiAkhir: resolvedGrade,
+        capaian: gradeRecord?.capaianKompetensi || 'Menunjukkan penguasaan yang baik dalam mencapai capaian pembelajaran yang ditetapkan.'
       });
     }
   });

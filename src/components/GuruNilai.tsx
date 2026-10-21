@@ -155,6 +155,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     nilaiUjianAsli: number | '';
     nilaiUjian: number | '';
     nilaiPsts?: number | '';
+    nilaiRaportManual?: number | '';
     capaianKompetensi: string;
   }
 
@@ -168,6 +169,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     tp4NilaiAsli?: number | '';
     nilaiPsts?: number | '';
     nilaiUjianAsli: number | '';
+    nilaiRaportManual?: number | '';
     capaianKompetensi?: string;
     matchedStudent?: LocalNilaiSiswa;
     status: 'matched' | 'unmatched';
@@ -321,6 +323,11 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       const tp3Asli = (existingGrade && existingGrade.tp3NilaiAsli !== undefined) ? existingGrade.tp3NilaiAsli : ((existingGrade && existingGrade.tp3Nilai !== undefined) ? existingGrade.tp3Nilai : (tpRef?.tp3 ? '' : undefined));
       const tp4Asli = (existingGrade && existingGrade.tp4NilaiAsli !== undefined) ? existingGrade.tp4NilaiAsli : ((existingGrade && existingGrade.tp4Nilai !== undefined) ? existingGrade.tp4Nilai : (tpRef?.tp4 ? '' : undefined));
       const ujianAsli = (existingGrade && existingGrade.nilaiUjianAsli !== undefined) ? existingGrade.nilaiUjianAsli : (existingGrade ? existingGrade.nilaiUjian : '');
+      const existingNilaiRaport = (existingGrade && typeof existingGrade.nilaiAkhir === 'number' && existingGrade.nilaiAkhir > 0)
+        ? existingGrade.nilaiAkhir
+        : ((existingGrade && typeof existingGrade.nilaiUjian === 'number' && existingGrade.nilaiUjian > 0)
+          ? existingGrade.nilaiUjian
+          : '');
 
       return {
         siswaId: student.id,
@@ -336,6 +343,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         nilaiUjianAsli: ujianAsli,
         nilaiUjian: existingGrade ? existingGrade.nilaiUjian : '',
         nilaiPsts: pstsVal,
+        nilaiRaportManual: existingNilaiRaport,
         capaianKompetensi: existingGrade?.capaianKompetensi || ''
       };
     });
@@ -452,7 +460,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   };
 
   // Handle individual numeric inputs for original values and trigger reciprocal updates
-  const handleNumChange = (studentId: string, field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli' | 'nilaiPsts', value: string) => {
+  const handleNumChange = (studentId: string, field: 'tp1NilaiAsli' | 'tp2NilaiAsli' | 'tp3NilaiAsli' | 'tp4NilaiAsli' | 'nilaiUjianAsli' | 'nilaiPsts' | 'nilaiRaportManual', value: string) => {
     isDirtyRef.current = true;
     const rawVal = value === '' ? '' : Math.min(100, Math.max(0, parseInt(value) || 0));
     setGrades(prev => {
@@ -495,6 +503,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       headers.push(activePeriod.tipeUjian === 'PSAS1' ? "Nilai PSTS 1" : "Nilai PSTS 2");
     }
     headers.push("Nilai Asli Ujian");
+    headers.push("Nilai Raport (Opsional jika belum input TP)");
     headers.push("Capaian Kompetensi (Opsional)");
 
     const dataRows = grades.map((g, idx) => {
@@ -518,6 +527,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         row.push(g.nilaiPsts !== "" && g.nilaiPsts !== undefined ? Number(g.nilaiPsts) : "");
       }
       row.push(g.nilaiUjianAsli !== "" && g.nilaiUjianAsli !== undefined ? Number(g.nilaiUjianAsli) : "");
+      row.push(g.nilaiRaportManual !== "" && g.nilaiRaportManual !== undefined ? Number(g.nilaiRaportManual) : "");
       row.push(g.capaianKompetensi || "");
 
       return row;
@@ -615,6 +625,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       tp4: -1,
       psts: -1,
       ujian: -1,
+      nilaiRaport: -1,
       capaian: -1
     };
 
@@ -628,6 +639,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         else if (col.includes('tp3') || col.includes('tp 3')) colIdxMap.tp3 = idx;
         else if (col.includes('tp4') || col.includes('tp 4')) colIdxMap.tp4 = idx;
         else if (col.includes('psts') || col.includes('pts')) colIdxMap.psts = idx;
+        else if (col.includes('raport') || col.includes('rapor') || col.includes('akhir')) colIdxMap.nilaiRaport = idx;
         else if (col.includes('ujian') || col.includes('pas') || col.includes('pat') || col.includes('sas') || col.includes('sat')) colIdxMap.ujian = idx;
         else if (col.includes('capaian') || col.includes('deskripsi')) colIdxMap.capaian = idx;
       });
@@ -682,6 +694,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       const tp4 = activeTPs?.tp4 ? parseNum(colIdxMap.tp4) : undefined;
       const psts = (activePeriod?.tipeUjian === 'PSAS1' || activePeriod?.tipeUjian === 'PSAT') ? parseNum(colIdxMap.psts) : undefined;
       const ujian = parseNum(colIdxMap.ujian);
+      const nilaiRaport = colIdxMap.nilaiRaport >= 0 ? parseNum(colIdxMap.nilaiRaport) : undefined;
       const capaian = colIdxMap.capaian >= 0 && colIdxMap.capaian < cols.length ? cols[colIdxMap.capaian].trim() : '';
 
       let matchedStudent: LocalNilaiSiswa | undefined;
@@ -719,6 +732,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         tp4NilaiAsli: tp4,
         nilaiPsts: psts,
         nilaiUjianAsli: ujian,
+        nilaiRaportManual: nilaiRaport,
         capaianKompetensi: capaian,
         matchedStudent,
         status: matchedStudent ? 'matched' : 'unmatched'
@@ -820,6 +834,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
           tp4NilaiAsli: (activeTPs?.tp4 && found.tp4NilaiAsli !== '' && found.tp4NilaiAsli !== undefined) ? found.tp4NilaiAsli : currentStudent.tp4NilaiAsli,
           nilaiPsts: (found.nilaiPsts !== '' && found.nilaiPsts !== undefined) ? found.nilaiPsts : currentStudent.nilaiPsts,
           nilaiUjianAsli: found.nilaiUjianAsli !== '' ? found.nilaiUjianAsli : currentStudent.nilaiUjianAsli,
+          nilaiRaportManual: (found.nilaiRaportManual !== '' && found.nilaiRaportManual !== undefined) ? found.nilaiRaportManual : currentStudent.nilaiRaportManual,
           capaianKompetensi: found.capaianKompetensi?.trim() ? found.capaianKompetensi : currentStudent.capaianKompetensi
         };
       });
@@ -842,44 +857,65 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
     }));
   };
 
+  // Helper mengecek apakah nilai TP sudah diinput untuk siswa ini
+  const hasTpInput = (g: LocalNilaiSiswa) => {
+    return (typeof g.tp1Nilai === 'number' && g.tp1Nilai > 0) ||
+           (typeof g.tp2Nilai === 'number' && g.tp2Nilai > 0) ||
+           (typeof g.tp1NilaiAsli === 'number' && g.tp1NilaiAsli > 0) ||
+           (typeof g.tp2NilaiAsli === 'number' && g.tp2NilaiAsli > 0);
+  };
+
   // Helper calculation for display & storage: Rata-rata dari seluruh nilai yang diinput
   const calculateNilaiAkhirLocal = (g: LocalNilaiSiswa) => {
     // Kumpulkan seluruh nilai komponen hasil katrol/konversi yang valid diisi
     const validScores: number[] = [];
 
-    if (typeof g.tp1Nilai === 'number') validScores.push(g.tp1Nilai);
-    if (typeof g.tp2Nilai === 'number') validScores.push(g.tp2Nilai);
-    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number') validScores.push(g.tp3Nilai);
-    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number') validScores.push(g.tp4Nilai);
+    if (typeof g.tp1Nilai === 'number' && g.tp1Nilai > 0) validScores.push(g.tp1Nilai);
+    if (typeof g.tp2Nilai === 'number' && g.tp2Nilai > 0) validScores.push(g.tp2Nilai);
+    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number' && g.tp3Nilai > 0) validScores.push(g.tp3Nilai);
+    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number' && g.tp4Nilai > 0) validScores.push(g.tp4Nilai);
 
     // Pada periode semester (PSAS 1 / PSAT), nilai PSTS juga ikut masuk dalam rata-rata
-    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number') {
+    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number' && g.nilaiPsts > 0) {
       validScores.push(g.nilaiPsts);
     }
 
-    if (typeof g.nilaiUjian === 'number') {
+    if (typeof g.nilaiUjian === 'number' && g.nilaiUjian > 0) {
       validScores.push(g.nilaiUjian);
     }
 
-    if (validScores.length === 0) return 0;
-    const total = validScores.reduce((acc, curr) => acc + curr, 0);
-    return Math.round(total / validScores.length);
+    if (validScores.length > 0) {
+      const total = validScores.reduce((acc, curr) => acc + curr, 0);
+      return Math.round(total / validScores.length);
+    }
+
+    // Jika belum input nilai TP: gunakan nilai Raport manual / nilai raport yang tersimpan
+    if (typeof g.nilaiRaportManual === 'number' && g.nilaiRaportManual > 0) {
+      return g.nilaiRaportManual;
+    }
+
+    return 0;
   };
 
   // Helper untuk mendapatkan rincian teks perhitungan Nilai Akhir (untuk tooltip guru)
   const getNilaiAkhirBreakdown = (g: LocalNilaiSiswa) => {
     const parts: { label: string; score: number }[] = [];
-    if (typeof g.tp1Nilai === 'number') parts.push({ label: 'TP1', score: g.tp1Nilai });
-    if (typeof g.tp2Nilai === 'number') parts.push({ label: 'TP2', score: g.tp2Nilai });
-    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number') parts.push({ label: 'TP3', score: g.tp3Nilai });
-    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number') parts.push({ label: 'TP4', score: g.tp4Nilai });
-    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number') {
+    if (typeof g.tp1Nilai === 'number' && g.tp1Nilai > 0) parts.push({ label: 'TP1', score: g.tp1Nilai });
+    if (typeof g.tp2Nilai === 'number' && g.tp2Nilai > 0) parts.push({ label: 'TP2', score: g.tp2Nilai });
+    if (activeTPs?.tp3 && typeof g.tp3Nilai === 'number' && g.tp3Nilai > 0) parts.push({ label: 'TP3', score: g.tp3Nilai });
+    if (activeTPs?.tp4 && typeof g.tp4Nilai === 'number' && g.tp4Nilai > 0) parts.push({ label: 'TP4', score: g.tp4Nilai });
+    if ((activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT') && typeof g.nilaiPsts === 'number' && g.nilaiPsts > 0) {
       parts.push({ label: activePeriod.tipeUjian === 'PSAS1' ? 'PSTS1' : 'PSTS2', score: g.nilaiPsts });
     }
-    if (typeof g.nilaiUjian === 'number') {
+    if (typeof g.nilaiUjian === 'number' && g.nilaiUjian > 0) {
       parts.push({ label: formatTipeUjian(activePeriod.tipeUjian) || 'Ujian', score: g.nilaiUjian });
     }
-    if (parts.length === 0) return 'Belum ada nilai yang diinput';
+    if (parts.length === 0) {
+      if (typeof g.nilaiRaportManual === 'number' && g.nilaiRaportManual > 0) {
+        return `Nilai Raport langsung (belum input nilai TP): ${g.nilaiRaportManual}`;
+      }
+      return 'Belum ada nilai yang diinput';
+    }
     const sum = parts.reduce((acc, p) => acc + p.score, 0);
     const avg = Math.round(sum / parts.length);
     const formulaStr = parts.map(p => `${p.label} (${p.score})`).join(' + ');
@@ -1015,10 +1051,10 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
   const handleSaveAll = async () => {
     if (!activeAssignment || isSaving) return;
 
-    // Check if any student has duplicate Nilai Asli TP values
+    // Check if any student has duplicate Nilai Asli TP values (hanya jika nilai TP diinput)
     const duplicateList: string[] = [];
     for (const g of grades) {
-      if (getDuplicateTPFields(g).size > 0) {
+      if (hasTpInput(g) && getDuplicateTPFields(g).size > 0) {
         duplicateList.push(g.siswaNama);
       }
     }
@@ -1037,7 +1073,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
       const updatedEntries: NilaiSiswa[] = grades.map(g => {
         const dbKey = `${activePeriod.id}_${g.siswaId}_${activeAssignment.mapelId}`;
         const finalVal = calculateNilaiAkhirLocal(g);
-        const descVal = g.capaianKompetensi.trim() || generateDescFromAsli(g);
+        const descVal = g.capaianKompetensi.trim() || generateDescFromAsli(g) || 'Menunjukkan penguasaan yang baik dalam mencapai capaian pembelajaran yang ditetapkan.';
         
         return {
           id: dbKey,
@@ -1383,39 +1419,39 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
         </div>
       )}
 
-      {!activeTPs ? (
-        <div className="p-6 text-center bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 space-y-3">
-          <h3 className="text-sm font-bold">Harap Input Tujuan Pembelajaran (TP) Terlebih Dahulu</h3>
-          <p className="text-xs text-slate-500 max-w-md mx-auto">
-            Sebelum memasukkan nilai siswa untuk subjek <strong>{activeAssignment?.mapelNama} ({activeAssignment?.kelasNama})</strong>, Anda diwajibkan menyusun Tujuan Pembelajaran kurikulum di menu <b>Tujuan Pembelajaran</b> terlebih dahulu.
+      {!activeTPs && (
+        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 text-amber-900 space-y-2">
+          <div className="flex items-center gap-2">
+            <Info className="w-4 h-4 text-amber-600 shrink-0" />
+            <h3 className="text-xs font-bold">Tujuan Pembelajaran (TP) Belum Diinput</h3>
+          </div>
+          <p className="text-[11px] text-amber-800">
+            Tujuan Pembelajaran kurikulum untuk subjek <strong>{activeAssignment?.mapelNama} ({activeAssignment?.kelasNama})</strong> belum disusun di menu <b>Tujuan Pembelajaran</b>. Guru tetap dapat memasukkan <strong>Nilai Raport</strong> siswa secara langsung di kolom tabel di bawah ini.
           </p>
-
-          {/* If peer teacher has already input TP for this same subject & jenjang */}
           {peerTpForActiveAssignment && (
-            <div className="pt-2 flex flex-col items-center gap-2">
-              <div className="inline-flex items-center gap-2 bg-blue-100/70 border border-blue-200 text-blue-900 px-3 py-1.5 rounded-xl text-xs font-semibold">
-                <Users className="w-3.5 h-3.5 text-blue-700" />
-                <span>Rekan sejawat <strong>{peerTeacherForActiveAssignment?.nama || 'Rekan Sejawat'}</strong> telah menyusun TP untuk Jenjang {activeAssignmentJenjang}.</span>
-              </div>
+            <div className="pt-1 flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <span className="text-[11px] text-blue-900 font-medium">Rekan sejawat <strong>{peerTeacherForActiveAssignment?.nama}</strong> telah menyusun TP Jenjang {activeAssignmentJenjang}.</span>
               <button
                 type="button"
                 id="btn-salin-tp-rekan-nilai"
                 onClick={handleCopyPeerTpDirect}
-                className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl inline-flex items-center gap-2 shadow-sm hover:shadow-md active:scale-95 transition-all cursor-pointer"
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
               >
-                <Copy className="w-4 h-4" />
-                Salin / Gunakan TP Rekan Sejawat ({peerTeacherForActiveAssignment?.nama || 'Rekan Sejawat'})
+                <Copy className="w-3 h-3" />
+                Salin TP Rekan
               </button>
             </div>
           )}
         </div>
-      ) : grades.length === 0 ? (
+      )}
+
+      {grades.length === 0 ? (
         <div className="p-8 text-center bg-slate-50 rounded-2xl text-slate-400 font-sans italic">
           Tidak ada siswa terdaftar dalam kelas {activeAssignment.kelasNama} di snapshot periode ini. Hubungi Admin.
         </div>
       ) : (
         <div className="space-y-4">
-          
+            
           {message && (
             <div className="p-3 bg-emerald-50 text-emerald-800 border border-emerald-250 text-xs font-semibold rounded-xl flex items-center gap-1.5">
               <CheckCircle className="w-4 h-4 text-emerald-600" />
@@ -1424,38 +1460,44 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
           )}
 
           {/* Quick Info Box about current TPs */}
-          <div className="bg-emerald-50/30 p-4 border border-emerald-100/40 rounded-xl space-y-2">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h4 className="text-[11px] font-bold text-emerald-950 uppercase tracking-wider">Tujuan Pembelajaran Terdefinisi:</h4>
-              {peerTpForActiveAssignment && (
-                <button
-                  type="button"
-                  onClick={handleCopyPeerTpDirect}
-                  className="px-2.5 py-1 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 border border-blue-200 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
-                  title="Sinkronkan atau salin ulang TP rekan sejawat"
-                >
-                  <Copy className="w-3 h-3 text-blue-600" />
-                  Salin / Sinkronkan TP Rekan ({peerTeacherForActiveAssignment?.nama})
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] text-emerald-900 leading-relaxed font-sans font-medium">
-              <div>• <strong>TP 1:</strong> {activeTPs.tp1}</div>
-              <div>• <strong>TP 2:</strong> {activeTPs.tp2}</div>
-              {activeTPs.tp3 && <div>• <strong>TP 3:</strong> {activeTPs.tp3}</div>}
-              {activeTPs.tp4 && <div>• <strong>TP 4:</strong> {activeTPs.tp4}</div>}
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2 pt-2 border-t border-emerald-100/50 text-[10px] text-slate-600 font-sans">
-              <div>
-                <span className="font-bold text-emerald-800 shrink-0">Ketentuan Raport: </span>
-                <span>Nilai <strong>Asli TP</strong> tiap siswa tidak boleh sama. Deskripsi capaian dihitung otomatis dari nilai TP tertinggi & terendah.</span>
+          {activeTPs ? (
+            <div className="bg-emerald-50/30 p-4 border border-emerald-100/40 rounded-xl space-y-2">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h4 className="text-[11px] font-bold text-emerald-950 uppercase tracking-wider">Tujuan Pembelajaran Terdefinisi:</h4>
+                {peerTpForActiveAssignment && (
+                  <button
+                    type="button"
+                    onClick={handleCopyPeerTpDirect}
+                    className="px-2.5 py-1 bg-white hover:bg-blue-50 text-blue-700 hover:text-blue-800 border border-blue-200 text-[10px] font-bold rounded-lg flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer"
+                    title="Sinkronkan atau salin ulang TP rekan sejawat"
+                  >
+                    <Copy className="w-3 h-3 text-blue-600" />
+                    Salin / Sinkronkan TP Rekan ({peerTeacherForActiveAssignment?.nama})
+                  </button>
+                )}
               </div>
-              <div className="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-md border border-emerald-200/60 font-medium">
-                <span className="font-bold">Formula Nilai Akhir:</span>
-                <span>Rata-rata dari seluruh nilai yang diinput {activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT' ? '(TP + PSTS + Ujian)' : '(TP + Ujian)'}</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[10px] text-emerald-900 leading-relaxed font-sans font-medium">
+                <div>• <strong>TP 1:</strong> {activeTPs.tp1}</div>
+                <div>• <strong>TP 2:</strong> {activeTPs.tp2}</div>
+                {activeTPs.tp3 && <div>• <strong>TP 3:</strong> {activeTPs.tp3}</div>}
+                {activeTPs.tp4 && <div>• <strong>TP 4:</strong> {activeTPs.tp4}</div>}
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mt-2 pt-2 border-t border-emerald-100/50 text-[10px] text-slate-600 font-sans">
+                <div>
+                  <span className="font-bold text-emerald-800 shrink-0">Ketentuan Raport: </span>
+                  <span>Nilai <strong>Asli TP</strong> tiap siswa tidak boleh sama. Deskripsi capaian dihitung otomatis dari nilai TP tertinggi & terendah.</span>
+                </div>
+                <div className="inline-flex items-center gap-1.5 text-emerald-800 bg-emerald-50/80 px-2.5 py-1 rounded-md border border-emerald-200/60 font-medium">
+                  <span className="font-bold">Formula Nilai Akhir:</span>
+                  <span>Rata-rata dari seluruh nilai yang diinput {activePeriod.tipeUjian === 'PSAS1' || activePeriod.tipeUjian === 'PSAT' ? '(TP + PSTS + Ujian)' : '(TP + Ujian)'}</span>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="flex items-center justify-between p-3 bg-emerald-50/40 border border-emerald-200/60 rounded-xl text-[11px] text-emerald-900 font-medium">
+              <span><strong>Mode Nilai Langsung:</strong> Karena TP belum diisi, nilai yang Anda masukkan pada kolom <strong>Nilai Raport</strong> akan tetap ditampilkan pada raport siswa & leger.</span>
+            </div>
+          )}
 
           {/* Grid List for Students Grade Entry */}
           <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden">
@@ -1471,13 +1513,13 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                     <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP2</th>
                     <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP2</th>
                     
-                    {activeTPs.tp3 && (
+                    {activeTPs?.tp3 && (
                       <>
                         <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP3</th>
                         <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP3</th>
                       </>
                     )}
-                    {activeTPs.tp4 && (
+                    {activeTPs?.tp4 && (
                       <>
                         <th className="py-3 px-1 text-center w-12 font-mono text-amber-900 bg-amber-50/40">Asli TP4</th>
                         <th className="py-3 px-1 text-center w-12 font-mono text-emerald-900 bg-emerald-50/30">Nilai TP4</th>
@@ -1581,7 +1623,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         </td>
 
                         {/* TP 3 if exists */}
-                        {activeTPs.tp3 && (
+                        {activeTPs?.tp3 && (
                           <>
                             <td className="py-3 px-1 text-center bg-amber-50/5">
                               <input
@@ -1608,7 +1650,7 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         )}
 
                         {/* TP 4 if exists */}
-                        {activeTPs.tp4 && (
+                        {activeTPs?.tp4 && (
                           <>
                             <td className="py-3 px-1 text-center bg-amber-50/5">
                               <input
@@ -1667,17 +1709,30 @@ export function GuruNilai({ db, guruId, onUpdate }: GuruNilaiProps) {
                         </td>
 
                         {/* Nilai Akhir */}
-                        <td className="py-3 px-3 text-center">
-                          <span 
-                            title={getNilaiAkhirBreakdown(g)}
-                            className={`inline-block w-10 text-center py-1 font-bold rounded cursor-help transition-transform hover:scale-110 ${
-                              finalGrade >= 75 
-                                ? 'bg-emerald-50 text-emerald-800' 
-                                : 'bg-rose-50 text-rose-700'
-                            }`}
-                          >
-                            {finalGrade}
-                          </span>
+                        <td className="py-3 px-2 text-center bg-emerald-50/10">
+                          {hasTpInput(g) ? (
+                            <span 
+                              title={getNilaiAkhirBreakdown(g)}
+                              className={`inline-block w-11 text-center py-1 font-bold rounded cursor-help font-mono text-xs transition-transform hover:scale-105 ${
+                                finalGrade >= 75 
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                                  : 'bg-rose-50 text-rose-700 border border-rose-200'
+                              }`}
+                            >
+                              {finalGrade}
+                            </span>
+                          ) : (
+                            <input
+                              type="number"
+                              min="0"
+                              max="100"
+                              value={g.nilaiRaportManual !== undefined && g.nilaiRaportManual !== '' ? g.nilaiRaportManual : (finalGrade > 0 ? finalGrade : '')}
+                              onChange={e => handleNumChange(g.siswaId, 'nilaiRaportManual', e.target.value)}
+                              placeholder="-"
+                              title="Nilai Raport (dapat diisi langsung jika belum input nilai TP)"
+                              className="w-12 text-center py-1 bg-white border border-emerald-300 focus:outline-none focus:ring-1 focus:ring-emerald-500 rounded text-xs font-bold text-emerald-950 font-mono shadow-2xs"
+                            />
+                          )}
                         </td>
 
                         {/* Capaian Deskripsi */}
