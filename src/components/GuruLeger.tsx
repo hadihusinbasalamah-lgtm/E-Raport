@@ -1085,18 +1085,7 @@ export function GuruLeger({ db, guruId, onUpdate, initialMode = 'leger' }: GuruL
           </table>
 
           {/* Signature Grid */}
-          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-            <div style={{ textAlign: 'center', width: '30%' }}>
-              <p style={{ margin: '0 0 50px 0' }}><br />Mengetahui,<br />Kemajelisan Orang Tua / Wali</p>
-              <p style={{ margin: '0', fontWeight: 'bold' }}>.....................................................</p>
-            </div>
-            
-            <div style={{ textAlign: 'center', width: '30%' }}>
-              <p style={{ margin: '0 0 40px 0' }}>Mengetahui,<br />Kepala Sekolah</p>
-              <p style={{ margin: '0', fontWeight: 'bold', textDecoration: 'underline' }}>Andreas Raymonda, S.Pd, M.Hum</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: '9px', color: '#475569' }}>NIK. 103.244.0072</p>
-            </div>
-
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', fontSize: '10px' }}>
             <div style={{ textAlign: 'center', width: '30%' }}>
               <p style={{ margin: '0 0 40px 0' }}>Surakarta, {formattedReportDate}<br />Wali Kelas</p>
               <p style={{ margin: '0', fontWeight: 'bold', textDecoration: 'underline' }}>{activeTeacher.nama}</p>
@@ -1206,18 +1195,7 @@ export function GuruLeger({ db, guruId, onUpdate, initialMode = 'leger' }: GuruL
           </table>
 
           {/* Signature Grid */}
-          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'space-between', fontSize: '10px' }}>
-            <div style={{ textAlign: 'center', width: '30%' }}>
-              <p style={{ margin: '0 0 50px 0' }}><br />Mengetahui,<br />Kemajelisan Orang Tua / Wali</p>
-              <p style={{ margin: '0', fontWeight: 'bold' }}>.....................................................</p>
-            </div>
-            
-            <div style={{ textAlign: 'center', width: '30%' }}>
-              <p style={{ margin: '0 0 40px 0' }}>Mengetahui,<br />Kepala Sekolah</p>
-              <p style={{ margin: '0', fontWeight: 'bold', textDecoration: 'underline' }}>Andreas Raymonda, S.Pd, M.Hum</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: '9px', color: '#475569' }}>NIK. 103.244.0072</p>
-            </div>
-
+          <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end', fontSize: '10px' }}>
             <div style={{ textAlign: 'center', width: '30%' }}>
               <p style={{ margin: '0 0 40px 0' }}>Surakarta, {formattedReportDate}<br />Wali Kelas</p>
               <p style={{ margin: '0', fontWeight: 'bold', textDecoration: 'underline' }}>{activeTeacher.nama}</p>
