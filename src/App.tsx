@@ -277,12 +277,6 @@ export default function App() {
         label: 'Cetak Leger Raport',
         icon: FileSpreadsheet,
         badge: 'Wali Kelas'
-      },
-      {
-        id: 'peringkatNav',
-        label: 'Cetak Peringkat Raport',
-        icon: Award,
-        badge: 'Wali Kelas'
       }
     ] : []),
     { id: 'profile-guru', label: 'Pengaturan Profil', icon: User },
