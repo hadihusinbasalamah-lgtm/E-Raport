@@ -37,7 +37,7 @@ import {
 import { 
   Users, BookOpen, UserCheck, GraduationCap, Calendar, User, LogOut, 
   LayoutDashboard, Award, FileText, CheckCircle2, ListChecks, Edit3, Printer, Menu, X, Loader2,
-  Database, Settings, Server, RefreshCw, AlertTriangle, CloudCheck, CheckSquare
+  Database, Settings, Server, RefreshCw, AlertTriangle, CloudCheck, CheckSquare, FileSpreadsheet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -271,12 +271,20 @@ export default function App() {
       icon: Printer,
       badge: isHomeroomTeacher ? 'Wali Kelas' : undefined 
     },
-    ...(isHomeroomTeacher ? [{
-      id: 'legerNav',
-      label: 'Cetak Leger Raport',
-      icon: FileText,
-      badge: 'Wali Kelas'
-    }] : []),
+    ...(isHomeroomTeacher ? [
+      {
+        id: 'legerNav',
+        label: 'Cetak Leger Raport',
+        icon: FileSpreadsheet,
+        badge: 'Wali Kelas'
+      },
+      {
+        id: 'peringkatNav',
+        label: 'Cetak Peringkat Raport',
+        icon: Award,
+        badge: 'Wali Kelas'
+      }
+    ] : []),
     { id: 'profile-guru', label: 'Pengaturan Profil', icon: User },
   ];
 
@@ -644,7 +652,11 @@ export default function App() {
                       )}
 
                       {activeTab === 'legerNav' && isHomeroomTeacher && (
-                        <GuruLeger db={db} guruId={session.userId} onUpdate={handleUpdateDb} />
+                        <GuruLeger db={db} guruId={session.userId} onUpdate={handleUpdateDb} initialMode="leger" />
+                      )}
+
+                      {activeTab === 'peringkatNav' && isHomeroomTeacher && (
+                        <GuruLeger db={db} guruId={session.userId} onUpdate={handleUpdateDb} initialMode="peringkat" />
                       )}
 
                       {activeTab === 'profile-guru' && (
