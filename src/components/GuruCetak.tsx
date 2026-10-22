@@ -86,7 +86,7 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
     setEkskulList(copy);
   };
 
-  const handleUpdateEkskulFieldNilai = (index: number, val: 'A' | 'B' | 'C') => {
+  const handleUpdateEkskulFieldNilai = (index: number, val: 'A' | 'B' | 'C' | '-') => {
     const copy = [...ekskulList];
     copy[index].nilai = val;
     setEkskulList(copy);
@@ -411,9 +411,10 @@ export function GuruCetak({ db, guruId, onUpdate }: GuruCetakProps) {
                             <div className="w-24">
                               <select
                                 value={item.nilai}
-                                onChange={e => handleUpdateEkskulFieldNilai(index, e.target.value as 'A' | 'B' | 'C')}
+                                onChange={e => handleUpdateEkskulFieldNilai(index, e.target.value as 'A' | 'B' | 'C' | '-')}
                                 className="w-full px-2 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-bold text-emerald-800"
                               >
+                                <option value="-">-</option>
                                 <option value="A">Nilai A</option>
                                 <option value="B">Nilai B</option>
                                 <option value="C">Nilai C</option>

@@ -102,7 +102,7 @@ export interface NilaiSiswa {
 
 export interface EkstrakurikulerItem {
   nama: string;
-  nilai: 'A' | 'B' | 'C';
+  nilai: 'A' | 'B' | 'C' | '-';
 }
 
 export interface AbsensiDanCatatan {
